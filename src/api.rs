@@ -97,10 +97,8 @@ impl BrewApi {
         let query_lower = query.to_lowercase();
 
         // Fetch both formulae and casks in parallel
-        let (formulae_result, casks_result) = tokio::join!(
-            self.fetch_all_formulae(),
-            self.fetch_all_casks()
-        );
+        let (formulae_result, casks_result) =
+            tokio::join!(self.fetch_all_formulae(), self.fetch_all_casks());
 
         let formulae = formulae_result?;
         let casks = casks_result?;
@@ -114,7 +112,10 @@ impl BrewApi {
                         .into_iter()
                         .filter(|f| {
                             f.name.to_lowercase().contains(&query)
-                                || f.desc.as_ref().map(|d| d.to_lowercase().contains(&query)).unwrap_or(false)
+                                || f.desc
+                                    .as_ref()
+                                    .map(|d| d.to_lowercase().contains(&query))
+                                    .unwrap_or(false)
                         })
                         .collect::<Vec<_>>()
                 }
@@ -127,7 +128,10 @@ impl BrewApi {
                         .filter(|c| {
                             c.token.to_lowercase().contains(&query)
                                 || c.name.iter().any(|n| n.to_lowercase().contains(&query))
-                                || c.desc.as_ref().map(|d| d.to_lowercase().contains(&query)).unwrap_or(false)
+                                || c.desc
+                                    .as_ref()
+                                    .map(|d| d.to_lowercase().contains(&query))
+                                    .unwrap_or(false)
                         })
                         .collect::<Vec<_>>()
                 }

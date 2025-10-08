@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"))
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn")),
         )
         .init();
 
@@ -73,7 +73,10 @@ async fn main() -> anyhow::Result<()> {
             commands::deps(&api, &formula, tree).await?;
         }
         None => {
-            println!("{} Welcome to bru - a fast Homebrew-compatible package manager!", "👋".bold());
+            println!(
+                "{} Welcome to bru - a fast Homebrew-compatible package manager!",
+                "👋".bold()
+            );
             println!("\nRun {} to see available commands.", "bru --help".cyan());
             println!("\n{} Built with Rust for maximum performance", "⚡".bold());
         }

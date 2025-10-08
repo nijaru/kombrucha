@@ -8,7 +8,11 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
     let results = api.search(query).await?;
 
     if results.is_empty() {
-        println!("\n{} No formulae or casks found matching '{}'", "❌".red(), query);
+        println!(
+            "\n{} No formulae or casks found matching '{}'",
+            "❌".red(),
+            query
+        );
         return Ok(());
     }
 
