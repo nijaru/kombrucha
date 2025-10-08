@@ -21,6 +21,8 @@ pub struct Formula {
     pub dependencies: Vec<String>,
     #[serde(default)]
     pub build_dependencies: Vec<String>,
+    #[serde(default)]
+    pub bottle: Option<Bottle>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -31,6 +33,30 @@ pub struct Versions {
     pub head: Option<String>,
     #[serde(default)]
     pub bottle: bool,
+}
+
+/// Bottle file metadata for a specific platform
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BottleFile {
+    pub cellar: String,
+    pub url: String,
+    pub sha256: String,
+}
+
+/// Bottle metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BottleData {
+    pub rebuild: u32,
+    #[serde(default)]
+    pub root_url: Option<String>,
+    pub files: std::collections::HashMap<String, BottleFile>,
+}
+
+/// Bottle information from API
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bottle {
+    #[serde(default)]
+    pub stable: Option<BottleData>,
 }
 
 /// Cask metadata
@@ -50,6 +76,7 @@ pub struct Cask {
 }
 
 /// Homebrew API client
+#[derive(Clone)]
 pub struct BrewApi {
     client: reqwest::Client,
 }

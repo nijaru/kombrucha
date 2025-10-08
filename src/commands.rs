@@ -1,5 +1,6 @@
 use crate::api::BrewApi;
 use crate::cellar;
+use crate::download;
 use crate::error::Result;
 use owo_colors::OwoColorize;
 
@@ -312,6 +313,74 @@ pub async fn outdated(api: &BrewApi) -> Result<()> {
             pkg.version.dimmed(),
             format!("→ {}", latest).cyan()
         );
+    }
+
+    Ok(())
+}
+
+pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    println!(
+        "{} Fetching {} formulae...",
+        "⬇".bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    // Fetch formula metadata in parallel
+    let mut formulae = Vec::new();
+    for name in formula_names {
+        match api.fetch_formula(name).await {
+            Ok(formula) => {
+                // Check if bottle exists
+                if formula.bottle.is_none()
+                    || formula
+                        .bottle
+                        .as_ref()
+                        .and_then(|b| b.stable.as_ref())
+                        .is_none()
+                {
+                    println!("{} No bottle available for {}", "⚠".yellow(), name.bold());
+                    continue;
+                }
+                formulae.push(formula);
+            }
+            Err(e) => {
+                println!(
+                    "{} Failed to fetch formula {}: {}",
+                    "❌".red(),
+                    name.bold(),
+                    e
+                );
+                continue;
+            }
+        }
+    }
+
+    if formulae.is_empty() {
+        println!("\n{} No formulae to download", "ℹ".blue());
+        return Ok(());
+    }
+
+    // Download bottles in parallel
+    match download::download_bottles(api, &formulae).await {
+        Ok(results) => {
+            println!(
+                "\n{} Downloaded {} bottles to {}",
+                "✓".green(),
+                results.len().to_string().bold(),
+                download::cache_dir().display().to_string().dimmed()
+            );
+            for (name, path) in results {
+                println!(
+                    "  {} {}",
+                    name.bold().green(),
+                    path.display().to_string().dimmed()
+                );
+            }
+        }
+        Err(e) => {
+            println!("\n{} Download failed: {}", "❌".red(), e);
+            return Err(e.into());
+        }
     }
 
     Ok(())

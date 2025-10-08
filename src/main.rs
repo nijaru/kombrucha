@@ -1,7 +1,9 @@
 mod api;
 mod cellar;
 mod commands;
+mod download;
 mod error;
+mod platform;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
@@ -57,6 +59,12 @@ enum Commands {
 
     /// Show outdated installed packages
     Outdated,
+
+    /// Download bottles for formulae
+    Fetch {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -97,6 +105,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Outdated) => {
             commands::outdated(&api).await?;
+        }
+        Some(Commands::Fetch { formulae }) => {
+            commands::fetch(&api, &formulae).await?;
         }
         None => {
             println!(
