@@ -51,7 +51,7 @@ bru deps --tree wget
 
 ## Performance
 
-See [BENCHMARKS.md](BENCHMARKS.md) for detailed results.
+See [benchmarks/results.md](benchmarks/results.md) for detailed results.
 
 **Summary**:
 - `bru info`: **7.2x faster** than `brew info`
@@ -66,10 +66,14 @@ Read the [performance analysis](internal/performance-analysis.md) for details.
 
 ## Documentation
 
-- [SPEC.md](SPEC.md) - Original architecture specification
 - [CLAUDE.md](CLAUDE.md) - Development guide
-- [internal/](internal/) - Research and planning docs
-- [BENCHMARKS.md](BENCHMARKS.md) - Performance results
+- [internal/](internal/) - Research, planning, and specifications
+  - [SPEC.md](internal/SPEC.md) - Original architecture specification
+  - [implementation-roadmap.md](internal/implementation-roadmap.md) - Phased implementation plan
+  - [research-conclusions.md](internal/research-conclusions.md) - All research findings
+- [benchmarks/](benchmarks/) - Performance testing and results
+  - [results.md](benchmarks/results.md) - Benchmark results vs Homebrew
+- [scripts/](scripts/) - Development and testing scripts
 
 ## License
 

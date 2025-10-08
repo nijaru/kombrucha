@@ -2,7 +2,24 @@
 
 This document tracks things we need to investigate, decide, or research before implementing.
 
-## 🔴 Critical (Need answers before Phase 1)
+## ✅ All Questions Answered - See research-conclusions.md
+
+**Updated**: 2025-01-08 after comprehensive testing and research
+
+**Summary**:
+- ✅ API rate limits: NONE (tested with 50 rapid requests)
+- ✅ Tap structure: API-only for core (no git clone needed)
+- ✅ Keg-only: Rarely used now, check API flag
+- ✅ Dependency resolution: Force latest, match Homebrew
+- ✅ Config strategy: Aggressive defaults leveraging speed
+- ✅ Checksums: SHA256 only, no GPG
+- ✅ Shell completions: Clap auto-generates
+
+**See `research-conclusions.md` for full details**
+
+---
+
+## 🔴 Critical (Need answers before Phase 1) - ✅ ALL ANSWERED
 
 ### 1. Homebrew Prefix & Cellar Paths
 
@@ -21,10 +38,10 @@ This document tracks things we need to investigate, decide, or research before i
 - Can we install to same location as Homebrew? (Probably yes)
 - What if user doesn't have Homebrew installed? (Create standard prefix)
 
-**Action**:
-- [ ] Read Homebrew prefix detection code
-- [ ] Test on both Intel and Apple Silicon
-- [ ] Document in `internal/homebrew-compatibility.md`
+**Status**: ✅ ANSWERED
+- [x] Documented in `homebrew-compatibility.md`
+- [x] Prefix: /opt/homebrew (ARM), /usr/local (Intel)
+- [x] Detection via arch or HOMEBREW_PREFIX env var
 
 ### 2. API Rate Limiting & Caching
 
@@ -56,10 +73,10 @@ This document tracks things we need to investigate, decide, or research before i
     formula/wget.json (cached, 1 day TTL)
 ```
 
-**Action**:
-- [ ] Check if Homebrew API has rate limits
-- [ ] Implement simple file-based cache
-- [ ] Add `--no-cache` flag for testing
+**Status**: ✅ ANSWERED
+- [x] Tested: NO rate limits (50/50 requests succeeded)
+- [x] Cache for performance, not rate limiting
+- [x] Strategy: ~/.cache/bru/ with 1h TTL for lists, 1d for formulae
 
 ### 3. Bottle Checksums & Security
 
@@ -77,10 +94,10 @@ This document tracks things we need to investigate, decide, or research before i
 - Do we need GPG signature verification?
 - What happens on checksum mismatch?
 
-**Action**:
-- [ ] Read Homebrew bottle verification code
-- [ ] Test bottle download and checksum verification
-- [ ] Implement in Phase 2
+**Status**: ✅ ANSWERED
+- [x] SHA256 checksums only (no GPG)
+- [x] Documented in `homebrew-compatibility.md`
+- [x] Bottles from ghcr.io with HTTPS
 
 ### 4. Configuration System
 
@@ -117,13 +134,11 @@ color = true
 verbose = false
 ```
 
-**Decision**: Start simple, add config as needed
-- Phase 0-2: No config file, use sensible defaults
-- Phase 3+: Add config file if users request it
-
-**Action**:
-- [ ] Defer until Phase 2
-- [ ] For now: auto-detect Homebrew prefix, use defaults
+**Status**: ✅ DECIDED
+- [x] No config file for MVP
+- [x] Aggressive defaults leveraging speed (see research-conclusions.md)
+- [x] Environment variables for power users
+- [x] Optional config in Phase 3+ if needed
 
 ## 🟡 Important (Need answers before Phase 2)
 
@@ -142,9 +157,10 @@ verbose = false
 - Receipts track what's installed
 - `brew uninstall` needs to work on bru-installed packages
 
-**Action**:
-- [ ] Examine receipt format in Phase 2
-- [ ] Ensure compatibility
+**Status**: ✅ ANSWERED
+- [x] Complete format documented in `homebrew-compatibility.md`
+- [x] JSON with full dep tree, timestamps, build environment
+- [x] Compatible receipt generation planned for Phase 2
 
 ### 6. Tap Management
 
@@ -155,13 +171,11 @@ verbose = false
 - Core: homebrew/core (built-in)
 - Others: `brew tap user/repo` clones to `/opt/homebrew/Library/Taps/`
 
-**For Phase 1-2**:
-- Only support homebrew-core (default)
-- Tap management deferred to Phase 3+
-
-**Action**:
-- [ ] Defer tap support until Phase 3
-- [ ] Document in roadmap
+**Status**: ✅ ANSWERED
+- [x] Modern Homebrew: API-only for core (no git clone!)
+- [x] Third-party taps: Still git repos
+- [x] Phase 1-2: API-only (matches modern Homebrew)
+- [x] Phase 3+: Add tap support if needed
 
 ### 7. Keg-Only Formulae Handling
 
@@ -177,9 +191,11 @@ verbose = false
 - How do dependent formulae find keg-only deps?
 - Do we need special handling in Phase 2?
 
-**Action**:
-- [ ] Research in Phase 1
-- [ ] Test with openssl@3 and dependents
+**Status**: ✅ ANSWERED
+- [x] Modern Homebrew CHANGED behavior!
+- [x] openssl@3, python@3.12 ARE symlinked now
+- [x] keg_only flag rarely used
+- [x] Simple strategy: check flag, skip symlinks if true
 
 ### 8. Dependency Conflict Resolution
 
@@ -194,13 +210,11 @@ verbose = false
 - Option A: Match Homebrew exactly (simple, compatible)
 - Option B: Allow version flexibility (complex, better)
 
-**Decision for Phase 1-2**: Match Homebrew (Option A)
-- Defer advanced dep resolution to Phase 4
-- Focus on compatibility first
-
-**Action**:
-- [ ] Document decision in implementation-roadmap.md
-- [ ] Consider Phase 4 enhancement
+**Status**: ✅ DECIDED
+- [x] Phase 1-2: Match Homebrew exactly (force latest)
+- [x] Tested: Homebrew forces latest, cascading upgrades
+- [x] Phase 4: Consider SAT solver for version flexibility
+- [x] Documented in research-conclusions.md
 
 ## 🟢 Nice to Have (Can research anytime)
 
@@ -212,9 +226,11 @@ verbose = false
 
 **Implementation**: clap can generate completions automatically
 
-**Action**:
-- [ ] Add in Phase 3 or later
-- [ ] Easy to implement with clap
+**Status**: ✅ ANSWERED
+- [x] Clap auto-generates completions
+- [x] Trivial to implement (10 lines of code)
+- [x] Phase 3-4 priority
+- [x] Documented in research-conclusions.md
 
 ### 10. Progress Bars for Downloads
 
@@ -225,9 +241,10 @@ verbose = false
 - Show multiple progress bars for concurrent downloads
 - Show overall progress
 
-**Action**:
-- [ ] Implement in Phase 2 with download manager
-- [ ] `indicatif` is perfect for this
+**Status**: ✅ PLANNED
+- [x] indicatif already in dependencies
+- [x] Phase 2 implementation with parallel downloads
+- [x] Show multiple progress bars for concurrent ops
 
 ### 11. Homebrew API Alternatives
 
@@ -238,13 +255,11 @@ verbose = false
 - Use CDN/mirror (faster for some regions)
 - Build our own index (overkill)
 
-**Decision**: Stick with formulae.brew.sh API
-- It's fast, reliable, official
-- Has CDN backing
-- Caching solves speed issues
-
-**Action**:
-- [ ] No action needed, use official API
+**Status**: ✅ DECIDED
+- [x] Use official formulae.brew.sh API
+- [x] No rate limits detected
+- [x] Fast with CDN
+- [x] Cache for offline support
 
 ### 12. Metrics & Telemetry
 
@@ -255,13 +270,10 @@ verbose = false
 - We set `HOMEBREW_NO_ANALYTICS=1` in our dotfiles optimization
 - Users value privacy
 
-**Decision**: No telemetry for now
-- Focus on building great software
-- Users can opt-in later if desired
-
-**Action**:
-- [ ] No telemetry in MVP
-- [ ] Reconsider in Phase 4+
+**Status**: ✅ DECIDED
+- [x] No telemetry in MVP
+- [x] Privacy-first approach
+- [x] Reconsider in Phase 4+ with opt-in only
 
 ## Research Methodology
 

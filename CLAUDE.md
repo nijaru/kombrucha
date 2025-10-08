@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Kombrucha** is a fast Homebrew clone written in Rust, with the CLI command `bru`. The goal is to create a high-performance, user-friendly package manager that works with all existing Homebrew formulae and infrastructure, allowing users to freely swap between `brew` and `bru`.
 
+**Documentation Structure**:
+- This file: Development guide for working on kombrucha
+- `internal/`: Research, specifications, and planning docs
+- `benchmarks/`: Performance testing and results
+- `scripts/`: Development and testing scripts
+
 ### Project Goals
 
 - **Performance**: Dramatically faster than Ruby-based Homebrew through parallel operations and compiled code
