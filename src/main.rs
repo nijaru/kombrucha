@@ -1,4 +1,5 @@
 mod api;
+mod cellar;
 mod commands;
 mod error;
 
@@ -40,6 +41,22 @@ enum Commands {
         #[arg(long)]
         tree: bool,
     },
+
+    /// Show formulae that depend on a formula
+    Uses {
+        /// Formula name
+        formula: String,
+    },
+
+    /// List installed packages
+    List {
+        /// Show all installed versions
+        #[arg(long)]
+        versions: bool,
+    },
+
+    /// Show outdated installed packages
+    Outdated,
 }
 
 #[tokio::main]
@@ -71,6 +88,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Deps { formula, tree }) => {
             commands::deps(&api, &formula, tree).await?;
+        }
+        Some(Commands::Uses { formula }) => {
+            commands::uses(&api, &formula).await?;
+        }
+        Some(Commands::List { versions }) => {
+            commands::list(&api, versions).await?;
+        }
+        Some(Commands::Outdated) => {
+            commands::outdated(&api).await?;
         }
         None => {
             println!(

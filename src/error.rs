@@ -16,6 +16,9 @@ pub enum BruError {
 
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
+
+    #[error("Error: {0}")]
+    Other(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, BruError>;

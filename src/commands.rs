@@ -1,4 +1,5 @@
 use crate::api::BrewApi;
+use crate::cellar;
 use crate::error::Result;
 use owo_colors::OwoColorize;
 
@@ -175,6 +176,142 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool) -> Result<()> {
                 println!("  {}", dep);
             }
         }
+    }
+
+    Ok(())
+}
+
+pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
+    println!(
+        "{} Finding formulae that depend on: {}",
+        "🔍".bold(),
+        formula.cyan()
+    );
+
+    // Fetch all formulae
+    let all_formulae = api.fetch_all_formulae().await?;
+
+    // Find formulae that depend on the target
+    let dependent_formulae: Vec<_> = all_formulae
+        .into_iter()
+        .filter(|f| {
+            f.dependencies.contains(&formula.to_string())
+                || f.build_dependencies.contains(&formula.to_string())
+        })
+        .collect();
+
+    if dependent_formulae.is_empty() {
+        println!("\n{} No formulae depend on '{}'", "✓".green(), formula);
+        return Ok(());
+    }
+
+    println!(
+        "\n{} Found {} formulae that depend on {}:\n",
+        "✓".green(),
+        dependent_formulae.len().to_string().bold(),
+        formula.cyan()
+    );
+
+    for f in dependent_formulae {
+        print!("{}", f.name.bold());
+        if let Some(desc) = &f.desc {
+            if !desc.is_empty() {
+                print!(" {}", format!("({})", desc).dimmed());
+            }
+        }
+        println!();
+    }
+
+    Ok(())
+}
+
+pub async fn list(_api: &BrewApi, show_versions: bool) -> Result<()> {
+    println!("{} Installed packages:", "📦".bold());
+
+    let packages = cellar::list_installed()?;
+
+    if packages.is_empty() {
+        println!("\n{} No packages installed", "ℹ".blue());
+        return Ok(());
+    }
+
+    // Group by formula name
+    let mut by_name: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
+    for pkg in packages {
+        by_name.entry(pkg.name.clone()).or_default().push(pkg);
+    }
+
+    let mut names: Vec<_> = by_name.keys().cloned().collect();
+    names.sort();
+
+    println!();
+    for name in names {
+        let versions = &by_name[&name];
+
+        if show_versions && versions.len() > 1 {
+            println!("{}", name.bold().green());
+            for pkg in versions {
+                println!("  {}", pkg.version);
+            }
+        } else {
+            // Just show the first version (usually only one)
+            let pkg = &versions[0];
+            print!("{}", name.bold().green());
+            println!(" {}", pkg.version.dimmed());
+        }
+    }
+
+    println!(
+        "\n{} {} packages installed",
+        "✓".green(),
+        by_name.len().to_string().bold()
+    );
+
+    Ok(())
+}
+
+pub async fn outdated(api: &BrewApi) -> Result<()> {
+    println!("{} Checking for outdated packages...", "🔍".bold());
+
+    let packages = cellar::list_installed()?;
+
+    if packages.is_empty() {
+        println!("\n{} No packages installed", "ℹ".blue());
+        return Ok(());
+    }
+
+    let mut outdated_packages = Vec::new();
+
+    // Check each package against API
+    for pkg in packages {
+        // Fetch current version from API
+        if let Ok(formula) = api.fetch_formula(&pkg.name).await {
+            if let Some(latest_version) = &formula.versions.stable {
+                if latest_version != &pkg.version {
+                    outdated_packages.push((pkg, latest_version.clone()));
+                }
+            }
+        }
+    }
+
+    if outdated_packages.is_empty() {
+        println!("\n{} All packages are up to date", "✓".green());
+        return Ok(());
+    }
+
+    println!(
+        "\n{} Found {} outdated packages:\n",
+        "⚠".yellow(),
+        outdated_packages.len().to_string().bold()
+    );
+
+    for (pkg, latest) in outdated_packages {
+        println!(
+            "{} {} {}",
+            pkg.name.bold().yellow(),
+            pkg.version.dimmed(),
+            format!("→ {}", latest).cyan()
+        );
     }
 
     Ok(())
