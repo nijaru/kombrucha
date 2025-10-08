@@ -10,7 +10,7 @@
 - **Beautiful**: Colorized output with formatted results
 - **Parallel**: Concurrent API calls (parallel downloads in Phase 2)
 
-## Status: Phase 1 Complete ✅
+## Status: Phase 2.2 Complete ✅
 
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
@@ -21,11 +21,12 @@
 - `bru list` - List installed packages
 - `bru list --versions` - Show all installed versions
 - `bru outdated` - Show outdated packages
+- `bru fetch <formula>...` - Download bottles with parallel downloads
+- `bru install <formula>...` - Install packages from bottles with full dependency resolution
 
-**Coming soon** (Phase 2):
-- Bottle downloads with parallel downloads
-- Package installation
-- Upgrade and reinstall commands
+**Coming soon** (Phase 2.3):
+- `bru upgrade` - Upgrade installed packages
+- `bru reinstall` - Reinstall packages
 
 ## Installation
 
@@ -60,6 +61,12 @@ bru list
 
 # Check for outdated packages
 bru outdated
+
+# Install a package
+bru install hello
+
+# Download bottles without installing
+bru fetch wget jq tree
 ```
 
 ## Performance
