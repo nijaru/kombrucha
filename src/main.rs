@@ -3,7 +3,9 @@ mod cellar;
 mod commands;
 mod download;
 mod error;
+mod extract;
 mod platform;
+mod symlink;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
