@@ -605,3 +605,215 @@ fn build_runtime_deps(
         })
         .collect()
 }
+
+pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    // Determine which formulae to upgrade
+    let to_upgrade = if formula_names.is_empty() {
+        // Upgrade all outdated
+        println!("{} Checking for outdated packages...", "🔍".bold());
+        let packages = cellar::list_installed()?;
+        let mut outdated = Vec::new();
+
+        for pkg in packages {
+            if let Ok(formula) = api.fetch_formula(&pkg.name).await {
+                if let Some(latest) = &formula.versions.stable {
+                    if latest != &pkg.version {
+                        outdated.push(pkg.name.clone());
+                    }
+                }
+            }
+        }
+
+        if outdated.is_empty() {
+            println!("\n{} All packages are up to date", "✓".green());
+            return Ok(());
+        }
+
+        println!(
+            "{} {} packages to upgrade: {}",
+            "→".bold(),
+            outdated.len().to_string().bold(),
+            outdated.join(", ").cyan()
+        );
+        outdated
+    } else {
+        formula_names.to_vec()
+    };
+
+    println!(
+        "\n{} Upgrading {} packages...",
+        "⬆".bold(),
+        to_upgrade.len()
+    );
+
+    for formula_name in &to_upgrade {
+        // Check if installed
+        let installed_versions = cellar::get_installed_versions(formula_name)?;
+        if installed_versions.is_empty() {
+            println!(
+                "  {} {} not installed, installing...",
+                "ℹ".blue(),
+                formula_name.bold()
+            );
+            install(api, &[formula_name.clone()], false).await?;
+            continue;
+        }
+
+        let old_version = &installed_versions[0].version;
+
+        // Fetch latest version
+        let formula = api.fetch_formula(formula_name).await?;
+        let new_version = formula
+            .versions
+            .stable
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula_name))?;
+
+        if old_version == new_version {
+            println!(
+                "  {} {} already at latest version {}",
+                "✓".green(),
+                formula_name.bold(),
+                new_version.dimmed()
+            );
+            continue;
+        }
+
+        println!(
+            "  {} Upgrading {} {} → {}",
+            "⬆".bold(),
+            formula_name.cyan(),
+            old_version.dimmed(),
+            new_version.cyan()
+        );
+
+        // Unlink old version
+        symlink::unlink_formula(formula_name, old_version)?;
+
+        // Download new version
+        let bottle_path = download::download_bottle(&formula, None).await?;
+
+        // Install new version
+        let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
+        let linked = symlink::link_formula(formula_name, new_version)?;
+
+        // Generate receipt
+        let runtime_deps = build_runtime_deps(&formula.dependencies, &{
+            let mut map = HashMap::new();
+            map.insert(formula.name.clone(), formula.clone());
+            map
+        });
+        let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
+        receipt_data.write(&extracted_path)?;
+
+        println!(
+            "    {} Linked {} files",
+            "✓".green(),
+            linked.len().to_string().dimmed()
+        );
+
+        // Remove old version
+        let old_path = cellar::cellar_path().join(formula_name).join(old_version);
+        if old_path.exists() {
+            std::fs::remove_dir_all(&old_path)?;
+            println!(
+                "    {} Removed old version {}",
+                "✓".green(),
+                old_version.dimmed()
+            );
+        }
+
+        println!(
+            "    {} Upgraded {} to {}",
+            "✓".green(),
+            formula_name.bold().green(),
+            new_version.dimmed()
+        );
+    }
+
+    println!(
+        "\n{} Upgraded {} packages",
+        "✓".green().bold(),
+        to_upgrade.len().to_string().bold()
+    );
+
+    Ok(())
+}
+
+pub async fn reinstall(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Reinstalling {} formulae...",
+        "🔄".bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    for formula_name in formula_names {
+        // Check if installed
+        let installed_versions = cellar::get_installed_versions(formula_name)?;
+        if installed_versions.is_empty() {
+            println!("  {} {} not installed", "⚠".yellow(), formula_name.bold());
+            continue;
+        }
+
+        let version = &installed_versions[0].version;
+        println!(
+            "  {} Reinstalling {} {}",
+            "🔄".bold(),
+            formula_name.cyan(),
+            version.dimmed()
+        );
+
+        // Unlink
+        symlink::unlink_formula(formula_name, version)?;
+
+        // Remove from Cellar
+        let cellar_path = cellar::cellar_path().join(formula_name).join(version);
+        if cellar_path.exists() {
+            std::fs::remove_dir_all(&cellar_path)?;
+        }
+
+        // Fetch formula metadata
+        let formula = api.fetch_formula(formula_name).await?;
+
+        // Download bottle
+        let bottle_path = download::download_bottle(&formula, None).await?;
+
+        // Install
+        let extracted_path = extract::extract_bottle(&bottle_path, formula_name, version)?;
+        let linked = symlink::link_formula(formula_name, version)?;
+
+        // Generate receipt
+        let runtime_deps = build_runtime_deps(&formula.dependencies, &{
+            let mut map = HashMap::new();
+            map.insert(formula.name.clone(), formula.clone());
+            map
+        });
+        let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
+        receipt_data.write(&extracted_path)?;
+
+        println!(
+            "    {} Linked {} files",
+            "✓".green(),
+            linked.len().to_string().dimmed()
+        );
+        println!(
+            "    {} Reinstalled {} {}",
+            "✓".green(),
+            formula_name.bold().green(),
+            version.dimmed()
+        );
+    }
+
+    println!(
+        "\n{} Reinstalled {} packages",
+        "✓".green().bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    Ok(())
+}

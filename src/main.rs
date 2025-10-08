@@ -78,6 +78,18 @@ enum Commands {
         #[arg(long)]
         only_dependencies: bool,
     },
+
+    /// Upgrade installed formulae
+    Upgrade {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+    },
+
+    /// Reinstall formulae
+    Reinstall {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -127,6 +139,12 @@ async fn main() -> anyhow::Result<()> {
             only_dependencies,
         }) => {
             commands::install(&api, &formulae, only_dependencies).await?;
+        }
+        Some(Commands::Upgrade { formulae }) => {
+            commands::upgrade(&api, &formulae).await?;
+        }
+        Some(Commands::Reinstall { formulae }) => {
+            commands::reinstall(&api, &formulae).await?;
         }
         None => {
             println!(
