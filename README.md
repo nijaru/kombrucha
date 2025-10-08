@@ -4,11 +4,11 @@
 
 ## Features
 
-- **Fast**: 7x faster than Homebrew for common commands
-- **Efficient**: 15-85x less CPU usage
-- **Compatible**: Works with all existing Homebrew formulae, taps, and infrastructure
-- **Beautiful**: Colorized output with progress indicators
-- **Parallel**: Concurrent API calls and downloads (coming in Phase 2)
+- **Fast**: 7x faster than Homebrew for info commands
+- **Efficient**: 15x less CPU usage for search operations
+- **Compatible**: Targets full compatibility with Homebrew formulae and infrastructure
+- **Beautiful**: Colorized output with formatted results
+- **Parallel**: Concurrent API calls (parallel downloads in Phase 2)
 
 ## Status: Phase 0 Complete ✅
 
@@ -53,16 +53,16 @@ bru deps --tree wget
 
 See [benchmarks/results.md](benchmarks/results.md) for detailed results.
 
-**Summary**:
-- `bru info`: **7.2x faster** than `brew info`
-- `bru search`: Same speed, **15x less CPU**
-- Phase 2 target: **10-20x faster** for installs
+**Phase 0 Benchmarks**:
+- `bru info`: **7.2x faster** than `brew info` (1.45s → 0.20s)
+- `bru search`: Same speed, **15x less CPU usage**
+- Phase 2 estimate: **10-20x faster** for parallel installs
 
 ## Why?
 
-Homebrew is amazing but slow. On modern networks (100+ Mbps), Ruby overhead dominates execution time. bru eliminates this overhead while remaining 100% compatible.
+Homebrew is amazing but slow. On modern networks (100+ Mbps), Ruby overhead dominates execution time. bru eliminates this overhead while targeting full compatibility with Homebrew's formulae and infrastructure.
 
-Read the [performance analysis](internal/performance-analysis.md) for details.
+See [performance analysis](internal/performance-analysis.md) for the technical breakdown.
 
 ## Documentation
 
