@@ -10,7 +10,7 @@
 - **Beautiful**: Colorized output with formatted results
 - **Parallel**: Concurrent API calls (parallel downloads in Phase 2)
 
-## Status: Phase 2.2 Complete ✅
+## Status: Phase 2.3 Complete ✅
 
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
@@ -23,10 +23,11 @@
 - `bru outdated` - Show outdated packages
 - `bru fetch <formula>...` - Download bottles with parallel downloads
 - `bru install <formula>...` - Install packages from bottles with full dependency resolution
+- `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
+- `bru reinstall <formula>...` - Reinstall packages
 
-**Coming soon** (Phase 2.3):
-- `bru upgrade` - Upgrade installed packages
-- `bru reinstall` - Reinstall packages
+**Coming soon** (Phase 3):
+- Source builds for formulae without bottles
 
 ## Installation
 
