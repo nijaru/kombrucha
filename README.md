@@ -10,18 +10,22 @@
 - **Beautiful**: Colorized output with formatted results
 - **Parallel**: Concurrent API calls (parallel downloads in Phase 2)
 
-## Status: Phase 0 Complete ✅
+## Status: Phase 1 Complete ✅
 
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
 - `bru info <formula>` - Show formula/cask information
 - `bru deps <formula>` - Show dependencies
 - `bru deps --tree <formula>` - Show dependency tree
+- `bru uses <formula>` - Show formulae that depend on a formula
+- `bru list` - List installed packages
+- `bru list --versions` - Show all installed versions
+- `bru outdated` - Show outdated packages
 
-**Coming soon** (Phase 1-2):
-- Parallel dependency resolution
-- Bottle downloads and installation
-- Full Homebrew command compatibility
+**Coming soon** (Phase 2):
+- Bottle downloads with parallel downloads
+- Package installation
+- Upgrade and reinstall commands
 
 ## Installation
 
@@ -47,6 +51,15 @@ bru info wget
 
 # Show dependencies
 bru deps --tree wget
+
+# See what depends on a package
+bru uses openssl
+
+# List installed packages
+bru list
+
+# Check for outdated packages
+bru outdated
 ```
 
 ## Performance

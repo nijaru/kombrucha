@@ -67,7 +67,8 @@ When a user runs `bru install <formula>`:
 
 ## Development Phases (from SPEC.md:46-60)
 
-**Phase 1**: Read-only commands (`search`, `info`, `deps`, `uses`) + dependency resolution
+**Phase 0** ✅: Foundation (CLI scaffolding, API client, basic commands)
+**Phase 1** ✅: Read-only commands (`search`, `info`, `deps`, `uses`, `list`, `outdated`)
 **Phase 2**: Bottle-based installation (install with bottles only)
 **Phase 3**: Ruby interop for source builds (full `install`, `uninstall`, `upgrade`)
 **Phase 4**: Complete command compatibility (all Homebrew commands)
