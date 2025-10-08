@@ -20,8 +20,8 @@ pub fn relocate_bottle(cellar_path: &Path, prefix: &Path) -> Result<()> {
     // cellar_path is /opt/homebrew/Cellar/formula/version
     // We need /opt/homebrew/Cellar (two parents up)
     let cellar_str = cellar_path
-        .parent()  // /opt/homebrew/Cellar/formula
-        .and_then(|p| p.parent())  // /opt/homebrew/Cellar
+        .parent() // /opt/homebrew/Cellar/formula
+        .and_then(|p| p.parent()) // /opt/homebrew/Cellar
         .and_then(|p| p.to_str())
         .ok_or_else(|| anyhow::anyhow!("Invalid cellar path"))?;
 
@@ -118,11 +118,7 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 .context("Failed to run install_name_tool")?;
 
             if !status.success() {
-                tracing::warn!(
-                    "Failed to relocate {} in {}",
-                    old_path,
-                    path.display()
-                );
+                tracing::warn!("Failed to relocate {} in {}", old_path, path.display());
             }
         }
     }

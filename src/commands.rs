@@ -475,10 +475,7 @@ pub async fn install(
         let extracted_path = extract::extract_bottle(bottle_path, &formula.name, version)?;
 
         // Relocate bottle (fix install names)
-        crate::relocate::relocate_bottle(
-            &extracted_path,
-            &crate::cellar::detect_prefix(),
-        )?;
+        crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
         // Create symlinks
         let linked = symlink::link_formula(&formula.name, version)?;
@@ -703,10 +700,7 @@ pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
 
         // Relocate bottle (fix install names)
-        crate::relocate::relocate_bottle(
-            &extracted_path,
-            &crate::cellar::detect_prefix(),
-        )?;
+        crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
         let linked = symlink::link_formula(formula_name, new_version)?;
 
@@ -800,10 +794,7 @@ pub async fn reinstall(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, version)?;
 
         // Relocate bottle (fix install names)
-        crate::relocate::relocate_bottle(
-            &extracted_path,
-            &crate::cellar::detect_prefix(),
-        )?;
+        crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
         let linked = symlink::link_formula(formula_name, version)?;
 
