@@ -68,6 +68,16 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Install formulae from bottles
+    Install {
+        /// Formula names
+        formulae: Vec<String>,
+
+        /// Skip installing dependencies
+        #[arg(long)]
+        only_dependencies: bool,
+    },
 }
 
 #[tokio::main]
@@ -111,6 +121,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Fetch { formulae }) => {
             commands::fetch(&api, &formulae).await?;
+        }
+        Some(Commands::Install {
+            formulae,
+            only_dependencies,
+        }) => {
+            commands::install(&api, &formulae, only_dependencies).await?;
         }
         None => {
             println!(
