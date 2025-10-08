@@ -4,9 +4,29 @@ use crate::api::{BrewApi, Formula};
 use crate::platform;
 use anyhow::{Context, Result, anyhow};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
+
+/// GHCR token response
+#[derive(Deserialize)]
+struct GhcrToken {
+    token: String,
+}
+
+/// Get anonymous bearer token for GHCR
+async fn get_ghcr_token(repository: &str) -> Result<String> {
+    let url = format!(
+        "https://ghcr.io/token?service=ghcr.io&scope=repository:{}:pull",
+        repository
+    );
+
+    let client = reqwest::Client::new();
+    let response: GhcrToken = client.get(&url).send().await?.json().await?;
+
+    Ok(response.token)
+}
 
 /// Download cache directory
 pub fn cache_dir() -> PathBuf {
@@ -101,10 +121,18 @@ pub async fn download_bottle(
         None
     };
 
-    // Download
+    // Get GHCR bearer token
+    // Repository format: homebrew/core/{formula}
+    let repository = format!("homebrew/core/{}", formula.name);
+    let token = get_ghcr_token(&repository)
+        .await
+        .context("Failed to get GHCR token")?;
+
+    // Download with authentication
     let client = reqwest::Client::new();
     let mut response = client
         .get(&bottle_file.url)
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .context("Failed to send request")?;
