@@ -6,6 +6,7 @@ mod error;
 mod extract;
 mod platform;
 mod receipt;
+mod relocate;
 mod symlink;
 
 use clap::{Parser, Subcommand};
