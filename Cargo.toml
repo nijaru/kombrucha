@@ -6,9 +6,16 @@ authors = ["Nick <nijaru@users.noreply.github.com>"]
 description = "A fast Homebrew-compatible package manager written in Rust"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/nijaru/kombrucha"
+homepage = "https://github.com/nijaru/kombrucha"
+documentation = "https://github.com/nijaru/kombrucha#readme"
 readme = "README.md"
-keywords = ["homebrew", "package-manager", "cli"]
+keywords = ["homebrew", "package-manager", "cli", "macos", "bottles"]
 categories = ["command-line-utilities"]
+exclude = [
+    "internal/*",
+    "benchmarks/*",
+    ".github/*",
+]
 
 [dependencies]
 # CLI & UX
