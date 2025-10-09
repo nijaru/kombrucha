@@ -72,12 +72,17 @@ bru fetch wget jq tree
 
 ## Performance
 
-See [benchmarks/results.md](benchmarks/results.md) for detailed results.
+See [benchmarks/results.md](benchmarks/results.md) and [benchmarks/phase2-results.md](benchmarks/phase2-results.md) for detailed results.
 
-**Phase 0 Benchmarks**:
+**Phase 0 Benchmarks** (read-only commands):
 - `bru info`: **7.2x faster** than `brew info` (1.45s → 0.20s)
 - `bru search`: Same speed, **15x less CPU usage**
-- Phase 2 estimate: **10-20x faster** for parallel installs
+
+**Phase 2 Benchmarks** (installation):
+- `bru install`: **21-60x faster** than `brew install`
+  - Normal usage (with auto-update): **60x faster** (8.3s → 0.14s)
+  - Pure install (no auto-update): **21x faster** (2.9s → 0.14s)
+  - **100x less CPU usage** (2.1s → 0.02s user time)
 
 ## Why?
 
