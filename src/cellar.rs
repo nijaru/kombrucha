@@ -83,7 +83,9 @@ pub struct InstallReceipt {
 pub struct InstalledPackage {
     pub name: String,
     pub version: String,
+    #[allow(dead_code)]
     pub path: PathBuf,
+    #[allow(dead_code)]
     pub receipt: Option<InstallReceipt>,
 }
 
@@ -110,6 +112,7 @@ impl InstalledPackage {
     }
 
     /// Check if this was installed on request (vs as dependency)
+    #[allow(dead_code)]
     pub fn installed_on_request(&self) -> bool {
         self.receipt
             .as_ref()
@@ -118,6 +121,7 @@ impl InstalledPackage {
     }
 
     /// Get runtime dependencies
+    #[allow(dead_code)]
     pub fn runtime_dependencies(&self) -> Vec<RuntimeDependency> {
         self.receipt
             .as_ref()

@@ -67,7 +67,7 @@ pub struct BuiltOn {
 impl InstallReceipt {
     /// Create a new receipt for a bottle installation
     pub fn new_bottle(
-        formula: &Formula,
+        _formula: &Formula,
         runtime_deps: Vec<RuntimeDependency>,
         installed_on_request: bool,
     ) -> Self {
