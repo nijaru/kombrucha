@@ -25,6 +25,7 @@
 - `bru install <formula>...` - Install packages from bottles with full dependency resolution
 - `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
 - `bru reinstall <formula>...` - Reinstall packages
+- `bru uninstall <formula>...` - Uninstall packages (with dependency checking)
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles
@@ -65,6 +66,9 @@ bru outdated
 
 # Install a package
 bru install hello
+
+# Uninstall a package
+bru uninstall hello
 
 # Download bottles without installing
 bru fetch wget jq tree

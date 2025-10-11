@@ -821,3 +821,99 @@ pub async fn reinstall(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Uninstalling {} formulae...",
+        "🗑".bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    // Get all installed packages to check dependencies
+    let all_installed = cellar::list_installed()?;
+
+    for formula_name in formula_names {
+        // Check if installed
+        let installed_versions = cellar::get_installed_versions(formula_name)?;
+        if installed_versions.is_empty() {
+            println!("  {} {} not installed", "⚠".yellow(), formula_name.bold());
+            continue;
+        }
+
+        // Check if other packages depend on this one (unless --force)
+        if !force {
+            let dependents: Vec<_> = all_installed
+                .iter()
+                .filter(|pkg| {
+                    pkg.name != *formula_name
+                        && pkg
+                            .runtime_dependencies()
+                            .iter()
+                            .any(|dep| dep.full_name == *formula_name)
+                })
+                .map(|pkg| pkg.name.as_str())
+                .collect();
+
+            if !dependents.is_empty() {
+                println!(
+                    "  {} Cannot uninstall {} - required by: {}",
+                    "⚠".yellow(),
+                    formula_name.bold(),
+                    dependents.join(", ").cyan()
+                );
+                println!("    Use {} to force uninstall", "--force".dimmed());
+                continue;
+            }
+        }
+
+        let version = &installed_versions[0].version;
+        println!(
+            "  {} Uninstalling {} {}",
+            "🗑".bold(),
+            formula_name.cyan(),
+            version.dimmed()
+        );
+
+        // Unlink symlinks
+        let unlinked = symlink::unlink_formula(formula_name, version)?;
+        if !unlinked.is_empty() {
+            println!(
+                "    {} Unlinked {} files",
+                "✓".green(),
+                unlinked.len().to_string().dimmed()
+            );
+        }
+
+        // Remove from Cellar
+        let cellar_path = cellar::cellar_path().join(formula_name).join(version);
+        if cellar_path.exists() {
+            std::fs::remove_dir_all(&cellar_path)?;
+        }
+
+        // Remove formula directory if empty
+        let formula_dir = cellar::cellar_path().join(formula_name);
+        if formula_dir.exists() && formula_dir.read_dir()?.next().is_none() {
+            std::fs::remove_dir(&formula_dir)?;
+        }
+
+        println!(
+            "    {} Uninstalled {} {}",
+            "✓".green(),
+            formula_name.bold().green(),
+            version.dimmed()
+        );
+    }
+
+    println!(
+        "\n{} Uninstalled {} packages",
+        "✓".green().bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    Ok(())
+}

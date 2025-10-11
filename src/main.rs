@@ -91,6 +91,16 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Uninstall formulae
+    Uninstall {
+        /// Formula names
+        formulae: Vec<String>,
+
+        /// Ignore dependencies (force uninstall)
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 #[tokio::main]
@@ -146,6 +156,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Reinstall { formulae }) => {
             commands::reinstall(&api, &formulae).await?;
+        }
+        Some(Commands::Uninstall { formulae, force }) => {
+            commands::uninstall(&api, &formulae, force).await?;
         }
         None => {
             println!(
