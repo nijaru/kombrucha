@@ -186,13 +186,12 @@ fn unlink_directory(
                     link_target.clone()
                 };
 
-                if let Ok(canonical) = resolved.canonicalize() {
-                    if canonical.starts_with(formula_path) {
+                if let Ok(canonical) = resolved.canonicalize()
+                    && canonical.starts_with(formula_path) {
                         // Remove symlink
                         fs::remove_file(&target_path)?;
                         unlinked_files.push(target_path);
                     }
-                }
             }
         }
     }

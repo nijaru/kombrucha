@@ -30,11 +30,10 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
         println!("{}", "==> Formulae".bold().green());
         for formula in results.formulae.iter().take(20) {
             print!("{}", formula.name.bold());
-            if let Some(desc) = &formula.desc {
-                if !desc.is_empty() {
+            if let Some(desc) = &formula.desc
+                && !desc.is_empty() {
                     print!(" {}", format!("({})", desc).dimmed());
                 }
-            }
             println!();
         }
 
@@ -60,11 +59,10 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
             if cask.token != display_name {
                 print!(" {}", format!("({})", display_name).dimmed());
             }
-            if let Some(desc) = &cask.desc {
-                if !desc.is_empty() {
+            if let Some(desc) = &cask.desc
+                && !desc.is_empty() {
                     print!(" {}", format!("- {}", desc).dimmed());
                 }
-            }
             println!();
         }
 
@@ -216,11 +214,10 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
 
     for f in dependent_formulae {
         print!("{}", f.name.bold());
-        if let Some(desc) = &f.desc {
-            if !desc.is_empty() {
+        if let Some(desc) = &f.desc
+            && !desc.is_empty() {
                 print!(" {}", format!("({})", desc).dimmed());
             }
-        }
         println!();
     }
 
@@ -287,13 +284,11 @@ pub async fn outdated(api: &BrewApi) -> Result<()> {
     // Check each package against API
     for pkg in packages {
         // Fetch current version from API
-        if let Ok(formula) = api.fetch_formula(&pkg.name).await {
-            if let Some(latest_version) = &formula.versions.stable {
-                if latest_version != &pkg.version {
-                    outdated_packages.push((pkg, latest_version.clone()));
-                }
+        if let Ok(formula) = api.fetch_formula(&pkg.name).await
+            && let Some(latest_version) = &formula.versions.stable
+            && latest_version != &pkg.version {
+                outdated_packages.push((pkg, latest_version.clone()));
             }
-        }
     }
 
     if outdated_packages.is_empty() {
@@ -618,13 +613,11 @@ pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         let mut outdated = Vec::new();
 
         for pkg in packages {
-            if let Ok(formula) = api.fetch_formula(&pkg.name).await {
-                if let Some(latest) = &formula.versions.stable {
-                    if latest != &pkg.version {
-                        outdated.push(pkg.name.clone());
-                    }
+            if let Ok(formula) = api.fetch_formula(&pkg.name).await
+                && let Some(latest) = &formula.versions.stable
+                && latest != &pkg.version {
+                    outdated.push(pkg.name.clone());
                 }
-            }
         }
 
         if outdated.is_empty() {
@@ -658,7 +651,7 @@ pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
                 "ℹ".blue(),
                 formula_name.bold()
             );
-            install(api, &[formula_name.clone()], false).await?;
+            install(api, std::slice::from_ref(formula_name), false).await?;
             continue;
         }
 
