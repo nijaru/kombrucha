@@ -970,3 +970,145 @@ pub fn untap(tap_name: &str) -> Result<()> {
 
     Ok(())
 }
+
+pub fn cleanup(formula_names: &[String], dry_run: bool) -> Result<()> {
+    let all_packages = cellar::list_installed()?;
+
+    // Group packages by formula name
+    let mut by_formula: HashMap<String, Vec<&cellar::InstalledPackage>> = HashMap::new();
+    for pkg in &all_packages {
+        by_formula.entry(pkg.name.clone()).or_default().push(pkg);
+    }
+
+    // Filter to specified formulae if provided
+    let to_clean: Vec<_> = if formula_names.is_empty() {
+        by_formula.keys().cloned().collect()
+    } else {
+        formula_names.to_vec()
+    };
+
+    let mut total_removed = 0;
+    let mut total_space_freed = 0u64;
+
+    if dry_run {
+        println!("{} Dry run - no files will be removed", "ℹ".blue());
+    } else {
+        println!("{} Cleaning up old versions...", "🧹".bold());
+    }
+
+    for formula in &to_clean {
+        let versions = match by_formula.get(formula) {
+            Some(v) => v,
+            None => {
+                if !formula_names.is_empty() {
+                    println!("  {} {} not installed", "⚠".yellow(), formula.bold());
+                }
+                continue;
+            }
+        };
+
+        if versions.len() <= 1 {
+            continue;
+        }
+
+        // Sort by version (keep the first one, which is typically the latest)
+        let latest = versions[0];
+        let old_versions = &versions[1..];
+
+        for old in old_versions {
+            let version_path = cellar::cellar_path().join(&old.name).join(&old.version);
+
+            // Calculate directory size
+            let size = calculate_dir_size(&version_path)?;
+            total_space_freed += size;
+
+            if dry_run {
+                println!(
+                    "  {} Would remove {} {} ({})",
+                    "→".dimmed(),
+                    old.name.cyan(),
+                    old.version.dimmed(),
+                    format_size(size).dimmed()
+                );
+            } else {
+                println!(
+                    "  {} Removing {} {} ({})",
+                    "🗑".bold(),
+                    old.name.cyan(),
+                    old.version.dimmed(),
+                    format_size(size).dimmed()
+                );
+
+                // Remove the old version directory
+                if version_path.exists() {
+                    std::fs::remove_dir_all(&version_path)?;
+                }
+            }
+
+            total_removed += 1;
+        }
+
+        println!(
+            "    {} Keeping {} {}",
+            "✓".green(),
+            latest.name.bold(),
+            latest.version.dimmed()
+        );
+    }
+
+    if total_removed == 0 {
+        println!("\n{} No old versions to remove", "✓".green());
+    } else if dry_run {
+        println!(
+            "\n{} Would remove {} old versions ({})",
+            "ℹ".blue(),
+            total_removed.to_string().bold(),
+            format_size(total_space_freed).bold()
+        );
+    } else {
+        println!(
+            "\n{} Removed {} old versions, freed {}",
+            "✓".green().bold(),
+            total_removed.to_string().bold(),
+            format_size(total_space_freed).bold()
+        );
+    }
+
+    Ok(())
+}
+
+fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
+    let mut total = 0u64;
+
+    if !path.exists() {
+        return Ok(0);
+    }
+
+    for entry in walkdir::WalkDir::new(path) {
+        let entry = entry.map_err(|e| anyhow::anyhow!("Failed to read directory: {}", e))?;
+        if entry.file_type().is_file() {
+            total += entry
+                .metadata()
+                .map_err(|e| anyhow::anyhow!("Failed to read metadata: {}", e))?
+                .len();
+        }
+    }
+
+    Ok(total)
+}
+
+fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+
+    if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} bytes", bytes)
+    }
+}

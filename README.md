@@ -26,6 +26,7 @@
 - `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
 - `bru reinstall <formula>...` - Reinstall packages
 - `bru uninstall <formula>...` - Uninstall packages (with dependency checking)
+- `bru cleanup [formula...]` - Remove old versions of installed packages
 - `bru tap [user/repo]` - Add or list third-party repositories
 - `bru untap <user/repo>` - Remove a third-party repository
 
@@ -71,6 +72,9 @@ bru install hello
 
 # Uninstall a package
 bru uninstall hello
+
+# Clean up old versions
+bru cleanup
 
 # List taps (third-party repositories)
 bru tap

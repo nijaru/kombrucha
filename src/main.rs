@@ -114,6 +114,16 @@ enum Commands {
         /// Tap name (user/repo format)
         tap: String,
     },
+
+    /// Remove old versions of installed formulae
+    Cleanup {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+
+        /// Show what would be removed without actually removing
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -178,6 +188,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Untap { tap }) => {
             commands::untap(&tap)?;
+        }
+        Some(Commands::Cleanup { formulae, dry_run }) => {
+            commands::cleanup(&formulae, dry_run)?;
         }
         None => {
             println!(
