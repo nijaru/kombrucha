@@ -76,6 +76,10 @@ enum Commands {
         /// Show all installed versions
         #[arg(long)]
         versions: bool,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Show outdated installed packages
@@ -248,8 +252,8 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Uses { formula }) => {
             commands::uses(&api, &formula).await?;
         }
-        Some(Commands::List { versions }) => {
-            commands::list(&api, versions).await?;
+        Some(Commands::List { versions, json }) => {
+            commands::list(&api, versions, json).await?;
         }
         Some(Commands::Outdated) => {
             commands::outdated(&api).await?;

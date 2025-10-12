@@ -25,6 +25,7 @@
 - `bru uses <formula>` - Show formulae that depend on a formula
 - `bru list` - List installed packages
 - `bru list --versions` - Show all installed versions
+- `bru list --json` - Output installed packages as JSON
 - `bru outdated` - Show outdated packages
 - `bru fetch <formula>...` - Download bottles with parallel downloads
 - `bru install <formula>...` - Install packages from bottles with full dependency resolution
