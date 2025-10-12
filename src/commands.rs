@@ -1419,3 +1419,129 @@ pub fn unpin(formula_names: &[String]) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    for formula_name in formula_names {
+        match api.fetch_formula(formula_name).await {
+            Ok(formula) => {
+                print!("{}", formula.name.bold().cyan());
+                if let Some(desc) = &formula.desc
+                    && !desc.is_empty() {
+                        println!(": {}", desc);
+                    } else {
+                        println!(": {}", "No description available".dimmed());
+                    }
+            }
+            Err(_) => {
+                println!("{}: {}", formula_name.bold().yellow(), "Not found".dimmed());
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn link(formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Linking formulae...", "🔗".bold());
+
+    for formula_name in formula_names {
+        let versions = cellar::get_installed_versions(formula_name)?;
+        if versions.is_empty() {
+            println!("  {} {} is not installed", "⚠".yellow(), formula_name.bold());
+            continue;
+        }
+
+        let version = &versions[0].version;
+        println!("  {} Linking {} {}", "🔗".bold(), formula_name.cyan(), version.dimmed());
+
+        let linked = symlink::link_formula(formula_name, version)?;
+        println!(
+            "    {} Linked {} files",
+            "✓".green(),
+            linked.len().to_string().dimmed()
+        );
+    }
+
+    Ok(())
+}
+
+pub fn unlink(formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Unlinking formulae...", "🔗".bold());
+
+    for formula_name in formula_names {
+        let versions = cellar::get_installed_versions(formula_name)?;
+        if versions.is_empty() {
+            println!("  {} {} is not installed", "⚠".yellow(), formula_name.bold());
+            continue;
+        }
+
+        let version = &versions[0].version;
+        println!("  {} Unlinking {} {}", "🔗".bold(), formula_name.cyan(), version.dimmed());
+
+        let unlinked = symlink::unlink_formula(formula_name, version)?;
+        println!(
+            "    {} Unlinked {} files",
+            "✓".green(),
+            unlinked.len().to_string().dimmed()
+        );
+    }
+
+    Ok(())
+}
+
+pub fn commands() -> Result<()> {
+    println!("{}", "==> Available Commands".bold().green());
+    println!();
+
+    let commands_list = vec![
+        ("search <query>", "Search for formulae and casks"),
+        ("info <formula>", "Show information about a formula or cask"),
+        ("desc <formula>...", "Show formula descriptions"),
+        ("deps <formula>", "Show dependencies for a formula"),
+        ("uses <formula>", "Show formulae that depend on a formula"),
+        ("list", "List installed packages"),
+        ("outdated", "Show outdated installed packages"),
+        ("fetch <formula>...", "Download bottles for formulae"),
+        ("install <formula>...", "Install formulae from bottles"),
+        ("upgrade [formula...]", "Upgrade installed formulae"),
+        ("reinstall <formula>...", "Reinstall formulae"),
+        ("uninstall <formula>...", "Uninstall formulae"),
+        ("link <formula>...", "Link a formula"),
+        ("unlink <formula>...", "Unlink a formula"),
+        ("cleanup [formula...]", "Remove old versions of installed formulae"),
+        ("tap [user/repo]", "Add or list third-party repositories"),
+        ("untap <user/repo>", "Remove a third-party repository"),
+        ("config", "Show system configuration"),
+        ("doctor", "Check system for potential problems"),
+        ("home <formula>", "Open formula homepage in browser"),
+        ("leaves", "List packages not required by others"),
+        ("pin <formula>...", "Pin formulae to prevent upgrades"),
+        ("unpin <formula>...", "Unpin formulae to allow upgrades"),
+        ("commands", "List all available commands"),
+    ];
+
+    for (cmd, desc) in &commands_list {
+        println!("  {} {}", cmd.cyan().bold(), desc.dimmed());
+    }
+
+    println!();
+    println!("{} {} commands available", "ℹ".blue(), commands_list.len().to_string().bold());
+    println!("Run {} for help", "bru --help".cyan());
+
+    Ok(())
+}

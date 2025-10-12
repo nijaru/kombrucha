@@ -15,6 +15,7 @@
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
 - `bru info <formula>` - Show formula/cask information
+- `bru desc <formula>...` - Show formula descriptions
 - `bru deps <formula>` - Show dependencies
 - `bru deps --tree <formula>` - Show dependency tree
 - `bru uses <formula>` - Show formulae that depend on a formula
@@ -26,6 +27,8 @@
 - `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
 - `bru reinstall <formula>...` - Reinstall packages
 - `bru uninstall <formula>...` - Uninstall packages (with dependency checking)
+- `bru link <formula>...` - Link a formula
+- `bru unlink <formula>...` - Unlink a formula
 - `bru cleanup [formula...]` - Remove old versions of installed packages
 - `bru tap [user/repo]` - Add or list third-party repositories
 - `bru untap <user/repo>` - Remove a third-party repository
@@ -35,6 +38,7 @@
 - `bru leaves` - List packages not required by others
 - `bru pin <formula>...` - Pin formulae to prevent upgrades
 - `bru unpin <formula>...` - Unpin formulae to allow upgrades
+- `bru commands` - List all available commands
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles
@@ -60,6 +64,9 @@ bru search rust
 
 # Get info about a package
 bru info wget
+
+# Quick description lookup
+bru desc wget jq curl
 
 # Show dependencies
 bru deps --tree wget

@@ -151,6 +151,28 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Show formula description
+    Desc {
+        /// Formula names
+        formulae: Vec<String>,
+    },
+
+    /// Link a formula
+    Link {
+        /// Formula names
+        formulae: Vec<String>,
+    },
+
+    /// Unlink a formula
+    Unlink {
+        /// Formula names
+        formulae: Vec<String>,
+    },
+
+    /// List all available commands
+    #[allow(clippy::enum_variant_names)]
+    Commands,
 }
 
 #[tokio::main]
@@ -236,6 +258,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Unpin { formulae }) => {
             commands::unpin(&formulae)?;
+        }
+        Some(Commands::Desc { formulae }) => {
+            commands::desc(&api, &formulae).await?;
+        }
+        Some(Commands::Link { formulae }) => {
+            commands::link(&formulae)?;
+        }
+        Some(Commands::Unlink { formulae }) => {
+            commands::unlink(&formulae)?;
+        }
+        Some(Commands::Commands) => {
+            commands::commands()?;
         }
         None => {
             println!(
