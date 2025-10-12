@@ -130,6 +130,27 @@ enum Commands {
 
     /// Check system for potential problems
     Doctor,
+
+    /// Open formula homepage in browser
+    Home {
+        /// Formula name
+        formula: String,
+    },
+
+    /// List installed packages that are not dependencies of others
+    Leaves,
+
+    /// Pin formulae to prevent upgrades
+    Pin {
+        /// Formula names
+        formulae: Vec<String>,
+    },
+
+    /// Unpin formulae to allow upgrades
+    Unpin {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -203,6 +224,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Doctor) => {
             commands::doctor()?;
+        }
+        Some(Commands::Home { formula }) => {
+            commands::home(&api, &formula).await?;
+        }
+        Some(Commands::Leaves) => {
+            commands::leaves()?;
+        }
+        Some(Commands::Pin { formulae }) => {
+            commands::pin(&formulae)?;
+        }
+        Some(Commands::Unpin { formulae }) => {
+            commands::unpin(&formulae)?;
         }
         None => {
             println!(

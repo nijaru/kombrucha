@@ -31,6 +31,10 @@
 - `bru untap <user/repo>` - Remove a third-party repository
 - `bru config` - Show system configuration and statistics
 - `bru doctor` - Check system for potential problems
+- `bru home <formula>` - Open formula homepage in browser
+- `bru leaves` - List packages not required by others
+- `bru pin <formula>...` - Pin formulae to prevent upgrades
+- `bru unpin <formula>...` - Unpin formulae to allow upgrades
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles

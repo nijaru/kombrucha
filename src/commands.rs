@@ -642,7 +642,20 @@ pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         to_upgrade.len()
     );
 
+    // Check for pinned formulae
+    let pinned = read_pinned()?;
+
     for formula_name in &to_upgrade {
+        // Skip pinned formulae
+        if pinned.contains(formula_name) {
+            println!(
+                "  {} {} is pinned, skipping",
+                "📌".bold(),
+                formula_name.bold()
+            );
+            continue;
+        }
+
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
         if installed_versions.is_empty() {
@@ -1254,6 +1267,155 @@ pub fn doctor() -> Result<()> {
             println!("  {} Found {} warning(s)", "⚠".yellow(), warnings);
         }
     }
+
+    Ok(())
+}
+
+pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
+    println!("{} Opening homepage for {}...", "🌐".bold(), formula_name.cyan());
+
+    let formula = api.fetch_formula(formula_name).await?;
+
+    match &formula.homepage {
+        Some(url) if !url.is_empty() => {
+            println!("  {}: {}", "Homepage".dimmed(), url.cyan());
+
+            // Open URL in default browser
+            let status = std::process::Command::new("open")
+                .arg(url)
+                .status();
+
+            match status {
+                Ok(s) if s.success() => {
+                    println!("  {} Opened in browser", "✓".green());
+                }
+                _ => {
+                    println!("  {} Could not open browser automatically", "⚠".yellow());
+                    println!("  {} Please visit: {}", "ℹ".blue(), url);
+                }
+            }
+        }
+        _ => {
+            println!("  {} No homepage available for {}", "⚠".yellow(), formula_name.bold());
+        }
+    }
+
+    Ok(())
+}
+
+pub fn leaves() -> Result<()> {
+    println!("{}", "==> Leaf Packages".bold().green());
+    println!("(Packages not required by other packages)");
+    println!();
+
+    let all_packages = cellar::list_installed()?;
+
+    // Build a set of all packages that are dependencies of others
+    let mut required_by_others = std::collections::HashSet::new();
+    for pkg in &all_packages {
+        for dep in pkg.runtime_dependencies() {
+            required_by_others.insert(dep.full_name.clone());
+        }
+    }
+
+    // Filter to packages that are NOT in the required set
+    let mut leaves: Vec<_> = all_packages
+        .iter()
+        .filter(|pkg| !required_by_others.contains(&pkg.name))
+        .collect();
+
+    leaves.sort_by(|a, b| a.name.cmp(&b.name));
+
+    if leaves.is_empty() {
+        println!("{} No leaf packages found", "ℹ".blue());
+    } else {
+        for pkg in &leaves {
+            println!("{}", pkg.name.cyan());
+        }
+        println!();
+        println!("{} {} leaf packages", "ℹ".blue(), leaves.len().to_string().bold());
+    }
+
+    Ok(())
+}
+
+fn pinned_file_path() -> std::path::PathBuf {
+    cellar::detect_prefix().join("var/homebrew/pinned_formulae")
+}
+
+fn read_pinned() -> Result<Vec<String>> {
+    let path = pinned_file_path();
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+
+    let content = std::fs::read_to_string(&path)?;
+    Ok(content.lines().map(|s| s.to_string()).collect())
+}
+
+fn write_pinned(pinned: &[String]) -> Result<()> {
+    let path = pinned_file_path();
+
+    // Create parent directory if needed
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    std::fs::write(&path, pinned.join("\n"))?;
+    Ok(())
+}
+
+pub fn pin(formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Pinning formulae...", "📌".bold());
+
+    let mut pinned = read_pinned()?;
+
+    for formula in formula_names {
+        // Check if formula is installed
+        let versions = cellar::get_installed_versions(formula)?;
+        if versions.is_empty() {
+            println!("  {} {} is not installed", "⚠".yellow(), formula.bold());
+            continue;
+        }
+
+        if pinned.contains(formula) {
+            println!("  {} {} is already pinned", "ℹ".blue(), formula.bold());
+        } else {
+            pinned.push(formula.clone());
+            println!("  {} Pinned {}", "✓".green(), formula.bold().green());
+        }
+    }
+
+    write_pinned(&pinned)?;
+
+    Ok(())
+}
+
+pub fn unpin(formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Unpinning formulae...", "📌".bold());
+
+    let mut pinned = read_pinned()?;
+
+    for formula in formula_names {
+        if let Some(pos) = pinned.iter().position(|x| x == formula) {
+            pinned.remove(pos);
+            println!("  {} Unpinned {}", "✓".green(), formula.bold().green());
+        } else {
+            println!("  {} {} is not pinned", "ℹ".blue(), formula.bold());
+        }
+    }
+
+    write_pinned(&pinned)?;
 
     Ok(())
 }
