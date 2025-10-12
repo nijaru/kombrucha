@@ -127,6 +127,9 @@ enum Commands {
 
     /// Show system configuration
     Config,
+
+    /// Check system for potential problems
+    Doctor,
 }
 
 #[tokio::main]
@@ -197,6 +200,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Config) => {
             commands::config()?;
+        }
+        Some(Commands::Doctor) => {
+            commands::doctor()?;
         }
         None => {
             println!(

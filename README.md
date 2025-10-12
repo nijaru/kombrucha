@@ -30,6 +30,7 @@
 - `bru tap [user/repo]` - Add or list third-party repositories
 - `bru untap <user/repo>` - Remove a third-party repository
 - `bru config` - Show system configuration and statistics
+- `bru doctor` - Check system for potential problems
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles
