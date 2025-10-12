@@ -12,7 +12,7 @@
 
 ## Status: Phase 2 Complete + Phase 3/4 Features ✅
 
-**Working commands**:
+**39 commands implemented:**
 - `bru search <query>` - Search formulae and casks
 - `bru search <query> --formula` - Search only formulae
 - `bru search <query> --cask` - Search only casks
@@ -50,6 +50,8 @@
 - `bru missing [formula...]` - Check for missing dependencies
 - `bru analytics [on|off|state]` - Control analytics
 - `bru cat <formula>...` - Print formula source code
+- `bru shellenv [--shell <shell>]` - Print shell configuration
+- `bru gist-logs [formula]` - Generate diagnostic information
 - `bru commands` - List all available commands
 - `bru completions <shell>` - Generate shell completion scripts (bash, zsh, fish, etc.)
 

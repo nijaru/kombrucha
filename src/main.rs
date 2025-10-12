@@ -235,6 +235,19 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Print shell configuration
+    Shellenv {
+        /// Shell type (bash, zsh, fish)
+        #[arg(long)]
+        shell: Option<String>,
+    },
+
+    /// Create diagnostic gist for debugging
+    GistLogs {
+        /// Formula name (optional)
+        formula: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -359,6 +372,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Cat { formulae }) => {
             commands::cat(&api, &formulae).await?;
+        }
+        Some(Commands::Shellenv { shell }) => {
+            commands::shellenv(shell.as_deref())?;
+        }
+        Some(Commands::GistLogs { formula }) => {
+            commands::gist_logs(&api, formula.as_deref()).await?;
         }
         None => {
             println!(
