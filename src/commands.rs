@@ -1897,6 +1897,9 @@ pub fn commands() -> Result<()> {
         ("leaves", "List packages not required by others"),
         ("pin <formula>...", "Pin formulae to prevent upgrades"),
         ("unpin <formula>...", "Unpin formulae to allow upgrades"),
+        ("missing [formula...]", "Check for missing dependencies"),
+        ("analytics [on|off|state]", "Control analytics"),
+        ("cat <formula>...", "Print formula source code"),
         ("commands", "List all available commands"),
         ("completions <shell>", "Generate shell completion scripts"),
     ];
@@ -1908,6 +1911,151 @@ pub fn commands() -> Result<()> {
     println!();
     println!("{} {} commands available", "ℹ".blue(), commands_list.len().to_string().bold());
     println!("Run {} for help", "bru --help".cyan());
+
+    Ok(())
+}
+
+pub fn missing(formula_names: &[String]) -> Result<()> {
+    let to_check = if formula_names.is_empty() {
+        // Check all installed packages
+        cellar::list_installed()?
+            .into_iter()
+            .map(|p| p.name)
+            .collect()
+    } else {
+        formula_names.to_vec()
+    };
+
+    if to_check.is_empty() {
+        println!("{} No packages installed", "ℹ".blue());
+        return Ok(());
+    }
+
+    println!("{} Checking for missing dependencies...", "🔍".bold());
+    println!();
+
+    let all_installed = cellar::list_installed()?;
+    let installed_set: HashSet<_> = all_installed.iter().map(|p| p.name.as_str()).collect();
+
+    let mut has_missing = false;
+
+    for formula_name in &to_check {
+        // Check if formula is installed
+        let pkg = match all_installed.iter().find(|p| &p.name == formula_name) {
+            Some(p) => p,
+            None => {
+                if !formula_names.is_empty() {
+                    println!("{} {} is not installed", "⚠".yellow(), formula_name.bold());
+                }
+                continue;
+            }
+        };
+
+        // Check each runtime dependency
+        let runtime_deps = pkg.runtime_dependencies();
+        let missing_deps: Vec<_> = runtime_deps
+            .iter()
+            .filter(|dep| !installed_set.contains(dep.full_name.as_str()))
+            .collect();
+
+        if !missing_deps.is_empty() {
+            has_missing = true;
+            println!("{} {} is missing dependencies:", "✗".red(), formula_name.bold());
+            for dep in missing_deps {
+                println!("  {} {} {}", "→".dimmed(), dep.full_name.cyan(), dep.version.dimmed());
+            }
+            println!();
+        }
+    }
+
+    if !has_missing {
+        println!("{} No missing dependencies found", "✓".green());
+    }
+
+    Ok(())
+}
+
+pub fn analytics(action: Option<&str>) -> Result<()> {
+    let analytics_file = cellar::detect_prefix()
+        .join("var/homebrew/analytics_disabled");
+
+    match action {
+        Some("off") => {
+            // Create the file to disable analytics
+            if let Some(parent) = analytics_file.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&analytics_file, "")?;
+            println!("{} Analytics disabled", "✓".green());
+        }
+        Some("on") => {
+            // Remove the file to enable analytics
+            if analytics_file.exists() {
+                std::fs::remove_file(&analytics_file)?;
+            }
+            println!("{} Analytics enabled", "✓".green());
+        }
+        Some("state") | None => {
+            // Show current state
+            let enabled = !analytics_file.exists();
+            println!("{}", "==> Analytics Status".bold().green());
+            println!();
+            if enabled {
+                println!("{}: {}", "Status".bold(), "Enabled".green());
+                println!();
+                println!("Analytics help bru improve by tracking usage patterns.");
+                println!("Run {} to disable", "bru analytics off".cyan());
+            } else {
+                println!("{}: {}", "Status".bold(), "Disabled".red());
+                println!();
+                println!("Run {} to enable", "bru analytics on".cyan());
+            }
+        }
+        Some(other) => {
+            println!("{} Invalid action: {}", "❌".red(), other);
+            println!("Valid actions: on, off, state");
+            return Ok(());
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn cat(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    for (i, formula_name) in formula_names.iter().enumerate() {
+        if i > 0 {
+            println!(); // Blank line between formulae
+        }
+
+        println!("{} {}", "==>".bold().green(), formula_name.bold().cyan());
+        println!();
+
+        // Try to fetch formula from API
+        match api.fetch_formula(formula_name).await {
+            Ok(formula) => {
+                // Print formula as JSON (since we don't have Ruby source)
+                let json = serde_json::to_string_pretty(&formula)?;
+                println!("{}", json);
+            }
+            Err(_) => {
+                // Try as cask
+                match api.fetch_cask(formula_name).await {
+                    Ok(cask) => {
+                        let json = serde_json::to_string_pretty(&cask)?;
+                        println!("{}", json);
+                    }
+                    Err(_) => {
+                        println!("{} No formula or cask found for '{}'", "❌".red(), formula_name);
+                    }
+                }
+            }
+        }
+    }
 
     Ok(())
 }

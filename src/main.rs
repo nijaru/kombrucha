@@ -217,6 +217,24 @@ enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+
+    /// Check for missing dependencies
+    Missing {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+    },
+
+    /// Control analytics (on/off/state)
+    Analytics {
+        /// Action: on, off, or state
+        action: Option<String>,
+    },
+
+    /// Print formula source code
+    Cat {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -332,6 +350,15 @@ async fn main() -> anyhow::Result<()> {
                 "bru",
                 &mut std::io::stdout(),
             );
+        }
+        Some(Commands::Missing { formulae }) => {
+            commands::missing(&formulae)?;
+        }
+        Some(Commands::Analytics { action }) => {
+            commands::analytics(action.as_deref())?;
+        }
+        Some(Commands::Cat { formulae }) => {
+            commands::cat(&api, &formulae).await?;
         }
         None => {
             println!(

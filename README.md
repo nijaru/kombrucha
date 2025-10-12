@@ -47,6 +47,9 @@
 - `bru leaves` - List packages not required by others
 - `bru pin <formula>...` - Pin formulae to prevent upgrades
 - `bru unpin <formula>...` - Unpin formulae to allow upgrades
+- `bru missing [formula...]` - Check for missing dependencies
+- `bru analytics [on|off|state]` - Control analytics
+- `bru cat <formula>...` - Print formula source code
 - `bru commands` - List all available commands
 - `bru completions <shell>` - Generate shell completion scripts (bash, zsh, fish, etc.)
 
