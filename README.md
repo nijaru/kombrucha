@@ -42,6 +42,7 @@
 - `bru pin <formula>...` - Pin formulae to prevent upgrades
 - `bru unpin <formula>...` - Unpin formulae to allow upgrades
 - `bru commands` - List all available commands
+- `bru completions <shell>` - Generate shell completion scripts (bash, zsh, fish, etc.)
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles
@@ -57,6 +58,16 @@ cd kombrucha
 cargo build --release
 
 # Binary is at: ./target/release/bru
+
+# Optional: Set up shell completions
+# For bash:
+bru completions bash > ~/.local/share/bash-completion/completions/bru
+
+# For zsh:
+bru completions zsh > ~/.zfunc/_bru
+
+# For fish:
+bru completions fish > ~/.config/fish/completions/bru.fish
 ```
 
 ## Quick Start

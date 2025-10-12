@@ -10,7 +10,7 @@ mod relocate;
 mod symlink;
 mod tap;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use owo_colors::OwoColorize;
 
 #[derive(Parser)]
@@ -187,6 +187,13 @@ enum Commands {
     /// List all available commands
     #[allow(clippy::enum_variant_names)]
     Commands,
+
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
 }
 
 #[tokio::main]
@@ -290,6 +297,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Commands) => {
             commands::commands()?;
+        }
+        Some(Commands::Completions { shell }) => {
+            let mut cmd = Cli::command();
+            clap_complete::generate(
+                shell,
+                &mut cmd,
+                "bru",
+                &mut std::io::stdout(),
+            );
         }
         None => {
             println!(

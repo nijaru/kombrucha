@@ -1723,6 +1723,7 @@ pub fn commands() -> Result<()> {
         ("pin <formula>...", "Pin formulae to prevent upgrades"),
         ("unpin <formula>...", "Unpin formulae to allow upgrades"),
         ("commands", "List all available commands"),
+        ("completions <shell>", "Generate shell completion scripts"),
     ];
 
     for (cmd, desc) in &commands_list {
