@@ -26,6 +26,8 @@
 - `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
 - `bru reinstall <formula>...` - Reinstall packages
 - `bru uninstall <formula>...` - Uninstall packages (with dependency checking)
+- `bru tap [user/repo]` - Add or list third-party repositories
+- `bru untap <user/repo>` - Remove a third-party repository
 
 **Coming soon** (Phase 3):
 - Source builds for formulae without bottles
@@ -69,6 +71,15 @@ bru install hello
 
 # Uninstall a package
 bru uninstall hello
+
+# List taps (third-party repositories)
+bru tap
+
+# Add a tap
+bru tap user/repo
+
+# Remove a tap
+bru untap user/repo
 
 # Download bottles without installing
 bru fetch wget jq tree

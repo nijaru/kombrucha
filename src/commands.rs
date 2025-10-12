@@ -917,3 +917,56 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
     Ok(())
 }
+
+pub fn tap(tap_name: Option<&str>) -> Result<()> {
+    match tap_name {
+        None => {
+            // List all taps
+            let taps = crate::tap::list_taps()?;
+            if taps.is_empty() {
+                println!("{} No taps installed", "ℹ".blue());
+            } else {
+                for tap in taps {
+                    println!("{}", tap.cyan());
+                }
+            }
+        }
+        Some(tap) => {
+            // Add a tap
+            println!("{} Tapping {}...", "🔗".bold(), tap.cyan());
+
+            if crate::tap::is_tapped(tap)? {
+                println!("  {} {} already tapped", "✓".green(), tap.bold());
+                return Ok(());
+            }
+
+            crate::tap::tap(tap)?;
+
+            println!(
+                "  {} Tapped {} successfully",
+                "✓".green(),
+                tap.bold().green()
+            );
+        }
+    }
+    Ok(())
+}
+
+pub fn untap(tap_name: &str) -> Result<()> {
+    println!("{} Untapping {}...", "🔗".bold(), tap_name.cyan());
+
+    if !crate::tap::is_tapped(tap_name)? {
+        println!("  {} {} is not tapped", "⚠".yellow(), tap_name.bold());
+        return Ok(());
+    }
+
+    crate::tap::untap(tap_name)?;
+
+    println!(
+        "  {} Untapped {} successfully",
+        "✓".green(),
+        tap_name.bold().green()
+    );
+
+    Ok(())
+}

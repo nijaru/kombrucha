@@ -8,6 +8,7 @@ mod platform;
 mod receipt;
 mod relocate;
 mod symlink;
+mod tap;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
@@ -101,6 +102,18 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+
+    /// Add a tap (third-party repository)
+    Tap {
+        /// Tap name (user/repo format, or empty to list all taps)
+        tap: Option<String>,
+    },
+
+    /// Remove a tap
+    Untap {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
 }
 
 #[tokio::main]
@@ -159,6 +172,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Uninstall { formulae, force }) => {
             commands::uninstall(&api, &formulae, force).await?;
+        }
+        Some(Commands::Tap { tap }) => {
+            commands::tap(tap.as_deref())?;
+        }
+        Some(Commands::Untap { tap }) => {
+            commands::untap(&tap)?;
         }
         None => {
             println!(
