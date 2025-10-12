@@ -10,7 +10,7 @@
 - **Beautiful**: Colorized output with formatted results
 - **Parallel**: Concurrent API calls (parallel downloads in Phase 2)
 
-## Status: Phase 2.3 Complete ✅
+## Status: Phase 2 Complete + Phase 3/4 Features ✅
 
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
