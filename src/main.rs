@@ -103,6 +103,13 @@ enum Commands {
         force: bool,
     },
 
+    /// Remove unused dependencies
+    Autoremove {
+        /// Show what would be removed without actually removing
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+    },
+
     /// Add a tap (third-party repository)
     Tap {
         /// Tap name (user/repo format, or empty to list all taps)
@@ -231,6 +238,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Uninstall { formulae, force }) => {
             commands::uninstall(&api, &formulae, force).await?;
+        }
+        Some(Commands::Autoremove { dry_run }) => {
+            commands::autoremove(dry_run)?;
         }
         Some(Commands::Tap { tap }) => {
             commands::tap(tap.as_deref())?;

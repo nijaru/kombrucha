@@ -27,6 +27,7 @@
 - `bru upgrade [formula...]` - Upgrade installed packages (all or specific)
 - `bru reinstall <formula>...` - Reinstall packages
 - `bru uninstall <formula>...` - Uninstall packages (with dependency checking)
+- `bru autoremove` - Remove unused dependencies
 - `bru link <formula>...` - Link a formula
 - `bru unlink <formula>...` - Unlink a formula
 - `bru cleanup [formula...]` - Remove old versions of installed packages
@@ -85,6 +86,9 @@ bru install hello
 
 # Uninstall a package
 bru uninstall hello
+
+# Remove unused dependencies
+bru autoremove
 
 # Clean up old versions
 bru cleanup

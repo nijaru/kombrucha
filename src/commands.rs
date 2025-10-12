@@ -931,6 +931,121 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
     Ok(())
 }
 
+pub fn autoremove(dry_run: bool) -> Result<()> {
+    if dry_run {
+        println!("{} Dry run - no packages will be removed", "ℹ".blue());
+    } else {
+        println!("{} Removing unused dependencies...", "🗑".bold());
+    }
+
+    let all_packages = cellar::list_installed()?;
+
+    // Build a set of all packages installed on request
+    let mut on_request: HashSet<String> = HashSet::new();
+    for pkg in &all_packages {
+        if pkg.installed_on_request() {
+            on_request.insert(pkg.name.clone());
+        }
+    }
+
+    // Build a set of all dependencies required by packages installed on request
+    let mut required = HashSet::new();
+    let mut to_check: Vec<String> = on_request.iter().cloned().collect();
+    let mut checked = HashSet::new();
+
+    while let Some(name) = to_check.pop() {
+        if checked.contains(&name) {
+            continue;
+        }
+        checked.insert(name.clone());
+
+        // Find the package and get its dependencies
+        if let Some(pkg) = all_packages.iter().find(|p| p.name == name) {
+            for dep in pkg.runtime_dependencies() {
+                required.insert(dep.full_name.clone());
+                if !checked.contains(&dep.full_name) {
+                    to_check.push(dep.full_name.clone());
+                }
+            }
+        }
+    }
+
+    // Find packages that are:
+    // 1. Installed as dependency (not on request)
+    // 2. Not required by any package installed on request
+    let mut to_remove: Vec<_> = all_packages
+        .iter()
+        .filter(|pkg| !pkg.installed_on_request() && !required.contains(&pkg.name))
+        .collect();
+
+    if to_remove.is_empty() {
+        println!("\n{} No unused dependencies to remove", "✓".green());
+        return Ok(());
+    }
+
+    to_remove.sort_by(|a, b| a.name.cmp(&b.name));
+
+    println!(
+        "\n{} Found {} unused dependencies:\n",
+        "→".bold(),
+        to_remove.len().to_string().bold()
+    );
+
+    for pkg in &to_remove {
+        println!("  {} {}", pkg.name.cyan(), pkg.version.dimmed());
+    }
+
+    if dry_run {
+        println!(
+            "\n{} Would remove {} packages",
+            "ℹ".blue(),
+            to_remove.len().to_string().bold()
+        );
+        println!("Run without {} to remove them", "--dry-run".dimmed());
+        return Ok(());
+    }
+
+    println!();
+
+    // Remove packages
+    for pkg in &to_remove {
+        println!("  {} Uninstalling {} {}", "🗑".bold(), pkg.name.cyan(), pkg.version.dimmed());
+
+        // Unlink symlinks
+        let unlinked = symlink::unlink_formula(&pkg.name, &pkg.version)?;
+        if !unlinked.is_empty() {
+            println!(
+                "    {} Unlinked {} files",
+                "✓".green(),
+                unlinked.len().to_string().dimmed()
+            );
+        }
+
+        // Remove from Cellar
+        let cellar_path = cellar::cellar_path().join(&pkg.name).join(&pkg.version);
+        if cellar_path.exists() {
+            std::fs::remove_dir_all(&cellar_path)?;
+        }
+
+        // Remove formula directory if empty
+        let formula_dir = cellar::cellar_path().join(&pkg.name);
+        if formula_dir.exists()
+            && formula_dir.read_dir()?.next().is_none() {
+                std::fs::remove_dir(&formula_dir)?;
+            }
+
+        println!("    {} Removed {}", "✓".green(), pkg.name.bold().green());
+    }
+
+    println!(
+        "\n{} Removed {} unused packages",
+        "✓".green().bold(),
+        to_remove.len().to_string().bold()
+    );
+
+    Ok(())
+}
+
 pub fn tap(tap_name: Option<&str>) -> Result<()> {
     match tap_name {
         None => {
@@ -1521,6 +1636,7 @@ pub fn commands() -> Result<()> {
         ("upgrade [formula...]", "Upgrade installed formulae"),
         ("reinstall <formula>...", "Reinstall formulae"),
         ("uninstall <formula>...", "Uninstall formulae"),
+        ("autoremove", "Remove unused dependencies"),
         ("link <formula>...", "Link a formula"),
         ("unlink <formula>...", "Unlink a formula"),
         ("cleanup [formula...]", "Remove old versions of installed formulae"),
