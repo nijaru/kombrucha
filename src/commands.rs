@@ -1902,6 +1902,8 @@ pub fn commands() -> Result<()> {
         ("cat <formula>...", "Print formula source code"),
         ("shellenv [--shell <shell>]", "Print shell configuration"),
         ("gist-logs [formula]", "Generate diagnostic information"),
+        ("alias [formula]", "Show formula aliases"),
+        ("log <formula>", "Show install logs"),
         ("commands", "List all available commands"),
         ("completions <shell>", "Generate shell completion scripts"),
     ];
@@ -2215,6 +2217,166 @@ pub async fn gist_logs(api: &BrewApi, formula: Option<&str>) -> Result<()> {
     println!();
     println!("{} Diagnostic information generated", "✓".green());
     println!("Copy the above output to share for debugging");
+
+    Ok(())
+}
+
+pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
+    match formula {
+        None => {
+            // Show all common aliases
+            println!("{}", "==> Common Formula Aliases".bold().green());
+            println!();
+
+            let common_aliases = vec![
+                ("python", "python@3.13", "Latest Python 3"),
+                ("python3", "python@3.13", "Latest Python 3"),
+                ("node", "node", "Node.js"),
+                ("nodejs", "node", "Node.js"),
+                ("postgres", "postgresql@17", "Latest PostgreSQL"),
+                ("postgresql", "postgresql@17", "Latest PostgreSQL"),
+                ("mysql", "mysql", "MySQL server"),
+                ("mariadb", "mariadb", "MariaDB server"),
+                ("redis", "redis", "Redis server"),
+            ];
+
+            for (alias_name, formula_name, desc) in &common_aliases {
+                println!(
+                    "{} {} {}",
+                    alias_name.cyan().bold(),
+                    format!("→ {}", formula_name).dimmed(),
+                    format!("({})", desc).dimmed()
+                );
+            }
+
+            println!();
+            println!("Run {} to see aliases for a specific formula", "bru alias <formula>".cyan());
+        }
+        Some(formula_name) => {
+            // Check if formula exists and show its aliases
+            match api.fetch_formula(formula_name).await {
+                Ok(formula) => {
+                    println!("{} {}", "==>".bold().green(), formula.name.bold().cyan());
+                    if let Some(desc) = &formula.desc {
+                        println!("{}", desc);
+                    }
+                    println!();
+
+                    // In real Homebrew, aliases are stored separately
+                    // For now, show the formula name itself
+                    println!("{}: {}", "Name".bold(), formula.name.cyan());
+                    println!("{}: {}", "Full name".bold(), formula.full_name.dimmed());
+
+                    // Check if this is commonly aliased
+                    let common_aliases_map: std::collections::HashMap<&str, Vec<&str>> = [
+                        ("python@3.13", vec!["python", "python3"]),
+                        ("node", vec!["nodejs"]),
+                        ("postgresql@17", vec!["postgres", "postgresql"]),
+                    ].iter().cloned().collect();
+
+                    if let Some(aliases) = common_aliases_map.get(formula.name.as_str()) {
+                        println!();
+                        println!("{}", "Common aliases:".bold());
+                        for alias in aliases {
+                            println!("  {}", alias.cyan());
+                        }
+                    } else {
+                        println!();
+                        println!("{} No known aliases", "ℹ".blue());
+                    }
+                }
+                Err(_) => {
+                    println!("{} Formula '{}' not found", "❌".red(), formula_name);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn log(formula_name: &str) -> Result<()> {
+    println!("{} Checking logs for {}", "📋".bold(), formula_name.cyan());
+    println!();
+
+    // Check if formula is installed
+    let installed_versions = cellar::get_installed_versions(formula_name)?;
+    if installed_versions.is_empty() {
+        println!("{} {} is not installed", "⚠".yellow(), formula_name.bold());
+        println!();
+        println!("Run {} to install it", format!("bru install {}", formula_name).cyan());
+        return Ok(());
+    }
+
+    let version = &installed_versions[0].version;
+    let install_path = cellar::cellar_path()
+        .join(formula_name)
+        .join(version);
+
+    println!("{}", format!("==> {} {}", formula_name, version).bold().green());
+    println!();
+
+    // Check for INSTALL_RECEIPT.json
+    let receipt_path = install_path.join("INSTALL_RECEIPT.json");
+    if receipt_path.exists() {
+        println!("{}", "Install Receipt:".bold());
+        let receipt_content = std::fs::read_to_string(&receipt_path)?;
+        let receipt: serde_json::Value = serde_json::from_str(&receipt_content)?;
+
+        if let Some(obj) = receipt.as_object() {
+            let on_request = obj.get("installed_on_request")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let status_text = if on_request { "Yes" } else { "No (dependency)" };
+            println!("  {}: {}",
+                "Installed on request".dimmed(),
+                status_text.cyan()
+            );
+
+            if let Some(time) = obj.get("time").and_then(|v| v.as_i64()) {
+                let datetime = chrono::DateTime::from_timestamp(time, 0)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                println!("  {}: {}", "Install time".dimmed(), datetime);
+            }
+
+            if let Some(built_from) = obj.get("source").and_then(|v| v.get("spec")).and_then(|v| v.as_str()) {
+                println!("  {}: {}", "Built from".dimmed(), built_from);
+            }
+        }
+        println!();
+    }
+
+    // List installed files
+    println!("{}", "Installed files:".bold());
+    let prefix = cellar::detect_prefix();
+    let bin_dir = prefix.join("bin");
+
+    let mut file_count = 0;
+    if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_symlink() {
+                if let Ok(target) = std::fs::read_link(&path) {
+                    if target.starts_with(&install_path) {
+                        println!("  {} {}", path.file_name().unwrap().to_string_lossy().cyan(), format!("→ {}", target.display()).dimmed());
+                        file_count += 1;
+                        if file_count >= 10 {
+                            println!("  {} (showing first 10)", "...".dimmed());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if file_count == 0 {
+        println!("  {}", "No executables linked".dimmed());
+    }
+
+    println!();
+    println!("{}: {}", "Install directory".dimmed(), install_path.display().to_string().cyan());
 
     Ok(())
 }

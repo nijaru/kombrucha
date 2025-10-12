@@ -248,6 +248,18 @@ enum Commands {
         /// Formula name (optional)
         formula: Option<String>,
     },
+
+    /// Show formula aliases
+    Alias {
+        /// Formula name (optional)
+        formula: Option<String>,
+    },
+
+    /// Show install logs
+    Log {
+        /// Formula name
+        formula: String,
+    },
 }
 
 #[tokio::main]
@@ -378,6 +390,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::GistLogs { formula }) => {
             commands::gist_logs(&api, formula.as_deref()).await?;
+        }
+        Some(Commands::Alias { formula }) => {
+            commands::alias(&api, formula.as_deref()).await?;
+        }
+        Some(Commands::Log { formula }) => {
+            commands::log(&formula)?;
         }
         None => {
             println!(
