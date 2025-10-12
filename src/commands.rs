@@ -1112,3 +1112,33 @@ fn format_size(bytes: u64) -> String {
         format!("{} bytes", bytes)
     }
 }
+
+pub fn config() -> Result<()> {
+    println!("{}", "==> System Configuration".bold().green());
+    println!();
+
+    let prefix = cellar::detect_prefix();
+    let cellar = cellar::cellar_path();
+    let taps = crate::tap::taps_path();
+
+    println!("{}", "Paths:".bold());
+    println!("  {}: {}", "Prefix".dimmed(), prefix.display().to_string().cyan());
+    println!("  {}: {}", "Cellar".dimmed(), cellar.display().to_string().cyan());
+    println!("  {}: {}", "Taps".dimmed(), taps.display().to_string().cyan());
+    println!();
+
+    let packages = cellar::list_installed()?;
+    let installed_taps = crate::tap::list_taps()?;
+
+    println!("{}", "Statistics:".bold());
+    println!("  {}: {}", "Installed packages".dimmed(), packages.len().to_string().cyan());
+    println!("  {}: {}", "Installed taps".dimmed(), installed_taps.len().to_string().cyan());
+    println!();
+
+    println!("{}", "System:".bold());
+    println!("  {}: {}", "Version".dimmed(), env!("CARGO_PKG_VERSION").cyan());
+    println!("  {}: {}", "Architecture".dimmed(), std::env::consts::ARCH.cyan());
+    println!("  {}: {}", "OS".dimmed(), std::env::consts::OS.cyan());
+
+    Ok(())
+}

@@ -124,6 +124,9 @@ enum Commands {
         #[arg(short = 'n', long)]
         dry_run: bool,
     },
+
+    /// Show system configuration
+    Config,
 }
 
 #[tokio::main]
@@ -191,6 +194,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Cleanup { formulae, dry_run }) => {
             commands::cleanup(&formulae, dry_run)?;
+        }
+        Some(Commands::Config) => {
+            commands::config()?;
         }
         None => {
             println!(
