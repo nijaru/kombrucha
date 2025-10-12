@@ -158,6 +158,25 @@ Homebrew is amazing but slow. On modern networks (100+ Mbps), Ruby overhead domi
 
 See [performance analysis](internal/performance-analysis.md) for the technical breakdown.
 
+## Testing
+
+```bash
+# Unit tests
+cargo test
+
+# Integration tests (install/uninstall workflow)
+./scripts/test-integration.sh
+
+# Smoke tests (quick validation)
+./scripts/test-smoke.sh
+
+# Run benchmarks
+./benchmarks/phase2-install.sh  # Simple package
+./benchmarks/phase2-complex.sh  # Package with dependencies
+```
+
+See [scripts/README.md](scripts/README.md) for detailed testing documentation.
+
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Development guide
@@ -168,6 +187,7 @@ See [performance analysis](internal/performance-analysis.md) for the technical b
 - [benchmarks/](benchmarks/) - Performance testing and results
   - [results.md](benchmarks/results.md) - Benchmark results vs Homebrew
 - [scripts/](scripts/) - Development and testing scripts
+  - [README.md](scripts/README.md) - Testing infrastructure documentation
 
 ## License
 
