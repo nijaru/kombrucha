@@ -132,6 +132,13 @@ enum Commands {
         dry_run: bool,
     },
 
+    /// Manage download cache
+    Cache {
+        /// Clean cache (remove all downloaded bottles)
+        #[arg(short, long)]
+        clean: bool,
+    },
+
     /// Show system configuration
     Config,
 
@@ -250,6 +257,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Cleanup { formulae, dry_run }) => {
             commands::cleanup(&formulae, dry_run)?;
+        }
+        Some(Commands::Cache { clean }) => {
+            commands::cache(clean)?;
         }
         Some(Commands::Config) => {
             commands::config()?;

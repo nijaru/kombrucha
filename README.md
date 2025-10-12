@@ -31,6 +31,8 @@
 - `bru link <formula>...` - Link a formula
 - `bru unlink <formula>...` - Unlink a formula
 - `bru cleanup [formula...]` - Remove old versions of installed packages
+- `bru cache` - Show download cache info
+- `bru cache --clean` - Clean download cache
 - `bru tap [user/repo]` - Add or list third-party repositories
 - `bru untap <user/repo>` - Remove a third-party repository
 - `bru config` - Show system configuration and statistics
