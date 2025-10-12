@@ -5,7 +5,7 @@ use crate::{download, extract, receipt, symlink};
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
 
-pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
+pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
     println!("{} Searching for: {}", "🔍".bold(), query.cyan());
 
     let results = api.search(query).await?;
@@ -19,14 +19,31 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
         return Ok(());
     }
 
+    // Determine what to display based on flags
+    let show_formulae = !cask_only;
+    let show_casks = !formula_only;
+
+    // Count total results to show
+    let total_to_show =
+        (if show_formulae { results.formulae.len() } else { 0 }) +
+        (if show_casks { results.casks.len() } else { 0 });
+
+    if total_to_show == 0 {
+        println!(
+            "\n{} No results found with the specified filter",
+            "❌".red()
+        );
+        return Ok(());
+    }
+
     println!(
         "\n{} Found {} results\n",
         "✓".green(),
-        results.total_count().to_string().bold()
+        total_to_show.to_string().bold()
     );
 
     // Display formulae
-    if !results.formulae.is_empty() {
+    if show_formulae && !results.formulae.is_empty() {
         println!("{}", "==> Formulae".bold().green());
         for formula in results.formulae.iter().take(20) {
             print!("{}", formula.name.bold());
@@ -47,7 +64,7 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
     }
 
     // Display casks
-    if !results.casks.is_empty() {
+    if show_casks && !results.casks.is_empty() {
         println!("{}", "==> Casks".bold().cyan());
         for cask in results.casks.iter().take(20) {
             let display_name = if !cask.name.is_empty() {
@@ -1826,6 +1843,8 @@ pub fn commands() -> Result<()> {
 
     let commands_list = vec![
         ("search <query>", "Search for formulae and casks"),
+        ("search <query> --formula", "Search only formulae"),
+        ("search <query> --cask", "Search only casks"),
         ("info <formula>", "Show information about a formula or cask"),
         ("info <formula> --json", "Show formula info as JSON"),
         ("desc <formula>...", "Show formula descriptions"),

@@ -31,6 +31,14 @@ enum Commands {
     Search {
         /// Query string
         query: String,
+
+        /// Only search formulae
+        #[arg(long)]
+        formula: bool,
+
+        /// Only search casks
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Show information about a formula or cask
@@ -228,8 +236,8 @@ async fn main() -> anyhow::Result<()> {
     let api = api::BrewApi::new()?;
 
     match cli.command {
-        Some(Commands::Search { query }) => {
-            commands::search(&api, &query).await?;
+        Some(Commands::Search { query, formula, cask }) => {
+            commands::search(&api, &query, formula, cask).await?;
         }
         Some(Commands::Info { formula, json }) => {
             commands::info(&api, &formula, json).await?;

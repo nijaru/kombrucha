@@ -185,10 +185,6 @@ pub struct SearchResults {
 }
 
 impl SearchResults {
-    pub fn total_count(&self) -> usize {
-        self.formulae.len() + self.casks.len()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.formulae.is_empty() && self.casks.is_empty()
     }

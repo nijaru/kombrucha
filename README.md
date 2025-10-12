@@ -14,6 +14,8 @@
 
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
+- `bru search <query> --formula` - Search only formulae
+- `bru search <query> --cask` - Search only casks
 - `bru info <formula>` - Show formula/cask information
 - `bru info <formula> --json` - Show formula info as JSON (for scripting)
 - `bru desc <formula>...` - Show formula descriptions
@@ -78,6 +80,10 @@ bru completions fish > ~/.config/fish/completions/bru.fish
 ```bash
 # Search for packages
 bru search rust
+
+# Search only formulae or casks
+bru search --formula python
+bru search --cask docker
 
 # Get info about a package
 bru info wget
