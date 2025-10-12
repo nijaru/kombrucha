@@ -37,6 +37,10 @@ enum Commands {
     Info {
         /// Formula/cask name
         formula: String,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
     },
 
     /// Show dependencies for a formula
@@ -47,6 +51,10 @@ enum Commands {
         /// Show as tree
         #[arg(long)]
         tree: bool,
+
+        /// Only show installed dependencies
+        #[arg(long)]
+        installed: bool,
     },
 
     /// Show formulae that depend on a formula
@@ -121,6 +129,9 @@ enum Commands {
         /// Tap name (user/repo format)
         tap: String,
     },
+
+    /// Update Homebrew and all taps
+    Update,
 
     /// Remove old versions of installed formulae
     Cleanup {
@@ -220,11 +231,11 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Search { query }) => {
             commands::search(&api, &query).await?;
         }
-        Some(Commands::Info { formula }) => {
-            commands::info(&api, &formula).await?;
+        Some(Commands::Info { formula, json }) => {
+            commands::info(&api, &formula, json).await?;
         }
-        Some(Commands::Deps { formula, tree }) => {
-            commands::deps(&api, &formula, tree).await?;
+        Some(Commands::Deps { formula, tree, installed }) => {
+            commands::deps(&api, &formula, tree, installed).await?;
         }
         Some(Commands::Uses { formula }) => {
             commands::uses(&api, &formula).await?;
@@ -261,6 +272,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Untap { tap }) => {
             commands::untap(&tap)?;
+        }
+        Some(Commands::Update) => {
+            commands::update()?;
         }
         Some(Commands::Cleanup { formulae, dry_run }) => {
             commands::cleanup(&formulae, dry_run)?;

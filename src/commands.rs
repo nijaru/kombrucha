@@ -77,63 +77,81 @@ pub async fn search(api: &BrewApi, query: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn info(api: &BrewApi, formula: &str) -> Result<()> {
-    println!("{} Fetching info for: {}", "📦".bold(), formula.cyan());
+pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
+    if !json {
+        println!("{} Fetching info for: {}", "📦".bold(), formula.cyan());
+    }
 
     // Try formula first, then cask
     match api.fetch_formula(formula).await {
         Ok(formula) => {
-            println!("\n{}", format!("==> {}", formula.name).bold().green());
-            if let Some(desc) = &formula.desc {
-                println!("{}", desc);
-            }
-            if let Some(homepage) = &formula.homepage {
-                println!("{}: {}", "Homepage".bold(), homepage);
-            }
-            if let Some(version) = &formula.versions.stable {
-                println!("{}: {}", "Version".bold(), version);
-            }
+            if json {
+                // Output as JSON
+                let json_str = serde_json::to_string_pretty(&formula)?;
+                println!("{}", json_str);
+            } else {
+                // Pretty print format
+                println!("\n{}", format!("==> {}", formula.name).bold().green());
+                if let Some(desc) = &formula.desc {
+                    println!("{}", desc);
+                }
+                if let Some(homepage) = &formula.homepage {
+                    println!("{}: {}", "Homepage".bold(), homepage);
+                }
+                if let Some(version) = &formula.versions.stable {
+                    println!("{}: {}", "Version".bold(), version);
+                }
 
-            if !formula.dependencies.is_empty() {
-                println!(
-                    "{}: {}",
-                    "Dependencies".bold(),
-                    formula.dependencies.join(", ")
-                );
-            }
+                if !formula.dependencies.is_empty() {
+                    println!(
+                        "{}: {}",
+                        "Dependencies".bold(),
+                        formula.dependencies.join(", ")
+                    );
+                }
 
-            if !formula.build_dependencies.is_empty() {
-                println!(
-                    "{}: {}",
-                    "Build dependencies".bold(),
-                    formula.build_dependencies.join(", ")
-                );
+                if !formula.build_dependencies.is_empty() {
+                    println!(
+                        "{}: {}",
+                        "Build dependencies".bold(),
+                        formula.build_dependencies.join(", ")
+                    );
+                }
             }
         }
         Err(_) => {
             // Try as cask
             match api.fetch_cask(formula).await {
                 Ok(cask) => {
-                    println!("\n{}", format!("==> {}", cask.token).bold().cyan());
-                    if !cask.name.is_empty() {
-                        println!("{}: {}", "Name".bold(), cask.name.join(", "));
-                    }
-                    if let Some(desc) = &cask.desc {
-                        println!("{}", desc);
-                    }
-                    if let Some(homepage) = &cask.homepage {
-                        println!("{}: {}", "Homepage".bold(), homepage);
-                    }
-                    if let Some(version) = &cask.version {
-                        println!("{}: {}", "Version".bold(), version);
+                    if json {
+                        let json_str = serde_json::to_string_pretty(&cask)?;
+                        println!("{}", json_str);
+                    } else {
+                        println!("\n{}", format!("==> {}", cask.token).bold().cyan());
+                        if !cask.name.is_empty() {
+                            println!("{}: {}", "Name".bold(), cask.name.join(", "));
+                        }
+                        if let Some(desc) = &cask.desc {
+                            println!("{}", desc);
+                        }
+                        if let Some(homepage) = &cask.homepage {
+                            println!("{}: {}", "Homepage".bold(), homepage);
+                        }
+                        if let Some(version) = &cask.version {
+                            println!("{}: {}", "Version".bold(), version);
+                        }
                     }
                 }
                 Err(_) => {
-                    println!(
-                        "\n{} No formula or cask found for '{}'",
-                        "❌".red(),
-                        formula
-                    );
+                    if json {
+                        println!("{{\"error\": \"No formula or cask found for '{}'\"}}", formula);
+                    } else {
+                        println!(
+                            "\n{} No formula or cask found for '{}'",
+                            "❌".red(),
+                            formula
+                        );
+                    }
                 }
             }
         }
@@ -142,7 +160,7 @@ pub async fn info(api: &BrewApi, formula: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn deps(api: &BrewApi, formula: &str, tree: bool) -> Result<()> {
+pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool) -> Result<()> {
     if tree {
         println!("{} Dependency tree for: {}", "🌳".bold(), formula.cyan());
     } else {
@@ -156,25 +174,55 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool) -> Result<()> {
         return Ok(());
     }
 
+    // If filtering by installed, get the list of installed packages
+    let installed_names: HashSet<String> = if installed_only {
+        cellar::list_installed()?
+            .into_iter()
+            .map(|p| p.name)
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     if !formula_data.dependencies.is_empty() {
-        println!("\n{}", "Runtime dependencies:".bold().green());
-        for dep in &formula_data.dependencies {
-            if tree {
-                println!("  └─ {}", dep);
-            } else {
-                println!("  {}", dep);
+        let mut deps: Vec<_> = formula_data.dependencies.iter().collect();
+
+        if installed_only {
+            deps.retain(|dep| installed_names.contains(*dep));
+        }
+
+        if !deps.is_empty() {
+            println!("\n{}", "Runtime dependencies:".bold().green());
+            for dep in deps {
+                if tree {
+                    println!("  └─ {}", dep.cyan());
+                } else {
+                    println!("  {}", dep.cyan());
+                }
             }
+        } else if installed_only {
+            println!("\n{} No runtime dependencies installed", "ℹ".blue());
         }
     }
 
     if !formula_data.build_dependencies.is_empty() {
-        println!("\n{}", "Build dependencies:".bold().yellow());
-        for dep in &formula_data.build_dependencies {
-            if tree {
-                println!("  └─ {}", dep);
-            } else {
-                println!("  {}", dep);
+        let mut build_deps: Vec<_> = formula_data.build_dependencies.iter().collect();
+
+        if installed_only {
+            build_deps.retain(|dep| installed_names.contains(*dep));
+        }
+
+        if !build_deps.is_empty() {
+            println!("\n{}", "Build dependencies:".bold().yellow());
+            for dep in build_deps {
+                if tree {
+                    println!("  └─ {}", dep.cyan());
+                } else {
+                    println!("  {}", dep.cyan());
+                }
             }
+        } else if installed_only && !formula_data.build_dependencies.is_empty() {
+            println!("\n{} No build dependencies installed", "ℹ".blue());
         }
     }
 
@@ -1099,6 +1147,86 @@ pub fn untap(tap_name: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn update() -> Result<()> {
+    println!("{} Updating Homebrew...", "⬇".bold());
+
+    let taps = crate::tap::list_taps()?;
+
+    if taps.is_empty() {
+        println!("\n{} No taps installed", "ℹ".blue());
+        return Ok(());
+    }
+
+    println!("\n{} Updating {} taps...", "→".bold(), taps.len().to_string().bold());
+
+    let mut updated = 0;
+    let mut unchanged = 0;
+    let mut errors = 0;
+
+    for tap in &taps {
+        print!("  {} Updating {}... ", "⬇".bold(), tap.cyan());
+
+        let tap_dir = crate::tap::tap_directory(tap)?;
+
+        if !tap_dir.exists() || !tap_dir.join(".git").exists() {
+            println!("{} (not a git repository)", "⚠".yellow());
+            errors += 1;
+            continue;
+        }
+
+        // Run git pull
+        let output = std::process::Command::new("git")
+            .args(["-C", tap_dir.to_str().unwrap(), "pull", "--ff-only"])
+            .output();
+
+        match output {
+            Ok(output) if output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if stdout.contains("Already up to date") || stdout.contains("Already up-to-date") {
+                    println!("{}", "already up to date".dimmed());
+                    unchanged += 1;
+                } else {
+                    println!("{}", "updated".green());
+                    updated += 1;
+                }
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                println!("{} {}", "failed".red(), stderr.trim().dimmed());
+                errors += 1;
+            }
+            Err(e) => {
+                println!("{} {}", "failed".red(), e.to_string().dimmed());
+                errors += 1;
+            }
+        }
+    }
+
+    println!();
+
+    if errors == 0 {
+        if updated > 0 {
+            println!(
+                "{} Updated {} taps, {} unchanged",
+                "✓".green().bold(),
+                updated.to_string().bold(),
+                unchanged.to_string().dimmed()
+            );
+        } else {
+            println!("{} All taps are up to date", "✓".green().bold());
+        }
+    } else {
+        println!(
+            "{} {} succeeded, {} failed",
+            "⚠".yellow(),
+            (updated + unchanged).to_string().bold(),
+            errors.to_string().bold()
+        );
+    }
+
+    Ok(())
+}
+
 pub fn cleanup(formula_names: &[String], dry_run: bool) -> Result<()> {
     let all_packages = cellar::list_installed()?;
 
@@ -1699,8 +1827,10 @@ pub fn commands() -> Result<()> {
     let commands_list = vec![
         ("search <query>", "Search for formulae and casks"),
         ("info <formula>", "Show information about a formula or cask"),
+        ("info <formula> --json", "Show formula info as JSON"),
         ("desc <formula>...", "Show formula descriptions"),
         ("deps <formula>", "Show dependencies for a formula"),
+        ("deps <formula> --installed", "Show only installed dependencies"),
         ("uses <formula>", "Show formulae that depend on a formula"),
         ("list", "List installed packages"),
         ("outdated", "Show outdated installed packages"),
@@ -1716,6 +1846,7 @@ pub fn commands() -> Result<()> {
         ("cache", "Manage download cache"),
         ("tap [user/repo]", "Add or list third-party repositories"),
         ("untap <user/repo>", "Remove a third-party repository"),
+        ("update", "Update Homebrew and all taps"),
         ("config", "Show system configuration"),
         ("doctor", "Check system for potential problems"),
         ("home <formula>", "Open formula homepage in browser"),

@@ -15,9 +15,11 @@
 **Working commands**:
 - `bru search <query>` - Search formulae and casks
 - `bru info <formula>` - Show formula/cask information
+- `bru info <formula> --json` - Show formula info as JSON (for scripting)
 - `bru desc <formula>...` - Show formula descriptions
 - `bru deps <formula>` - Show dependencies
 - `bru deps --tree <formula>` - Show dependency tree
+- `bru deps <formula> --installed` - Show only installed dependencies
 - `bru uses <formula>` - Show formulae that depend on a formula
 - `bru list` - List installed packages
 - `bru list --versions` - Show all installed versions
@@ -35,6 +37,7 @@
 - `bru cache --clean` - Clean download cache
 - `bru tap [user/repo]` - Add or list third-party repositories
 - `bru untap <user/repo>` - Remove a third-party repository
+- `bru update` - Update Homebrew and all taps
 - `bru config` - Show system configuration and statistics
 - `bru doctor` - Check system for potential problems
 - `bru home <formula>` - Open formula homepage in browser
@@ -85,8 +88,14 @@ bru desc wget jq curl
 # Show dependencies
 bru deps --tree wget
 
+# Show only installed dependencies
+bru deps --installed wget
+
 # See what depends on a package
 bru uses openssl
+
+# Get JSON output (for scripting)
+bru info --json wget
 
 # List installed packages
 bru list
@@ -114,6 +123,9 @@ bru tap user/repo
 
 # Remove a tap
 bru untap user/repo
+
+# Update all taps
+bru update
 
 # Download bottles without installing
 bru fetch wget jq tree
