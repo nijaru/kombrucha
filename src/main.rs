@@ -672,6 +672,42 @@ enum Commands {
         /// Formula name
         formula: String,
     },
+
+    /// Run external tap command
+    TapCmd {
+        /// Tap name
+        tap: String,
+
+        /// Command to run
+        command: String,
+
+        /// Command arguments
+        args: Vec<String>,
+    },
+
+    /// Install formula JSON API locally
+    InstallFormulaApi,
+
+    /// Show cask usage statistics
+    UsesCask {
+        /// Cask name
+        cask: String,
+    },
+
+    /// Show cask info (alias for info --cask)
+    AbvCask {
+        /// Cask name
+        cask: String,
+    },
+
+    /// Setup Homebrew development environment
+    Setup,
+
+    /// Fix bottle tags
+    FixBottleTags {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -988,6 +1024,24 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::FormulaInfo { formula }) => {
             commands::formula_info(&api, &formula).await?;
+        }
+        Some(Commands::TapCmd { tap, command, args }) => {
+            commands::tap_cmd(&tap, &command, &args)?;
+        }
+        Some(Commands::InstallFormulaApi) => {
+            commands::install_formula_api()?;
+        }
+        Some(Commands::UsesCask { cask }) => {
+            commands::uses_cask(&cask)?;
+        }
+        Some(Commands::AbvCask { cask }) => {
+            commands::abv_cask(&api, &cask).await?;
+        }
+        Some(Commands::Setup) => {
+            commands::setup()?;
+        }
+        Some(Commands::FixBottleTags { formulae }) => {
+            commands::fix_bottle_tags(&formulae)?;
         }
         None => {
             println!(

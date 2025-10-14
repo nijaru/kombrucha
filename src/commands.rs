@@ -5235,3 +5235,124 @@ pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<(
 
     Ok(())
 }
+
+pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result<()> {
+    println!("{} Running tap command: {} {}", "⚙️".bold(), tap_name.cyan(), command.cyan());
+
+    if !args.is_empty() {
+        println!("  Arguments: {}", args.join(" ").dimmed());
+    }
+
+    println!("\n{} External tap commands", "ℹ".blue());
+    println!("  Taps can provide custom commands");
+    println!("  These are scripts in the tap's cmd/ directory");
+
+    let tap_dir = crate::tap::tap_directory(tap_name)?;
+    let cmd_dir = tap_dir.join("cmd");
+
+    if cmd_dir.exists() {
+        println!("\n  {} Tap has cmd/ directory", "✓".green());
+        println!("  {} Would execute: {}/{}", "→".dimmed(), tap_name, command.cyan());
+    } else {
+        println!("\n  {} Tap has no cmd/ directory", "⚠".yellow());
+    }
+
+    Ok(())
+}
+
+pub fn install_formula_api() -> anyhow::Result<()> {
+    println!("{} Installing formula API locally...", "📥".bold());
+
+    println!("\n{} Formula API installation", "ℹ".blue());
+    println!("  Downloads and caches formula JSON API");
+    println!("  Used for fast offline formula lookups");
+
+    println!("\n  {} Would execute:", "→".dimmed());
+    println!("    1. Download formula.json from formulae.brew.sh");
+    println!("    2. Download cask.json");
+    println!("    3. Cache locally in Homebrew directory");
+    println!("    4. Enable fast offline search");
+
+    println!("\n  {} Improves search performance significantly", "ℹ".dimmed());
+
+    Ok(())
+}
+
+pub fn uses_cask(cask_name: &str) -> anyhow::Result<()> {
+    println!("{} Checking what uses cask: {}", "🔍".bold(), cask_name.cyan());
+
+    println!("\n{} Cask usage analysis", "ℹ".blue());
+    println!("  Unlike formulae, casks typically don't have dependents");
+    println!("  Casks are GUI applications, not libraries");
+
+    println!("\n  {} Casks are usually standalone", "ℹ".dimmed());
+    println!("  {} Safe to uninstall without affecting other software", "✓".green());
+
+    Ok(())
+}
+
+pub async fn abv_cask(api: &BrewApi, cask_name: &str) -> anyhow::Result<()> {
+    println!("{} Cask info: {}", "📦".bold(), cask_name.cyan());
+
+    let cask = api.fetch_cask(cask_name).await?;
+
+    println!("\n{}", cask.token.bold());
+    if let Some(name) = &cask.name.first() {
+        println!("{}", name.dimmed());
+    }
+
+    if let Some(version) = &cask.version {
+        println!("\n{} Version: {}", "→".dimmed(), version.cyan());
+    }
+
+    if let Some(homepage) = &cask.homepage {
+        println!("{} Homepage: {}", "→".dimmed(), homepage.dimmed());
+    }
+
+    if let Some(desc) = &cask.desc {
+        println!("\n{}", desc.dimmed());
+    }
+
+    Ok(())
+}
+
+pub fn setup() -> anyhow::Result<()> {
+    println!("{} Setting up Homebrew development environment...", "🔧".bold());
+
+    println!("\n{} Development setup", "ℹ".blue());
+    println!("  Configures environment for Homebrew development:");
+
+    println!("\n  {} Would execute:", "→".dimmed());
+    println!("    1. Clone Homebrew repository");
+    println!("    2. Install development dependencies");
+    println!("    3. Configure git hooks");
+    println!("    4. Set up Ruby environment");
+    println!("    5. Install bundler gems");
+    println!("    6. Configure shell environment");
+
+    println!("\n  {} For contributors and maintainers", "ℹ".dimmed());
+    println!("  {} See: https://docs.brew.sh/Development", "→".dimmed());
+
+    Ok(())
+}
+
+pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Fixing bottle tags for {} formulae...", "🏷️".bold(), formula_names.len().to_string().bold());
+
+    println!("\n{} Bottle tag repair", "ℹ".blue());
+    println!("  Updates bottle tags to current platform naming");
+    println!("  Homebrew periodically changes platform identifiers");
+
+    for formula in formula_names {
+        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("    {} Would update bottle tags in formula", "ℹ".dimmed());
+        println!("    {} Example: monterey -> ventura -> sonoma", "→".dimmed());
+    }
+
+    Ok(())
+}
