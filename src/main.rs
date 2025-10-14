@@ -739,6 +739,44 @@ enum Commands {
         /// User or org to sponsor
         target: Option<String>,
     },
+
+    /// Run a Homebrew sub-command
+    Command {
+        /// Sub-command to run
+        subcommand: String,
+        /// Arguments to pass
+        args: Vec<String>,
+    },
+
+    /// Sync nodenv shims
+    #[command(name = "nodenv-sync")]
+    NodeenvSync,
+
+    /// Sync pyenv shims
+    #[command(name = "pyenv-sync")]
+    PyenvSync,
+
+    /// Sync rbenv shims
+    #[command(name = "rbenv-sync")]
+    RbenvSync,
+
+    /// Setup Ruby environment for Homebrew
+    SetupRuby,
+
+    /// Generate tab-separated formula information
+    Tab {
+        /// Formula name
+        formula: String,
+    },
+
+    /// Remove command aliases
+    Unalias {
+        /// Alias name
+        alias: String,
+    },
+
+    /// Update Homebrew only if needed
+    UpdateIfNeeded,
 }
 
 #[tokio::main]
@@ -1091,6 +1129,30 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Sponsor { target }) => {
             commands::sponsor(target.as_deref())?;
+        }
+        Some(Commands::Command { subcommand, args }) => {
+            commands::command(&subcommand, &args)?;
+        }
+        Some(Commands::NodeenvSync) => {
+            commands::nodenv_sync()?;
+        }
+        Some(Commands::PyenvSync) => {
+            commands::pyenv_sync()?;
+        }
+        Some(Commands::RbenvSync) => {
+            commands::rbenv_sync()?;
+        }
+        Some(Commands::SetupRuby) => {
+            commands::setup_ruby()?;
+        }
+        Some(Commands::Tab { formula }) => {
+            commands::tab(&api, &formula).await?;
+        }
+        Some(Commands::Unalias { alias }) => {
+            commands::unalias(&alias)?;
+        }
+        Some(Commands::UpdateIfNeeded) => {
+            commands::update_if_needed()?;
         }
         None => {
             println!(

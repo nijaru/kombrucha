@@ -5500,3 +5500,231 @@ pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
+    println!("{} Running Homebrew sub-command: {}", "🔧".bold(), subcommand.cyan());
+
+    if !args.is_empty() {
+        println!("  {} Arguments: {}", "→".dimmed(), args.join(" ").dimmed());
+    }
+
+    println!("\n{} Sub-command execution", "ℹ".blue());
+    println!("  Runs external Homebrew commands or scripts");
+
+    println!("\n  {} Would execute:", "→".dimmed());
+    if args.is_empty() {
+        println!("    brew-{}", subcommand);
+    } else {
+        println!("    brew-{} {}", subcommand, args.join(" "));
+    }
+
+    println!("\n{} This is an internal command", "ℹ".blue());
+    println!("  Used by Homebrew to run external commands");
+
+    Ok(())
+}
+
+pub fn nodenv_sync() -> anyhow::Result<()> {
+    println!("{} Syncing nodenv shims...", "🔗".bold());
+
+    println!("\n{} nodenv integration", "ℹ".blue());
+    println!("  Synchronizes Node.js version manager shims");
+
+    let prefix = cellar::detect_prefix();
+    let nodenv_dir = prefix.join("opt/nodenv");
+
+    if nodenv_dir.exists() {
+        println!("\n  {} nodenv installation found", "✓".green());
+        println!("    {}", nodenv_dir.display().to_string().dimmed());
+    } else {
+        println!("\n  {} nodenv not installed", "ℹ".blue());
+        println!("    Install with: {}", "bru install nodenv".cyan());
+    }
+
+    println!("\n  {} Would sync:", "→".dimmed());
+    println!("    - Node version shims");
+    println!("    - npm/npx executables");
+    println!("    - PATH integration");
+
+    Ok(())
+}
+
+pub fn pyenv_sync() -> anyhow::Result<()> {
+    println!("{} Syncing pyenv shims...", "🐍".bold());
+
+    println!("\n{} pyenv integration", "ℹ".blue());
+    println!("  Synchronizes Python version manager shims");
+
+    let prefix = cellar::detect_prefix();
+    let pyenv_dir = prefix.join("opt/pyenv");
+
+    if pyenv_dir.exists() {
+        println!("\n  {} pyenv installation found", "✓".green());
+        println!("    {}", pyenv_dir.display().to_string().dimmed());
+    } else {
+        println!("\n  {} pyenv not installed", "ℹ".blue());
+        println!("    Install with: {}", "bru install pyenv".cyan());
+    }
+
+    println!("\n  {} Would sync:", "→".dimmed());
+    println!("    - Python version shims");
+    println!("    - pip/python executables");
+    println!("    - Virtual environment integration");
+
+    Ok(())
+}
+
+pub fn rbenv_sync() -> anyhow::Result<()> {
+    println!("{} Syncing rbenv shims...", "💎".bold());
+
+    println!("\n{} rbenv integration", "ℹ".blue());
+    println!("  Synchronizes Ruby version manager shims");
+
+    let prefix = cellar::detect_prefix();
+    let rbenv_dir = prefix.join("opt/rbenv");
+
+    if rbenv_dir.exists() {
+        println!("\n  {} rbenv installation found", "✓".green());
+        println!("    {}", rbenv_dir.display().to_string().dimmed());
+    } else {
+        println!("\n  {} rbenv not installed", "ℹ".blue());
+        println!("    Install with: {}", "bru install rbenv".cyan());
+    }
+
+    println!("\n  {} Would sync:", "→".dimmed());
+    println!("    - Ruby version shims");
+    println!("    - gem/bundle executables");
+    println!("    - Gemfile integration");
+
+    Ok(())
+}
+
+pub fn setup_ruby() -> anyhow::Result<()> {
+    println!("{} Setting up Ruby environment...", "💎".bold());
+
+    println!("\n{} Homebrew Ruby setup", "ℹ".blue());
+    println!("  Configures Ruby environment for Homebrew development");
+
+    let prefix = cellar::detect_prefix();
+    let homebrew_ruby = prefix.join("Library/Homebrew/vendor/portable-ruby");
+
+    println!("\n  {} Ruby installation:", "→".dimmed());
+    if homebrew_ruby.exists() {
+        println!("    {}", "Portable Ruby installed".green());
+        println!("    {}", homebrew_ruby.display().to_string().dimmed());
+    } else {
+        println!("    {}", "Portable Ruby not found".dimmed());
+    }
+
+    println!("\n  {} Would setup:", "→".dimmed());
+    println!("    - Ruby interpreter");
+    println!("    - RubyGems configuration");
+    println!("    - Bundler dependencies");
+    println!("    - Development gems");
+
+    println!("\n{} This is a development command", "ℹ".blue());
+    println!("  Required for formula development and testing");
+
+    Ok(())
+}
+
+pub async fn tab(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
+    println!("{} Formula info (tab-separated): {}", "📋".bold(), formula_name.cyan());
+
+    let formula = api.fetch_formula(formula_name).await?;
+
+    println!("\n{} Tab format", "ℹ".blue());
+    println!("  Generates machine-readable formula information");
+
+    println!("\n  {} Output format:", "→".dimmed());
+    println!("    name\\tversion\\thomepage\\tdescription");
+
+    println!("\n{}", "─".repeat(60).dimmed());
+
+    let version = formula.versions.stable.as_deref().unwrap_or("unknown");
+    let homepage = formula.homepage.as_deref().unwrap_or("none");
+    let desc = formula.desc.as_deref().unwrap_or("no description");
+
+    println!("{}\t{}\t{}\t{}",
+        formula.name.cyan(),
+        version.dimmed(),
+        homepage.dimmed(),
+        desc.dimmed()
+    );
+
+    println!("{}", "─".repeat(60).dimmed());
+
+    Ok(())
+}
+
+pub fn unalias(alias_name: &str) -> anyhow::Result<()> {
+    println!("{} Removing alias: {}", "🗑️".bold(), alias_name.cyan());
+
+    let prefix = cellar::detect_prefix();
+    let alias_file = prefix.join(format!(".brew_alias_{}", alias_name));
+
+    println!("\n{} Alias management", "ℹ".blue());
+    println!("  Removes command aliases");
+
+    if alias_file.exists() {
+        println!("\n  {} Alias found:", "✓".green());
+        println!("    {}", alias_file.display().to_string().dimmed());
+
+        std::fs::remove_file(&alias_file)?;
+        println!("\n{} Alias removed successfully", "✓".green().bold());
+    } else {
+        println!("\n  {} Alias not found: {}", "ℹ".blue(), alias_name);
+        println!("    To see all aliases: {}", "bru alias".cyan());
+    }
+
+    Ok(())
+}
+
+pub fn update_if_needed() -> anyhow::Result<()> {
+    println!("{} Checking if update is needed...", "🔄".bold());
+
+    let prefix = cellar::detect_prefix();
+    let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
+
+    if !repository_path.exists() {
+        println!("{} homebrew/core tap not found", "❌".red());
+        return Ok(());
+    }
+
+    println!("\n{} Conditional update", "ℹ".blue());
+    println!("  Only updates if last update was more than 24 hours ago");
+
+    let last_update_file = prefix.join(".homebrew_last_update");
+
+    let needs_update = if last_update_file.exists() {
+        if let Ok(metadata) = std::fs::metadata(&last_update_file) {
+            if let Ok(modified) = metadata.modified() {
+                if let Ok(elapsed) = modified.elapsed() {
+                    elapsed.as_secs() > 86400
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        } else {
+            true
+        }
+    } else {
+        true
+    };
+
+    if needs_update {
+        println!("\n  {} Update needed (>24 hours since last update)", "→".dimmed());
+        println!("    Running: {}", "bru update".cyan());
+
+        crate::commands::update()?;
+
+        std::fs::write(&last_update_file, "")?;
+    } else {
+        println!("\n  {} Update not needed (updated recently)", "✓".green());
+        println!("    Last update: within 24 hours");
+    }
+
+    Ok(())
+}
