@@ -548,6 +548,35 @@ enum Commands {
         /// Files to check
         files: Vec<String>,
     },
+
+    /// Show what changed during the last update
+    UpdateReport,
+
+    /// Update Python resources for a formula
+    UpdatePythonResources {
+        /// Formula name
+        formula: String,
+
+        /// Print updated resource blocks
+        #[arg(long)]
+        print_only: bool,
+    },
+
+    /// Determine which test runners are needed
+    DetermineTestRunners {
+        /// Formulae to check
+        formulae: Vec<String>,
+    },
+
+    /// Dispatch a bottle build
+    DispatchBuildBottle {
+        /// Formula name
+        formula: String,
+
+        /// Build for this platform
+        #[arg(long)]
+        platform: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -816,6 +845,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Typecheck { files }) => {
             commands::typecheck(&files)?;
+        }
+        Some(Commands::UpdateReport) => {
+            commands::update_report()?;
+        }
+        Some(Commands::UpdatePythonResources { formula, print_only }) => {
+            commands::update_python_resources(&formula, print_only)?;
+        }
+        Some(Commands::DetermineTestRunners { formulae }) => {
+            commands::determine_test_runners(&formulae)?;
+        }
+        Some(Commands::DispatchBuildBottle { formula, platform }) => {
+            commands::dispatch_build_bottle(&formula, platform.as_deref())?;
         }
         None => {
             println!(
