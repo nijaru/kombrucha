@@ -481,6 +481,43 @@ enum Commands {
         #[arg(long)]
         fix: bool,
     },
+
+    /// Run formula test suite
+    Test {
+        /// Formula name
+        formula: String,
+    },
+
+    /// Generate bottle from formula
+    Bottle {
+        /// Formula names
+        formulae: Vec<String>,
+
+        /// Write bottle block to formula file
+        #[arg(long)]
+        write: bool,
+    },
+
+    /// Pin a tap to prevent updates
+    TapPin {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
+
+    /// Unpin a tap to allow updates
+    TapUnpin {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
+
+    /// Install Homebrew's vendored gems
+    VendorGems,
+
+    /// Run Homebrew's Ruby instance
+    Ruby {
+        /// Ruby code or script file
+        args: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -713,6 +750,24 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Style { formulae, fix }) => {
             commands::style(&formulae, fix)?;
+        }
+        Some(Commands::Test { formula }) => {
+            commands::test(&formula)?;
+        }
+        Some(Commands::Bottle { formulae, write }) => {
+            commands::bottle(&formulae, write)?;
+        }
+        Some(Commands::TapPin { tap }) => {
+            commands::tap_pin(&tap)?;
+        }
+        Some(Commands::TapUnpin { tap }) => {
+            commands::tap_unpin(&tap)?;
+        }
+        Some(Commands::VendorGems) => {
+            commands::vendor_gems()?;
+        }
+        Some(Commands::Ruby { args }) => {
+            commands::ruby(&args)?;
         }
         None => {
             println!(

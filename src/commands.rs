@@ -4500,3 +4500,145 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+pub fn test(formula_name: &str) -> anyhow::Result<()> {
+    println!("{} Running tests for: {}", "🧪".bold(), formula_name.cyan());
+
+    println!("\n{} Formula testing requires Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("  Test suite would be executed from formula's test block");
+    println!("  Typical tests verify:");
+    println!("  - Installation succeeded");
+    println!("  - Binary is executable");
+    println!("  - Version output matches");
+    println!("  - Basic functionality works");
+
+    println!("\n  {} Would run: {} test {}", "→".dimmed(), "brew".cyan(), formula_name.cyan());
+
+    Ok(())
+}
+
+pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Generating bottles for {} formulae...",
+        "🍾".bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    if write {
+        println!("  {} Write mode enabled - would update formula files", "ℹ".blue());
+    }
+
+    println!("\n{} Bottle generation requires Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("  Would build from source and create bottles:");
+
+    for formula in formula_names {
+        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("    {} Build from source", "1.".dimmed());
+        println!("    {} Package into bottle tarball", "2.".dimmed());
+        println!("    {} Calculate SHA256 checksum", "3.".dimmed());
+        if write {
+            println!("    {} Write bottle block to formula", "4.".dimmed());
+        }
+    }
+
+    Ok(())
+}
+
+pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
+    println!("{} Pinning tap: {}", "📌".bold(), tap_name.cyan());
+
+    let tap_dir = crate::tap::tap_directory(tap_name)?;
+
+    if !tap_dir.exists() {
+        println!("{} Tap not found: {}", "❌".red(), tap_name);
+        return Ok(());
+    }
+
+    let prefix = cellar::detect_prefix();
+    let pinned_dir = prefix.join("Library/PinnedTaps");
+
+    std::fs::create_dir_all(&pinned_dir)?;
+
+    let pin_file = pinned_dir.join(tap_name.replace('/', "--"));
+
+    if pin_file.exists() {
+        println!("{} Tap already pinned", "ℹ".blue());
+        return Ok(());
+    }
+
+    std::fs::write(&pin_file, "")?;
+
+    println!("\n{} Tap pinned: {}", "✓".green().bold(), tap_name.bold());
+    println!("  This tap will not be updated by {} or {}", "bru update".cyan(), "bru upgrade".cyan());
+
+    Ok(())
+}
+
+pub fn tap_unpin(tap_name: &str) -> anyhow::Result<()> {
+    println!("{} Unpinning tap: {}", "📌".bold(), tap_name.cyan());
+
+    let prefix = cellar::detect_prefix();
+    let pinned_dir = prefix.join("Library/PinnedTaps");
+    let pin_file = pinned_dir.join(tap_name.replace('/', "--"));
+
+    if !pin_file.exists() {
+        println!("{} Tap is not pinned", "ℹ".blue());
+        return Ok(());
+    }
+
+    std::fs::remove_file(&pin_file)?;
+
+    println!("\n{} Tap unpinned: {}", "✓".green().bold(), tap_name.bold());
+    println!("  This tap will now be updated by {} and {}", "bru update".cyan(), "bru upgrade".cyan());
+
+    Ok(())
+}
+
+pub fn vendor_gems() -> anyhow::Result<()> {
+    println!("{} Installing Homebrew's vendored gems...", "💎".bold());
+
+    println!("\n{} Vendored gems require Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("  Would install Ruby gems required by Homebrew:");
+    println!("  - activesupport");
+    println!("  - addressable");
+    println!("  - concurrent-ruby");
+    println!("  - json_schemer");
+    println!("  - mechanize");
+    println!("  - minitest");
+    println!("  - parallel");
+    println!("  - parser");
+    println!("  - rubocop-ast");
+    println!("  - ruby-macho");
+    println!("  - sorbet-runtime");
+
+    println!("\n  {} Gems would be installed to: {}", "ℹ".dimmed(), "Homebrew/Library/Homebrew/vendor".cyan());
+
+    Ok(())
+}
+
+pub fn ruby(args: &[String]) -> anyhow::Result<()> {
+    if args.is_empty() {
+        println!("{} Starting Homebrew Ruby REPL...", "💎".bold());
+    } else {
+        println!("{} Running Ruby with Homebrew environment...", "💎".bold());
+    }
+
+    println!("\n{} Ruby execution requires Phase 3 (embedded Ruby interpreter)", "ℹ".blue());
+    println!("  Would run Ruby code with Homebrew's environment loaded");
+
+    if !args.is_empty() {
+        println!("\n  {} Arguments: {}", "→".dimmed(), args.join(" ").cyan());
+    }
+
+    println!("\n  When implemented:");
+    println!("  - Full access to Homebrew formula DSL");
+    println!("  - All Homebrew libraries available");
+    println!("  - Same Ruby version as Homebrew uses");
+
+    Ok(())
+}
