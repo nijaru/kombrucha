@@ -294,6 +294,34 @@ enum Commands {
         /// Formula name (for start/stop/restart)
         formula: Option<String>,
     },
+
+    /// Edit a formula in your editor
+    Edit {
+        /// Formula name
+        formula: String,
+    },
+
+    /// Create a new formula from URL
+    Create {
+        /// URL to download source
+        url: String,
+
+        /// Formula name (optional, inferred from URL)
+        #[arg(long)]
+        name: Option<String>,
+    },
+
+    /// Check for newer versions of formulae
+    Livecheck {
+        /// Formula name
+        formula: String,
+    },
+
+    /// Check formulae for issues
+    Audit {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -442,6 +470,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Services { action, formula }) => {
             commands::services(action.as_deref(), formula.as_deref())?;
+        }
+        Some(Commands::Edit { formula }) => {
+            commands::edit(&api, &formula).await?;
+        }
+        Some(Commands::Create { url, name }) => {
+            commands::create(&url, name.as_deref())?;
+        }
+        Some(Commands::Livecheck { formula }) => {
+            commands::livecheck(&api, &formula).await?;
+        }
+        Some(Commands::Audit { formulae }) => {
+            commands::audit(&api, &formulae).await?;
         }
         None => {
             println!(

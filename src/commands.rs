@@ -2732,3 +2732,301 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
+    println!("{} Opening {} in editor...", "✏️".bold(), formula_name.cyan());
+    
+    // First, verify formula exists
+    match api.fetch_formula(formula_name).await {
+        Ok(_) => {}
+        Err(_) => {
+            println!("\n{} Formula '{}' not found", "❌".red(), formula_name);
+            return Ok(());
+        }
+    }
+    
+    // Try to find formula file in taps
+    let prefix = cellar::detect_prefix();
+    let taps_dir = prefix.join("Library/Taps");
+
+    // Check homebrew-core first (try both flat and letter-organized structure)
+    let first_letter = formula_name.chars().next().unwrap_or('a').to_lowercase().to_string();
+    let core_formula_letter = taps_dir
+        .join("homebrew/homebrew-core/Formula")
+        .join(&first_letter)
+        .join(format!("{}.rb", formula_name));
+    let core_formula_flat = taps_dir
+        .join("homebrew/homebrew-core/Formula")
+        .join(format!("{}.rb", formula_name));
+    
+    let formula_path = if core_formula_letter.exists() {
+        core_formula_letter
+    } else if core_formula_flat.exists() {
+        core_formula_flat
+    } else {
+        // Search all taps
+        let mut found_path = None;
+        if taps_dir.exists() {
+            for tap_entry in std::fs::read_dir(&taps_dir)?.flatten() {
+                let tap_path = tap_entry.path();
+                if tap_path.is_dir() {
+                    for repo_entry in std::fs::read_dir(&tap_path)?.flatten() {
+                        let repo_path = repo_entry.path();
+                        let formula_path = repo_path.join("Formula").join(format!("{}.rb", formula_name));
+                        if formula_path.exists() {
+                            found_path = Some(formula_path);
+                            break;
+                        }
+                    }
+                }
+                if found_path.is_some() {
+                    break;
+                }
+            }
+        }
+        
+        match found_path {
+            Some(p) => p,
+            None => {
+                println!("\n{} Formula file not found locally", "⚠".yellow());
+                println!("Formula exists in API but not in local taps");
+                println!("Try: {}", format!("brew tap homebrew/core").cyan());
+                return Ok(());
+            }
+        }
+    };
+    
+    println!("  {}: {}", "File".dimmed(), formula_path.display().to_string().cyan());
+    
+    // Get editor from environment
+    let editor = std::env::var("EDITOR")
+        .or_else(|_| std::env::var("VISUAL"))
+        .unwrap_or_else(|_| "vim".to_string());
+    
+    // Open in editor
+    let status = std::process::Command::new(&editor)
+        .arg(&formula_path)
+        .status();
+    
+    match status {
+        Ok(s) if s.success() => {
+            println!("\n{} Finished editing {}", "✓".green(), formula_name.bold());
+        }
+        Ok(_) => {
+            println!("\n{} Editor exited with error", "⚠".yellow());
+        }
+        Err(e) => {
+            println!("\n{} Failed to open editor: {}", "❌".red(), e);
+            println!("Set EDITOR environment variable to your preferred editor");
+        }
+    }
+    
+    Ok(())
+}
+
+pub fn create(url: &str, name: Option<&str>) -> Result<()> {
+    println!("{} Creating formula from URL: {}", "📝".bold(), url.cyan());
+    
+    // Extract name from URL if not provided
+    let formula_name = if let Some(n) = name {
+        n.to_string()
+    } else {
+        // Try to extract from URL
+        let parts: Vec<&str> = url.split('/').collect();
+        let filename = parts.last().unwrap_or(&"formula");
+        
+        // Remove common extensions
+        let name = filename
+            .trim_end_matches(".tar.gz")
+            .trim_end_matches(".tar.bz2")
+            .trim_end_matches(".tar.xz")
+            .trim_end_matches(".zip")
+            .trim_end_matches(".tgz");
+        
+        // Remove version numbers (simple heuristic)
+        let parts: Vec<&str> = name.split('-').collect();
+        if parts.len() > 1 {
+            // Take first part before version
+            parts[0].to_string()
+        } else {
+            name.to_string()
+        }
+    };
+    
+    println!("  {}: {}", "Name".bold(), formula_name.cyan());
+    
+    // Generate basic formula template
+    let class_name = formula_name.chars().next().unwrap().to_uppercase().to_string() + &formula_name[1..];
+    let homepage_base = url.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.' || c == '-' || c == '/');
+
+    let template = vec![
+        format!("class {} < Formula", class_name),
+        format!("  desc \"Description of {}\"", formula_name),
+        format!("  homepage \"{}\"", homepage_base),
+        format!("  url \"{}\"", url),
+        "  sha256 \"\"  # TODO: Add SHA256 checksum".to_string(),
+        "  license \"\"  # TODO: Add license".to_string(),
+        "".to_string(),
+        "  depends_on \"cmake\" => :build  # Example build dependency".to_string(),
+        "".to_string(),
+        "  def install".to_string(),
+        "    # TODO: Add installation steps".to_string(),
+        "    # Common patterns:".to_string(),
+        "    # system \"./configure\", \"--prefix=#{prefix}\"".to_string(),
+        "    # system \"make\", \"install\"".to_string(),
+        "    #".to_string(),
+        "    # Or for CMake:".to_string(),
+        "    # system \"cmake\", \"-S\", \".\", \"-B\", \"build\", *std_cmake_args".to_string(),
+        "    # system \"cmake\", \"--build\", \"build\"".to_string(),
+        "    # system \"cmake\", \"--install\", \"build\"".to_string(),
+        "  end".to_string(),
+        "".to_string(),
+        "  test do".to_string(),
+        "    # TODO: Add test".to_string(),
+        format!("    # system \"#{{bin}}/{}\", \"--version\"", formula_name),
+        "  end".to_string(),
+        "end".to_string(),
+    ].join("\n") + "\n";
+    
+    // Write to file in current directory
+    let filename = format!("{}.rb", formula_name);
+    std::fs::write(&filename, template)?;
+    
+    println!("\n{} Created {}", "✓".green(), filename.bold().green());
+    println!();
+    println!("{}", "Next steps:".bold());
+    println!("  1. Add SHA256 checksum: {}", format!("shasum -a 256 <downloaded-file>").cyan());
+    println!("  2. Fill in description and license");
+    println!("  3. Update install method with build steps");
+    println!("  4. Add test command");
+    println!("  5. Test formula: {}", format!("bru install --build-from-source {}", filename).cyan());
+    
+    Ok(())
+}
+
+pub async fn livecheck(api: &BrewApi, formula_name: &str) -> Result<()> {
+    println!("{} Checking for newer versions of {}...", "🔍".bold(), formula_name.cyan());
+    
+    let formula = api.fetch_formula(formula_name).await?;
+    
+    let current_version = formula.versions.stable
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("No stable version found"))?;
+    
+    println!("\n{}", format!("==> {}", formula.name).bold().green());
+    println!("{}: {}", "Current version".bold(), current_version.cyan());
+    
+    if let Some(homepage) = &formula.homepage {
+        println!("{}: {}", "Homepage".bold(), homepage.dimmed());
+    }
+    
+    println!();
+    println!("{} Livecheck not yet implemented", "ℹ".blue());
+    println!("Would check:");
+    if let Some(homepage) = &formula.homepage {
+        println!("  - {}", homepage.dimmed());
+    }
+    println!("  - GitHub releases (if applicable)");
+    println!("  - Other version sources");
+    
+    Ok(())
+}
+
+pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+    
+    println!("{} Auditing {} formulae...", "🔍".bold(), formula_names.len().to_string().bold());
+    println!();
+    
+    let prefix = cellar::detect_prefix();
+    let taps_dir = prefix.join("Library/Taps");
+    
+    for formula_name in formula_names {
+        println!("{} {}", "==>".bold().green(), formula_name.bold().cyan());
+        
+        // Find formula file
+        let first_letter = formula_name.chars().next().unwrap_or('a').to_lowercase().to_string();
+        let core_formula_letter = taps_dir
+            .join("homebrew/homebrew-core/Formula")
+            .join(&first_letter)
+            .join(format!("{}.rb", formula_name));
+        let core_formula_flat = taps_dir
+            .join("homebrew/homebrew-core/Formula")
+            .join(format!("{}.rb", formula_name));
+
+        let formula_path = if core_formula_letter.exists() {
+            Some(core_formula_letter)
+        } else if core_formula_flat.exists() {
+            Some(core_formula_flat)
+        } else {
+            // Search all taps
+            let mut found_path = None;
+            if taps_dir.exists() {
+                'outer: for tap_entry in std::fs::read_dir(&taps_dir)?.flatten() {
+                    let tap_path = tap_entry.path();
+                    if tap_path.is_dir() {
+                        for repo_entry in std::fs::read_dir(&tap_path)?.flatten() {
+                            let repo_path = repo_entry.path();
+                            let fp = repo_path.join("Formula").join(format!("{}.rb", formula_name));
+                            if fp.exists() {
+                                found_path = Some(fp);
+                                break 'outer;
+                            }
+                        }
+                    }
+                }
+            }
+            found_path
+        };
+        
+        match formula_path {
+            Some(path) => {
+                let content = std::fs::read_to_string(&path)?;
+                let mut issues = Vec::new();
+                
+                // Basic checks
+                if !content.contains("def install") {
+                    issues.push("Missing install method");
+                }
+                
+                if !content.contains("desc ") {
+                    issues.push("Missing description");
+                }
+                
+                if !content.contains("homepage ") {
+                    issues.push("Missing homepage");
+                }
+                
+                if !content.contains("url ") {
+                    issues.push("Missing URL");
+                }
+                
+                if !content.contains("sha256 ") {
+                    issues.push("Missing SHA256");
+                }
+                
+                if content.contains("TODO") {
+                    issues.push("Contains TODO comments");
+                }
+                
+                if issues.is_empty() {
+                    println!("  {} No issues found", "✓".green());
+                } else {
+                    for issue in issues {
+                        println!("  {} {}", "⚠".yellow(), issue.dimmed());
+                    }
+                }
+            }
+            None => {
+                println!("  {} Formula file not found locally", "⚠".yellow());
+            }
+        }
+        
+        println!();
+    }
+    
+    Ok(())
+}
