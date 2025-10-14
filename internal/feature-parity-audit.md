@@ -52,11 +52,12 @@ These are user-facing commands needed for feature parity:
    - Impact: HIGH - Many users run databases/services
    - Status: IMPLEMENTED
 
-2. **Cask support** - Install macOS applications
+2. ✅ **Cask support** - Install macOS applications
    - `brew install --cask <app>` - Install GUI app
    - `brew uninstall --cask <app>` - Remove app
-   - `brew outdated --cask` - Check outdated apps
+   - `brew outdated --cask` - Check outdated apps (pending)
    - Impact: HIGH - ~50% of Homebrew usage on macOS
+   - Status: IMPLEMENTED (install/uninstall working, outdated pending)
 
 3. ✅ **bundle** - Install from Brewfile
    - `brew bundle` - Install from Brewfile
