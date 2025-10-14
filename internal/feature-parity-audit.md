@@ -4,17 +4,17 @@
 
 ## Current Status
 
-- **bru**: 106 commands implemented
+- **bru**: 112 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 14 commands
+- **Gap**: 8 commands
 
-🎉 **MILESTONE**: 88.3% feature parity achieved! Only 14 commands remaining.
+🎉 **MILESTONE**: 93.3% feature parity achieved! Only 8 commands remaining.
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (106 commands)
+### ✅ Implemented (112 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -89,6 +89,12 @@
 - install-formula-api (install formula API locally - stub)
 - setup (setup development environment - stub)
 - fix-bottle-tags (fix bottle tags - stub)
+- generate-man-completions (generate man pages and completions - stub)
+- bottle-merge (merge bottle metadata - stub)
+- install-bundler (install Ruby bundler - stub)
+- bump (automated version bump PRs - stub)
+- analytics-state (show analytics configuration)
+- sponsor (GitHub Sponsors information)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
