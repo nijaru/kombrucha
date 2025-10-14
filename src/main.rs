@@ -446,6 +446,22 @@ enum Commands {
         /// Target tap name
         tap: String,
     },
+
+    /// Unpack source code for a formula
+    Unpack {
+        /// Formula name
+        formula: String,
+
+        /// Destination directory
+        #[arg(long)]
+        destdir: Option<String>,
+    },
+
+    /// Print shell integration for command-not-found
+    CommandNotFoundInit {
+        /// Shell type
+        shell: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -663,6 +679,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Extract { formula, tap }) => {
             commands::extract(&formula, &tap)?;
+        }
+        Some(Commands::Unpack { formula, destdir }) => {
+            commands::unpack(&api, &formula, destdir.as_deref()).await?;
+        }
+        Some(Commands::CommandNotFoundInit { shell }) => {
+            commands::command_not_found_init(shell.as_deref())?;
         }
         None => {
             println!(

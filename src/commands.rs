@@ -4309,3 +4309,77 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn unpack(api: &BrewApi, formula_name: &str, dest_dir: Option<&str>) -> Result<()> {
+    println!("{} Unpacking source for: {}", "📦".bold(), formula_name.cyan());
+
+    // Fetch formula info
+    let formula = api.fetch_formula(formula_name).await?;
+
+    let version = formula.versions.stable.as_ref()
+        .ok_or_else(|| anyhow::anyhow!("No stable version available"))?;
+
+    println!("  Version: {}", version.cyan());
+
+    // Note: Full implementation would download source tarball and extract
+    // For now, provide informational output
+    println!("\n{} Source unpacking requires Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("  Formula source would be downloaded and extracted to:");
+
+    let target_dir = if let Some(dir) = dest_dir {
+        std::path::PathBuf::from(dir)
+    } else {
+        std::env::current_dir()?.join(formula_name)
+    };
+
+    println!("  {}", target_dir.display().to_string().cyan());
+
+    // Show what would happen
+    if let Some(homepage) = &formula.homepage {
+        println!("\n  Homepage: {}", homepage.dimmed());
+    }
+
+    Ok(())
+}
+
+pub fn command_not_found_init(shell: Option<&str>) -> Result<()> {
+    let detected_shell = shell.map(String::from).unwrap_or_else(|| {
+        std::env::var("SHELL")
+            .ok()
+            .and_then(|s| s.split('/').last().map(String::from))
+            .unwrap_or_else(|| "bash".to_string())
+    });
+
+    println!("# bru command-not-found hook for {}", detected_shell);
+    println!();
+
+    match detected_shell.as_str() {
+        "bash" => {
+            println!("# Add this to your ~/.bashrc:");
+            println!("HB_CNF_HANDLER=\"$(brew --repository)/Library/Taps/homebrew/homebrew-command-not-found/handler.sh\"");
+            println!("if [ -f \"$HB_CNF_HANDLER\" ]; then");
+            println!("  source \"$HB_CNF_HANDLER\"");
+            println!("fi");
+        }
+        "zsh" => {
+            println!("# Add this to your ~/.zshrc:");
+            println!("HB_CNF_HANDLER=\"$(brew --repository)/Library/Taps/homebrew/homebrew-command-not-found/handler.sh\"");
+            println!("if [ -f \"$HB_CNF_HANDLER\" ]; then");
+            println!("  source \"$HB_CNF_HANDLER\"");
+            println!("fi");
+        }
+        "fish" => {
+            println!("# Add this to your ~/.config/fish/config.fish:");
+            println!("set HB_CNF_HANDLER (brew --repository)/Library/Taps/homebrew/homebrew-command-not-found/handler.fish");
+            println!("if test -f $HB_CNF_HANDLER");
+            println!("  source $HB_CNF_HANDLER");
+            println!("end");
+        }
+        _ => {
+            println!("# Shell '{}' not directly supported", detected_shell);
+            println!("# Use bash or zsh configuration as a starting point");
+        }
+    }
+
+    Ok(())
+}
