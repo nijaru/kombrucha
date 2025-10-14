@@ -1,5 +1,6 @@
 mod api;
 mod cache;
+mod cask;
 mod cellar;
 mod commands;
 mod download;
@@ -95,12 +96,16 @@ enum Commands {
 
     /// Install formulae from bottles
     Install {
-        /// Formula names
+        /// Formula/cask names
         formulae: Vec<String>,
 
         /// Skip installing dependencies
         #[arg(long)]
         only_dependencies: bool,
+
+        /// Install cask instead of formula
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Upgrade installed formulae
@@ -117,12 +122,16 @@ enum Commands {
 
     /// Uninstall formulae
     Uninstall {
-        /// Formula names
+        /// Formula/cask names
         formulae: Vec<String>,
 
         /// Ignore dependencies (force uninstall)
         #[arg(long)]
         force: bool,
+
+        /// Uninstall cask instead of formula
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Remove unused dependencies
@@ -369,8 +378,13 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Install {
             formulae,
             only_dependencies,
+            cask,
         }) => {
-            commands::install(&api, &formulae, only_dependencies).await?;
+            if cask {
+                commands::install_cask(&api, &formulae).await?;
+            } else {
+                commands::install(&api, &formulae, only_dependencies).await?;
+            }
         }
         Some(Commands::Upgrade { formulae }) => {
             commands::upgrade(&api, &formulae).await?;
@@ -378,8 +392,12 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Reinstall { formulae }) => {
             commands::reinstall(&api, &formulae).await?;
         }
-        Some(Commands::Uninstall { formulae, force }) => {
-            commands::uninstall(&api, &formulae, force).await?;
+        Some(Commands::Uninstall { formulae, force, cask }) => {
+            if cask {
+                commands::uninstall_cask(&formulae)?;
+            } else {
+                commands::uninstall(&api, &formulae, force).await?;
+            }
         }
         Some(Commands::Autoremove { dry_run }) => {
             commands::autoremove(dry_run)?;

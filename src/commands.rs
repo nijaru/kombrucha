@@ -4,6 +4,7 @@ use crate::error::Result;
 use crate::{download, extract, receipt, symlink};
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
 pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
     println!("{} Searching for: {}", "🔍".bold(), query.cyan());
@@ -3028,5 +3029,229 @@ pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
         println!();
     }
     
+    Ok(())
+}
+
+pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
+    if cask_names.is_empty() {
+        println!("{} No casks specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Installing {} casks...",
+        "📦".bold(),
+        cask_names.len().to_string().bold()
+    );
+
+    for cask_name in cask_names {
+        println!("\n{} Installing cask: {}", "→".bold(), cask_name.cyan());
+
+        // Check if already installed
+        if crate::cask::is_cask_installed(cask_name) {
+            if let Some(version) = crate::cask::get_installed_cask_version(cask_name) {
+                println!("  {} {} is already installed", "✓".green(), cask_name.bold());
+                println!("    Installed version: {}", version.dimmed());
+                continue;
+            }
+        }
+
+        // Fetch cask metadata
+        let cask = match api.fetch_cask(cask_name).await {
+            Ok(c) => c,
+            Err(e) => {
+                println!("  {} Failed to fetch cask: {}", "❌".red(), e);
+                continue;
+            }
+        };
+
+        let version = cask.version.as_ref().ok_or_else(|| anyhow::anyhow!("No version"))?;
+        let url = cask.url.as_ref().ok_or_else(|| anyhow::anyhow!("No download URL"))?;
+
+        println!("  {}: {}", "Version".dimmed(), version.cyan());
+        println!("  {}: {}", "URL".dimmed(), url.dimmed());
+
+        // Extract app artifacts
+        let apps = crate::cask::extract_app_artifacts(&cask.artifacts);
+        if apps.is_empty() {
+            println!("  {} No app artifacts found", "⚠".yellow());
+            continue;
+        }
+
+        println!("  {}: {}", "Apps".dimmed(), apps.join(", ").cyan());
+
+        // Download cask
+        println!("  {} Downloading...", "⬇".bold());
+        let download_path = match crate::cask::download_cask(url, cask_name).await {
+            Ok(p) => p,
+            Err(e) => {
+                println!("  {} Failed to download: {}", "❌".red(), e);
+                continue;
+            }
+        };
+
+        println!("    {} Downloaded to {}", "✓".green(), download_path.display().to_string().dimmed());
+
+        // Handle different file types
+        let filename = download_path.file_name().unwrap().to_string_lossy().to_lowercase();
+
+        if filename.ends_with(".dmg") {
+            // Mount DMG
+            println!("  {} Mounting DMG...", "→".bold());
+            let mount_point = match crate::cask::mount_dmg(&download_path) {
+                Ok(p) => p,
+                Err(e) => {
+                    println!("  {} Failed to mount: {}", "❌".red(), e);
+                    continue;
+                }
+            };
+
+            println!("    {} Mounted at {}", "✓".green(), mount_point.display().to_string().dimmed());
+
+            // Install each app
+            for app_name in &apps {
+                let app_path = mount_point.join(app_name);
+
+                if !app_path.exists() {
+                    println!("    {} App not found: {}", "⚠".yellow(), app_name);
+                    continue;
+                }
+
+                println!("  {} Installing {}...", "→".bold(), app_name.cyan());
+                match crate::cask::install_app(&app_path, app_name) {
+                    Ok(_) => {
+                        println!("    {} Installed to /Applications/{}", "✓".green(), app_name.bold());
+                    }
+                    Err(e) => {
+                        println!("    {} Failed to install: {}", "❌".red(), e);
+                    }
+                }
+            }
+
+            // Unmount DMG
+            println!("  {} Unmounting DMG...", "→".bold());
+            if let Err(e) = crate::cask::unmount_dmg(&mount_point) {
+                println!("    {} Failed to unmount: {}", "⚠".yellow(), e);
+            }
+
+        } else if filename.ends_with(".pkg") {
+            // Install PKG
+            println!("  {} Installing PKG...", "→".bold());
+            match crate::cask::install_pkg(&download_path) {
+                Ok(_) => {
+                    println!("    {} Installed successfully", "✓".green());
+                }
+                Err(e) => {
+                    println!("  {} Failed to install: {}", "❌".red(), e);
+                    continue;
+                }
+            }
+
+        } else if filename.ends_with(".zip") {
+            println!("  {} ZIP installation not yet implemented", "⚠".yellow());
+            continue;
+        } else {
+            println!("  {} Unsupported file type: {}", "⚠".yellow(), filename);
+            continue;
+        }
+
+        // Create Caskroom directory to track installation
+        let cask_dir = crate::cask::cask_install_dir(cask_name, version);
+        std::fs::create_dir_all(&cask_dir)?;
+
+        // Write metadata file
+        let metadata = serde_json::json!({
+            "token": cask_name,
+            "version": version,
+            "installed_apps": apps,
+            "install_time": chrono::Utc::now().timestamp(),
+        });
+        let metadata_path = cask_dir.join(".metadata.json");
+        std::fs::write(&metadata_path, serde_json::to_string_pretty(&metadata)?)?;
+
+        println!("\n  {} Installed {} {}", "✓".green().bold(), cask_name.bold().green(), version.dimmed());
+    }
+
+    println!("\n{} Cask installation complete", "✓".green().bold());
+    Ok(())
+}
+
+pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
+    if cask_names.is_empty() {
+        println!("{} No casks specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Uninstalling {} casks...",
+        "🗑".bold(),
+        cask_names.len().to_string().bold()
+    );
+
+    for cask_name in cask_names {
+        println!("\n{} Uninstalling cask: {}", "→".bold(), cask_name.cyan());
+
+        // Check if installed
+        if !crate::cask::is_cask_installed(cask_name) {
+            println!("  {} {} is not installed", "⚠".yellow(), cask_name.bold());
+            continue;
+        }
+
+        let version = crate::cask::get_installed_cask_version(cask_name)
+            .ok_or_else(|| anyhow::anyhow!("Could not determine version"))?;
+
+        // Read metadata to find installed apps
+        let cask_dir = crate::cask::cask_install_dir(cask_name, &version);
+        let metadata_path = cask_dir.join(".metadata.json");
+
+        let apps = if metadata_path.exists() {
+            let metadata_str = std::fs::read_to_string(&metadata_path)?;
+            let metadata: serde_json::Value = serde_json::from_str(&metadata_str)?;
+
+            if let Some(apps_array) = metadata.get("installed_apps").and_then(|v| v.as_array()) {
+                apps_array
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .collect()
+            } else {
+                Vec::new()
+            }
+        } else {
+            // Fallback: guess app name from cask name
+            vec![format!("{}.app", cask_name.chars().next().unwrap().to_uppercase().to_string() + &cask_name[1..])]
+        };
+
+        // Remove apps from /Applications
+        for app_name in &apps {
+            let app_path = PathBuf::from("/Applications").join(app_name);
+
+            if app_path.exists() {
+                println!("  {} Removing {}...", "🗑".bold(), app_name.cyan());
+
+                match std::fs::remove_dir_all(&app_path) {
+                    Ok(_) => {
+                        println!("    {} Removed {}", "✓".green(), app_name.bold());
+                    }
+                    Err(e) => {
+                        println!("    {} Failed to remove: {}", "❌".red(), e);
+                        println!("    Try: {}", format!("sudo rm -rf {}", app_path.display()).cyan());
+                    }
+                }
+            } else {
+                println!("  {} App not found: {}", "⚠".yellow(), app_name.dimmed());
+            }
+        }
+
+        // Remove Caskroom directory
+        let caskroom_path = crate::cask::caskroom_dir().join(cask_name);
+        if caskroom_path.exists() {
+            std::fs::remove_dir_all(&caskroom_path)?;
+        }
+
+        println!("\n  {} Uninstalled {} {}", "✓".green().bold(), cask_name.bold().green(), version.dimmed());
+    }
+
+    println!("\n{} Cask uninstallation complete", "✓".green().bold());
     Ok(())
 }

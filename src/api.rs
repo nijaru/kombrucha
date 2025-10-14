@@ -73,6 +73,12 @@ pub struct Cask {
     pub homepage: Option<String>,
     #[serde(default)]
     pub version: Option<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub sha256: Option<String>,
+    #[serde(default)]
+    pub artifacts: Vec<serde_json::Value>,
 }
 
 /// Homebrew API client
