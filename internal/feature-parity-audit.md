@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 67 commands implemented
+- **bru**: 69 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 53 commands
+- **Gap**: 51 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (67 commands)
+### ✅ Implemented (69 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -44,6 +44,8 @@
 
 **Utilities**:
 - alias, gist-logs, link, unlink
+- unpack (show source extraction target)
+- command-not-found-init (shell integration)
 
 **Development**:
 - edit (open formula in editor)
