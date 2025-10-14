@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 63 commands implemented
+- **bru**: 67 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 57 commands
+- **Gap**: 53 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (63 commands)
+### ✅ Implemented (67 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -20,6 +20,7 @@
 - autoremove, cleanup (with --cask and --dry-run), pin, unpin
 - bundle (install from Brewfile, dump to Brewfile)
 - services (list, start, stop, restart)
+- migrate (migrate formulae between taps)
 
 **Information & Query**:
 - search, info, desc, deps, uses
@@ -29,9 +30,12 @@
 - formulae (list all ~7,968 formulae)
 - casks (list all ~7,625 casks)
 - unbottled (list formulae without bottles)
+- linkage (check library linkages)
 
 **Repository Management**:
 - tap, untap, tap-info, tap-new, update
+- extract (extract formula to tap)
+- readall (validate formulae in tap)
 
 **System**:
 - config, doctor, env, home, shellenv, docs

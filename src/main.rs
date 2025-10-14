@@ -411,6 +411,41 @@ enum Commands {
         /// Tap name (user/repo format)
         tap: String,
     },
+
+    /// Migrate formulae between taps
+    Migrate {
+        /// Formula name
+        formula: String,
+
+        /// New tap name
+        #[arg(long)]
+        tap: Option<String>,
+    },
+
+    /// Check library linkages for installed formulae
+    Linkage {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+
+        /// Show all files
+        #[arg(long)]
+        all: bool,
+    },
+
+    /// Read and validate all formulae in a tap
+    Readall {
+        /// Tap name (or homebrew/core if empty)
+        tap: Option<String>,
+    },
+
+    /// Extract formula to a tap
+    Extract {
+        /// Formula name
+        formula: String,
+
+        /// Target tap name
+        tap: String,
+    },
 }
 
 #[tokio::main]
@@ -616,6 +651,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::TapNew { tap }) => {
             commands::tap_new(&tap)?;
+        }
+        Some(Commands::Migrate { formula, tap }) => {
+            commands::migrate(&formula, tap.as_deref())?;
+        }
+        Some(Commands::Linkage { formulae, all }) => {
+            commands::linkage(&formulae, all)?;
+        }
+        Some(Commands::Readall { tap }) => {
+            commands::readall(tap.as_deref())?;
+        }
+        Some(Commands::Extract { formula, tap }) => {
+            commands::extract(&formula, &tap)?;
         }
         None => {
             println!(
