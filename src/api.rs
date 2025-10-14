@@ -91,17 +91,37 @@ impl BrewApi {
         Ok(Self { client })
     }
 
-    /// Fetch all formulae (cached by Homebrew API)
+    /// Fetch all formulae (cached locally for 24 hours)
     pub async fn fetch_all_formulae(&self) -> Result<Vec<Formula>> {
+        // Try cache first
+        if let Some(cached) = crate::cache::get_cached_formulae() {
+            return Ok(cached);
+        }
+
+        // Fetch fresh from API
         let url = format!("{}/formula.json", HOMEBREW_API_BASE);
         let formulae = self.client.get(&url).send().await?.json().await?;
+
+        // Store in cache (ignore errors)
+        let _ = crate::cache::store_formulae(&formulae);
+
         Ok(formulae)
     }
 
-    /// Fetch all casks (cached by Homebrew API)
+    /// Fetch all casks (cached locally for 24 hours)
     pub async fn fetch_all_casks(&self) -> Result<Vec<Cask>> {
+        // Try cache first
+        if let Some(cached) = crate::cache::get_cached_casks() {
+            return Ok(cached);
+        }
+
+        // Fetch fresh from API
         let url = format!("{}/cask.json", HOMEBREW_API_BASE);
         let casks = self.client.get(&url).send().await?.json().await?;
+
+        // Store in cache (ignore errors)
+        let _ = crate::cache::store_casks(&casks);
+
         Ok(casks)
     }
 

@@ -2396,3 +2396,66 @@ pub fn log(formula_name: &str) -> Result<()> {
 
     Ok(())
 }
+
+pub fn which_formula(command: &str) -> Result<()> {
+    println!("{} Finding formula for command: {}", "🔍".bold(), command.cyan());
+    
+    let prefix = cellar::detect_prefix();
+    let bin_dir = prefix.join("bin");
+    let command_path = bin_dir.join(command);
+    
+    if !command_path.exists() {
+        println!("\n{} Command '{}' not found in {}", "⚠".yellow(), command.bold(), bin_dir.display());
+        return Ok(());
+    }
+    
+    // Check if it's a symlink
+    if command_path.is_symlink() {
+        if let Ok(target) = std::fs::read_link(&command_path) {
+            // Resolve to absolute path
+            let resolved = if target.is_absolute() {
+                target
+            } else {
+                bin_dir.join(&target).canonicalize().unwrap_or(target)
+            };
+            
+            // Extract formula name from Cellar path
+            let cellar_path = cellar::cellar_path();
+            if resolved.starts_with(&cellar_path) {
+                if let Ok(rel_path) = resolved.strip_prefix(&cellar_path) {
+                    if let Some(formula_name) = rel_path.components().next() {
+                        println!("\n{}", formula_name.as_os_str().to_string_lossy().green().bold());
+                        return Ok(());
+                    }
+                }
+            }
+        }
+    }
+    
+    println!("\n{} Could not determine formula for '{}'", "⚠".yellow(), command.bold());
+    Ok(())
+}
+
+pub async fn options(api: &BrewApi, formula_name: &str) -> Result<()> {
+    println!("{} Checking options for: {}", "🔍".bold(), formula_name.cyan());
+    
+    // Verify formula exists
+    match api.fetch_formula(formula_name).await {
+        Ok(formula) => {
+            println!("\n{}", format!("==> {}", formula.name).bold().green());
+            if let Some(desc) = &formula.desc {
+                println!("{}", desc);
+            }
+            println!();
+            println!("{} No options available", "ℹ".blue());
+            println!();
+            println!("{}", "Bottles are pre-built binaries with fixed options.".dimmed());
+            println!("{}", "For custom builds with options, use `brew install --build-from-source`.".dimmed());
+        }
+        Err(_) => {
+            println!("\n{} Formula '{}' not found", "❌".red(), formula_name);
+        }
+    }
+    
+    Ok(())
+}

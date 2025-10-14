@@ -1,4 +1,5 @@
 mod api;
+mod cache;
 mod cellar;
 mod commands;
 mod download;
@@ -260,6 +261,18 @@ enum Commands {
         /// Formula name
         formula: String,
     },
+
+    /// Find which formula provides a command
+    WhichFormula {
+        /// Command name
+        command: String,
+    },
+
+    /// Show build options for a formula
+    Options {
+        /// Formula name
+        formula: String,
+    },
 }
 
 #[tokio::main]
@@ -396,6 +409,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Log { formula }) => {
             commands::log(&formula)?;
+        }
+        Some(Commands::WhichFormula { command }) => {
+            commands::which_formula(&command)?;
+        }
+        Some(Commands::Options { formula }) => {
+            commands::options(&api, &formula).await?;
         }
         None => {
             println!(
