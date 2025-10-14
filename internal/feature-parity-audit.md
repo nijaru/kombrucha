@@ -4,15 +4,17 @@
 
 ## Current Status
 
-- **bru**: 94 commands implemented
+- **bru**: 100 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 26 commands
+- **Gap**: 20 commands
+
+🎉 **MILESTONE**: 100 commands implemented! 83.3% feature parity achieved.
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (94 commands)
+### ✅ Implemented (100 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -31,6 +33,8 @@
 - casks (list all ~7,625 casks)
 - unbottled (list formulae without bottles)
 - linkage (check library linkages)
+- formula-info (condensed formula info)
+- contributions (contributor statistics)
 
 **Repository Management**:
 - tap, untap, tap-info, tap-new, tap-pin, tap-unpin, update
@@ -52,7 +56,7 @@
 - update-reset (reset tap to latest)
 - style (check formula style with RuboCop - stub)
 
-**Development**:
+**Development/CI:**
 - edit (open formula in editor)
 - create (generate formula template)
 - audit (validate formula files)
@@ -71,10 +75,14 @@
 - dispatch-build-bottle (CI/CD bottle dispatch - stub)
 - bump-formula-pr (create PR to update formula - stub)
 - bump-cask-pr (create PR to update cask - stub)
+- bump-revision (bump formula revision - stub)
 - generate-formula-api (generate formula JSON API - stub)
 - generate-cask-api (generate cask JSON API - stub)
 - pr-pull (download and apply PR - stub)
 - pr-upload (upload bottles for PR - stub)
+- pr-automerge (auto-merge PRs - stub)
+- test-bot (run CI test suite - stub)
+- update-license-data (update SPDX data - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
