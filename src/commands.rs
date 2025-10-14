@@ -3780,22 +3780,138 @@ pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
     
     println!("{} Running post-install for {} formulae...", "🔧".bold(), formula_names.len().to_string().bold());
     println!();
-    
+
     for formula_name in formula_names {
         println!("{} {}", "→".bold(), formula_name.cyan());
-        
+
         // Check if installed
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
             println!("  {} Not installed", "⚠".yellow());
             continue;
         }
-        
+
         // Post-install would run .rb postinstall block
         // For now, this is a stub since we don't have Ruby interop yet
         println!("  {} Post-install not yet implemented", "ℹ".blue());
         println!("  Requires Phase 3 (Ruby interop) to execute formula post-install blocks");
     }
-    
+
+    Ok(())
+}
+
+pub async fn formulae(api: &BrewApi) -> Result<()> {
+    println!("{} Fetching all available formulae...", "📦".bold());
+
+    let all_formulae = api.fetch_all_formulae().await?;
+
+    println!("\n{} {} formulae available\n", "✓".green(), all_formulae.len().to_string().bold());
+
+    // Display in columns like Homebrew
+    let names: Vec<String> = all_formulae.iter().map(|f| f.name.clone()).collect();
+
+    // Calculate column width based on terminal width
+    let term_width = 80; // Default, could use terminal_size crate
+    let max_name_len = names.iter().map(|n| n.len()).max().unwrap_or(0);
+    let col_width = max_name_len + 2;
+    let num_cols = (term_width / col_width).max(1);
+
+    // Print in columns
+    for (i, name) in names.iter().enumerate() {
+        print!("{:<width$}", name, width = col_width);
+        if (i + 1) % num_cols == 0 {
+            println!();
+        }
+    }
+
+    // Final newline if needed
+    if names.len() % num_cols != 0 {
+        println!();
+    }
+
+    Ok(())
+}
+
+pub async fn casks(api: &BrewApi) -> Result<()> {
+    println!("{} Fetching all available casks...", "📦".bold());
+
+    let all_casks = api.fetch_all_casks().await?;
+
+    println!("\n{} {} casks available\n", "✓".green(), all_casks.len().to_string().bold());
+
+    // Display in columns like Homebrew
+    let tokens: Vec<String> = all_casks.iter().map(|c| c.token.clone()).collect();
+
+    // Calculate column width based on terminal width
+    let term_width = 80; // Default
+    let max_token_len = tokens.iter().map(|t| t.len()).max().unwrap_or(0);
+    let col_width = max_token_len + 2;
+    let num_cols = (term_width / col_width).max(1);
+
+    // Print in columns
+    for (i, token) in tokens.iter().enumerate() {
+        print!("{:<width$}", token, width = col_width);
+        if (i + 1) % num_cols == 0 {
+            println!();
+        }
+    }
+
+    // Final newline if needed
+    if tokens.len() % num_cols != 0 {
+        println!();
+    }
+
+    Ok(())
+}
+
+pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+    println!("{} Checking for formulae without bottles...", "🔍".bold());
+
+    let all_formulae = api.fetch_all_formulae().await?;
+
+    // Filter to formulae without bottles
+    let unbottled_formulae: Vec<_> = all_formulae
+        .into_iter()
+        .filter(|f| {
+            // If specific formulae requested, only check those
+            if !formula_names.is_empty() {
+                if !formula_names.contains(&f.name) {
+                    return false;
+                }
+            }
+
+            // Check if formula has no bottle
+            f.bottle.is_none() ||
+            f.bottle.as_ref()
+                .and_then(|b| b.stable.as_ref())
+                .map(|s| s.files.is_empty())
+                .unwrap_or(true)
+        })
+        .collect();
+
+    if unbottled_formulae.is_empty() {
+        if formula_names.is_empty() {
+            println!("\n{} All formulae have bottles", "✓".green());
+        } else {
+            println!("\n{} All specified formulae have bottles", "✓".green());
+        }
+        return Ok(());
+    }
+
+    println!(
+        "\n{} {} formulae without bottles:\n",
+        "ℹ".blue(),
+        unbottled_formulae.len().to_string().bold()
+    );
+
+    // Display as list with descriptions
+    for formula in &unbottled_formulae {
+        print!("{}", formula.name.bold().yellow());
+        if let Some(desc) = &formula.desc {
+            print!(" - {}", desc.dimmed());
+        }
+        println!();
+    }
+
     Ok(())
 }

@@ -390,6 +390,18 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// List all available formulae
+    Formulae,
+
+    /// List all available casks
+    Casks,
+
+    /// List formulae that don't have bottles
+    Unbottled {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -580,6 +592,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Postinstall { formulae }) => {
             commands::postinstall(&formulae)?;
+        }
+        Some(Commands::Formulae) => {
+            commands::formulae(&api).await?;
+        }
+        Some(Commands::Casks) => {
+            commands::casks(&api).await?;
+        }
+        Some(Commands::Unbottled { formulae }) => {
+            commands::unbottled(&api, &formulae).await?;
         }
         None => {
             println!(
