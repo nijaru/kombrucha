@@ -360,55 +360,113 @@ pub async fn list(_api: &BrewApi, show_versions: bool, json: bool) -> Result<()>
     Ok(())
 }
 
-pub async fn outdated(api: &BrewApi) -> Result<()> {
-    println!("{} Checking for outdated packages...", "🔍".bold());
+pub async fn outdated(api: &BrewApi, cask: bool) -> Result<()> {
+    if cask {
+        // Check outdated casks
+        println!("{} Checking for outdated casks...", "🔍".bold());
 
-    let packages = cellar::list_installed()?;
+        let installed_casks = crate::cask::list_installed_casks()?;
 
-    if packages.is_empty() {
-        println!("\n{} No packages installed", "ℹ".blue());
-        return Ok(());
-    }
+        if installed_casks.is_empty() {
+            println!("\n{} No casks installed", "ℹ".blue());
+            return Ok(());
+        }
 
-    // Fetch all formula versions in parallel
-    let fetch_futures: Vec<_> = packages
-        .iter()
-        .map(|pkg| async move {
-            match api.fetch_formula(&pkg.name).await {
-                Ok(formula) => {
-                    if let Some(latest) = &formula.versions.stable {
-                        if latest != &pkg.version {
-                            return Some((pkg.clone(), latest.clone()));
+        // Fetch all cask versions in parallel
+        let fetch_futures: Vec<_> = installed_casks
+            .iter()
+            .map(|(token, installed_version)| {
+                let token = token.clone();
+                let installed_version = installed_version.clone();
+                async move {
+                    match api.fetch_cask(&token).await {
+                        Ok(cask) => {
+                            if let Some(latest) = &cask.version {
+                                if latest != &installed_version {
+                                    return Some((token, installed_version, latest.clone()));
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                    None
+                }
+            })
+            .collect();
+
+        let results = futures::future::join_all(fetch_futures).await;
+        let outdated_casks: Vec<_> = results.into_iter().flatten().collect();
+
+        if outdated_casks.is_empty() {
+            println!("\n{} All casks are up to date", "✓".green());
+            return Ok(());
+        }
+
+        println!(
+            "\n{} Found {} outdated casks:\n",
+            "⚠".yellow(),
+            outdated_casks.len().to_string().bold()
+        );
+
+        for (token, installed, latest) in outdated_casks {
+            println!(
+                "{} {} {}",
+                token.bold().yellow(),
+                installed.dimmed(),
+                format!("→ {}", latest).cyan()
+            );
+        }
+    } else {
+        // Check outdated formulae (existing logic)
+        println!("{} Checking for outdated packages...", "🔍".bold());
+
+        let packages = cellar::list_installed()?;
+
+        if packages.is_empty() {
+            println!("\n{} No packages installed", "ℹ".blue());
+            return Ok(());
+        }
+
+        // Fetch all formula versions in parallel
+        let fetch_futures: Vec<_> = packages
+            .iter()
+            .map(|pkg| async move {
+                match api.fetch_formula(&pkg.name).await {
+                    Ok(formula) => {
+                        if let Some(latest) = &formula.versions.stable {
+                            if latest != &pkg.version {
+                                return Some((pkg.clone(), latest.clone()));
+                            }
                         }
                     }
+                    Err(_) => {}
                 }
-                Err(_) => {}
-            }
-            None
-        })
-        .collect();
+                None
+            })
+            .collect();
 
-    let results = futures::future::join_all(fetch_futures).await;
-    let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
+        let results = futures::future::join_all(fetch_futures).await;
+        let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
 
-    if outdated_packages.is_empty() {
-        println!("\n{} All packages are up to date", "✓".green());
-        return Ok(());
-    }
+        if outdated_packages.is_empty() {
+            println!("\n{} All packages are up to date", "✓".green());
+            return Ok(());
+        }
 
-    println!(
-        "\n{} Found {} outdated packages:\n",
-        "⚠".yellow(),
-        outdated_packages.len().to_string().bold()
-    );
-
-    for (pkg, latest) in outdated_packages {
         println!(
-            "{} {} {}",
-            pkg.name.bold().yellow(),
-            pkg.version.dimmed(),
-            format!("→ {}", latest).cyan()
+            "\n{} Found {} outdated packages:\n",
+            "⚠".yellow(),
+            outdated_packages.len().to_string().bold()
         );
+
+        for (pkg, latest) in outdated_packages {
+            println!(
+                "{} {} {}",
+                pkg.name.bold().yellow(),
+                pkg.version.dimmed(),
+                format!("→ {}", latest).cyan()
+            );
+        }
     }
 
     Ok(())

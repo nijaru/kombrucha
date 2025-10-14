@@ -86,7 +86,11 @@ enum Commands {
     },
 
     /// Show outdated installed packages
-    Outdated,
+    Outdated {
+        /// Check outdated casks instead of formulae
+        #[arg(long)]
+        cask: bool,
+    },
 
     /// Download bottles for formulae
     Fetch {
@@ -399,8 +403,8 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::List { versions, json }) => {
             commands::list(&api, versions, json).await?;
         }
-        Some(Commands::Outdated) => {
-            commands::outdated(&api).await?;
+        Some(Commands::Outdated { cask }) => {
+            commands::outdated(&api, cask).await?;
         }
         Some(Commands::Fetch { formulae }) => {
             commands::fetch(&api, &formulae).await?;
