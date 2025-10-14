@@ -4,22 +4,24 @@
 
 ## Current Status
 
-- **bru**: 41 commands implemented
+- **bru**: 44 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 79 commands
+- **Gap**: 76 commands
 
 ## Command Categories
 
-### ✅ Implemented (41 commands)
+### ✅ Implemented (44 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
 - fetch, list, outdated
 - autoremove, cleanup, pin, unpin
+- bundle (install from Brewfile, dump to Brewfile)
 
 **Information & Query**:
 - search, info, desc, deps, uses
 - leaves, missing, cat, log
+- which-formula, options
 
 **Repository Management**:
 - tap, untap, update
@@ -48,18 +50,21 @@ These are user-facing commands needed for feature parity:
    - `brew outdated --cask` - Check outdated apps
    - Impact: HIGH - ~50% of Homebrew usage on macOS
 
-3. **bundle** - Install from Brewfile
+3. ✅ **bundle** - Install from Brewfile
    - `brew bundle` - Install from Brewfile
    - `brew bundle dump` - Generate Brewfile
    - Impact: HIGH - Team onboarding, reproducibility
+   - Status: IMPLEMENTED
 
-4. **which-formula** - Find which formula provides file
+4. ✅ **which-formula** - Find which formula provides file
    - `brew which-formula <command>` - Find provider
    - Impact: MEDIUM - Useful for debugging
+   - Status: IMPLEMENTED
 
-5. **options** - Show build options for formula
+5. ✅ **options** - Show build options for formula
    - `brew options <formula>` - Show available options
    - Impact: LOW (bottles don't have options)
+   - Status: IMPLEMENTED
 
 ### 🟡 Missing Development Commands (Priority 2)
 
@@ -124,14 +129,14 @@ Developer/CI commands, low user impact:
 ### Path to Feature Parity
 
 **Quick Wins** (1 week):
-1. ✅ Fix search performance (caching layer)
-2. ✅ Implement `which-formula` command
-3. ✅ Implement `options` command (simple - just show "No options")
+1. ✅ Fix search performance (caching layer) - DONE
+2. ✅ Implement `which-formula` command - DONE
+3. ✅ Implement `options` command - DONE
 
 **High-Value Features** (2-3 weeks):
-4. ✅ Services management (launchd integration)
-5. ✅ Bundle/Brewfile support
-6. ✅ Basic cask support (at least info/search)
+4. 🔴 Services management (launchd integration) - TODO
+5. ✅ Bundle/Brewfile support - DONE
+6. ✅ Basic cask support (info/search) - DONE
 
 **Feature Complete** (3-4 weeks):
 7. 🔴 Phase 3: Ruby interop + source builds
