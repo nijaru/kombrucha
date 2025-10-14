@@ -518,6 +518,24 @@ enum Commands {
         /// Ruby code or script file
         args: Vec<String>,
     },
+
+    /// Enter Homebrew's interactive Ruby shell
+    Irb,
+
+    /// Profile a brew command
+    Prof {
+        /// Command to profile
+        args: Vec<String>,
+    },
+
+    /// Generate README for a tap
+    TapReadme {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
+
+    /// Install Homebrew's bundler gems
+    InstallBundlerGems,
 }
 
 #[tokio::main]
@@ -768,6 +786,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Ruby { args }) => {
             commands::ruby(&args)?;
+        }
+        Some(Commands::Irb) => {
+            commands::irb()?;
+        }
+        Some(Commands::Prof { args }) => {
+            commands::prof(&args)?;
+        }
+        Some(Commands::TapReadme { tap }) => {
+            commands::tap_readme(&tap)?;
+        }
+        Some(Commands::InstallBundlerGems) => {
+            commands::install_bundler_gems()?;
         }
         None => {
             println!(

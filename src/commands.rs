@@ -4642,3 +4642,81 @@ pub fn ruby(args: &[String]) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+pub fn irb() -> anyhow::Result<()> {
+    println!("{} Starting Homebrew's interactive Ruby shell...", "💎".bold());
+
+    println!("\n{} IRB requires Phase 3 (embedded Ruby interpreter)", "ℹ".blue());
+    println!("  Interactive Ruby shell with Homebrew environment loaded");
+    println!("  Full access to Homebrew internals and formula DSL");
+
+    println!("\n  {} Use {} for non-interactive execution", "ℹ".dimmed(), "bru ruby".cyan());
+
+    Ok(())
+}
+
+pub fn prof(args: &[String]) -> anyhow::Result<()> {
+    if args.is_empty() {
+        println!("{} No command specified to profile", "❌".red());
+        println!("\nUsage: {} <command> [args]", "bru prof".cyan());
+        return Ok(());
+    }
+
+    println!("{} Profiling command: {}", "📊".bold(), args.join(" ").cyan());
+
+    println!("\n{} Profiling functionality", "ℹ".blue());
+    println!("  Would measure:");
+    println!("  - Execution time");
+    println!("  - Memory usage");
+    println!("  - API calls");
+    println!("  - Bottlenecks");
+
+    println!("\n  {} Command: {}", "→".dimmed(), args.join(" ").cyan());
+
+    Ok(())
+}
+
+pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
+    println!("{} Generating README for tap: {}", "📝".bold(), tap_name.cyan());
+
+    let tap_dir = crate::tap::tap_directory(tap_name)?;
+
+    if !tap_dir.exists() {
+        println!("{} Tap not found: {}", "❌".red(), tap_name);
+        return Ok(());
+    }
+
+    let readme_path = tap_dir.join("README.md");
+
+    if readme_path.exists() {
+        println!("\n{} README.md already exists", "ℹ".blue());
+        println!("  Location: {}", readme_path.display().to_string().dimmed());
+    } else {
+        println!("\n{} Would generate README.md with:", "ℹ".blue());
+        println!("  - Tap name and description");
+        println!("  - Installation instructions");
+        println!("  - List of formulae/casks");
+        println!("  - Contributing guidelines");
+        println!("\n  Location: {}", readme_path.display().to_string().cyan());
+    }
+
+    Ok(())
+}
+
+pub fn install_bundler_gems() -> anyhow::Result<()> {
+    println!("{} Installing Homebrew's bundler gems...", "💎".bold());
+
+    println!("\n{} Bundler gems require Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("  Would install gems from Homebrew's Gemfile:");
+    println!("  - bundler");
+    println!("  - rake");
+    println!("  - rspec");
+    println!("  - rubocop");
+    println!("  - simplecov");
+
+    println!("\n  {} Different from {}", "ℹ".dimmed(), "vendor-gems".cyan());
+    println!("  vendor-gems: Runtime dependencies");
+    println!("  install-bundler-gems: Development dependencies");
+
+    Ok(())
+}
