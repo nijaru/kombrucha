@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 82 commands implemented
+- **bru**: 84 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 38 commands
+- **Gap**: 36 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (82 commands)
+### ✅ Implemented (84 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -41,6 +41,7 @@
 - config, doctor, env, home, shellenv, docs
 - cache, analytics, commands, completions
 - prefix, cellar, repository, formula
+- developer (toggle developer mode)
 
 **Utilities**:
 - alias, gist-logs, link, unlink
@@ -63,6 +64,7 @@
 - irb (interactive Ruby shell - stub)
 - prof (profile commands - stub)
 - tap-readme (generate tap README)
+- typecheck (run Sorbet type checker - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
