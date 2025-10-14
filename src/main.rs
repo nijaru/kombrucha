@@ -273,6 +273,17 @@ enum Commands {
         /// Formula name
         formula: String,
     },
+
+    /// Install or dump Brewfile dependencies
+    Bundle {
+        /// Generate Brewfile from installed packages
+        #[arg(long)]
+        dump: bool,
+
+        /// Path to Brewfile (default: ./Brewfile)
+        #[arg(long)]
+        file: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -415,6 +426,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Options { formula }) => {
             commands::options(&api, &formula).await?;
+        }
+        Some(Commands::Bundle { dump, file }) => {
+            commands::bundle(&api, dump, file.as_deref()).await?;
         }
         None => {
             println!(
