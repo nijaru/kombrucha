@@ -130,6 +130,10 @@ enum Commands {
     Reinstall {
         /// Formula names
         formulae: Vec<String>,
+
+        /// Reinstall casks instead of formulae
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Uninstall formulae
@@ -182,6 +186,10 @@ enum Commands {
         /// Show what would be removed without actually removing
         #[arg(short = 'n', long)]
         dry_run: bool,
+
+        /// Clean up casks instead of formulae
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Manage download cache
@@ -440,8 +448,8 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Upgrade { formulae, cask }) => {
             commands::upgrade(&api, &formulae, cask).await?;
         }
-        Some(Commands::Reinstall { formulae }) => {
-            commands::reinstall(&api, &formulae).await?;
+        Some(Commands::Reinstall { formulae, cask }) => {
+            commands::reinstall(&api, &formulae, cask).await?;
         }
         Some(Commands::Uninstall { formulae, force, cask }) => {
             if cask {
@@ -465,8 +473,8 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Update) => {
             commands::update()?;
         }
-        Some(Commands::Cleanup { formulae, dry_run }) => {
-            commands::cleanup(&formulae, dry_run)?;
+        Some(Commands::Cleanup { formulae, dry_run, cask }) => {
+            commands::cleanup(&formulae, dry_run, cask)?;
         }
         Some(Commands::Cache { clean }) => {
             commands::cache(clean)?;

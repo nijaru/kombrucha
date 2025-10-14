@@ -959,7 +959,12 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> 
     Ok(())
 }
 
-pub async fn reinstall(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()> {
+    if cask {
+        return reinstall_cask(api, names).await;
+    }
+
+    let formula_names = names;
     if formula_names.is_empty() {
         println!("{} No formulae specified", "❌".red());
         return Ok(());
@@ -1451,7 +1456,11 @@ pub fn update() -> Result<()> {
     Ok(())
 }
 
-pub fn cleanup(formula_names: &[String], dry_run: bool) -> Result<()> {
+pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()> {
+    if cask {
+        return cleanup_cask(formula_names, dry_run);
+    }
+
     let all_packages = cellar::list_installed()?;
 
     // Group packages by formula name
@@ -3367,6 +3376,163 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     }
 
     println!("\n{} Cask installation complete", "✓".green().bold());
+    Ok(())
+}
+
+pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
+    if cask_names.is_empty() {
+        println!("{} No casks specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Reinstalling {} casks...",
+        "🔄".bold(),
+        cask_names.len().to_string().bold()
+    );
+
+    for cask_name in cask_names {
+        // Check if installed
+        if !crate::cask::is_cask_installed(cask_name) {
+            println!("  {} {} not installed", "⚠".yellow(), cask_name.bold());
+            continue;
+        }
+
+        println!("  {} Reinstalling {}...", "🔄".bold(), cask_name.cyan());
+
+        // Uninstall
+        uninstall_cask(&[cask_name.clone()])?;
+
+        // Reinstall
+        install_cask(api, &[cask_name.clone()]).await?;
+
+        println!("  {} Reinstalled {}", "✓".green(), cask_name.bold().green());
+    }
+
+    println!("\n{} Cask reinstall complete", "✓".green().bold());
+    Ok(())
+}
+
+pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
+    let caskroom = crate::cask::caskroom_dir();
+
+    if !caskroom.exists() {
+        println!("{} No casks installed", "ℹ".blue());
+        return Ok(());
+    }
+
+    // Get list of casks to clean (all or specified)
+    let to_clean: Vec<String> = if cask_names.is_empty() {
+        // Clean all installed casks
+        std::fs::read_dir(&caskroom)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .filter_map(|e| e.file_name().to_str().map(String::from))
+            .collect()
+    } else {
+        cask_names.to_vec()
+    };
+
+    let mut total_removed = 0;
+    let mut total_space_freed = 0u64;
+
+    if dry_run {
+        println!("{} Dry run - no files will be removed", "ℹ".blue());
+    } else {
+        println!("{} Cleaning up old cask versions...", "🧹".bold());
+    }
+
+    for token in &to_clean {
+        let cask_dir = caskroom.join(token);
+
+        if !cask_dir.exists() {
+            if !cask_names.is_empty() {
+                println!("  {} {} not installed", "⚠".yellow(), token.bold());
+            }
+            continue;
+        }
+
+        // Get all version directories
+        let mut versions: Vec<_> = std::fs::read_dir(&cask_dir)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+
+        if versions.len() <= 1 {
+            continue;
+        }
+
+        // Sort by modification time (newest first)
+        versions.sort_by_key(|e| {
+            e.metadata()
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+        });
+        versions.reverse();
+
+        let latest = &versions[0];
+        let old_versions = &versions[1..];
+
+        for old in old_versions {
+            let version_path = old.path();
+            let version_name = old.file_name();
+
+            // Calculate directory size
+            let size = calculate_dir_size(&version_path)?;
+            total_space_freed += size;
+
+            if dry_run {
+                println!(
+                    "  {} Would remove {} {} ({})",
+                    "→".dimmed(),
+                    token.cyan(),
+                    version_name.to_string_lossy().dimmed(),
+                    format_size(size).dimmed()
+                );
+            } else {
+                println!(
+                    "  {} Removing {} {} ({})",
+                    "🗑".bold(),
+                    token.cyan(),
+                    version_name.to_string_lossy().dimmed(),
+                    format_size(size).dimmed()
+                );
+
+                // Remove the old version directory
+                if version_path.exists() {
+                    std::fs::remove_dir_all(&version_path)?;
+                }
+            }
+
+            total_removed += 1;
+        }
+
+        println!(
+            "    {} Keeping {} {}",
+            "✓".green(),
+            token.bold(),
+            latest.file_name().to_string_lossy().dimmed()
+        );
+    }
+
+    if total_removed == 0 {
+        println!("\n{} No old cask versions to remove", "✓".green());
+    } else if dry_run {
+        println!(
+            "\n{} Would remove {} old cask versions ({})",
+            "ℹ".blue(),
+            total_removed.to_string().bold(),
+            format_size(total_space_freed).bold()
+        );
+    } else {
+        println!(
+            "\n{} Removed {} old cask versions, freed {}",
+            "✓".green().bold(),
+            total_removed.to_string().bold(),
+            format_size(total_space_freed).bold()
+        );
+    }
+
     Ok(())
 }
 
