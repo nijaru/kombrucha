@@ -4,13 +4,13 @@
 
 ## Current Status
 
-- **bru**: 56 commands implemented
+- **bru**: 58 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 64 commands
+- **Gap**: 62 commands
 
 ## Command Categories
 
-### ✅ Implemented (56 commands)
+### ✅ Implemented (58 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
@@ -26,7 +26,7 @@
 - livecheck (check for newer versions)
 
 **Repository Management**:
-- tap, untap, update
+- tap, untap, tap-info, update
 
 **System**:
 - config, doctor, env, home, shellenv
