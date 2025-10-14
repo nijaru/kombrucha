@@ -577,6 +577,55 @@ enum Commands {
         #[arg(long)]
         platform: Option<String>,
     },
+
+    /// Create PR to update a formula
+    BumpFormulaPr {
+        /// Formula name
+        formula: String,
+
+        /// New version
+        #[arg(long)]
+        version: Option<String>,
+
+        /// URL for new version
+        #[arg(long)]
+        url: Option<String>,
+    },
+
+    /// Create PR to update a cask
+    BumpCaskPr {
+        /// Cask name
+        cask: String,
+
+        /// New version
+        #[arg(long)]
+        version: Option<String>,
+    },
+
+    /// Generate formula JSON API
+    GenerateFormulaApi {
+        /// Formula names (or all if empty)
+        formulae: Vec<String>,
+    },
+
+    /// Generate cask JSON API
+    GenerateCaskApi {
+        /// Cask names (or all if empty)
+        casks: Vec<String>,
+    },
+
+    /// Download and apply a pull request
+    PrPull {
+        /// PR number or URL
+        pr: String,
+    },
+
+    /// Upload bottles for a PR
+    PrUpload {
+        /// Upload to Bintray instead of GitHub Releases
+        #[arg(long)]
+        bintray: bool,
+    },
 }
 
 #[tokio::main]
@@ -857,6 +906,24 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::DispatchBuildBottle { formula, platform }) => {
             commands::dispatch_build_bottle(&formula, platform.as_deref())?;
+        }
+        Some(Commands::BumpFormulaPr { formula, version, url }) => {
+            commands::bump_formula_pr(&formula, version.as_deref(), url.as_deref())?;
+        }
+        Some(Commands::BumpCaskPr { cask, version }) => {
+            commands::bump_cask_pr(&cask, version.as_deref())?;
+        }
+        Some(Commands::GenerateFormulaApi { formulae }) => {
+            commands::generate_formula_api(&formulae).await?;
+        }
+        Some(Commands::GenerateCaskApi { casks }) => {
+            commands::generate_cask_api(&casks).await?;
+        }
+        Some(Commands::PrPull { pr }) => {
+            commands::pr_pull(&pr)?;
+        }
+        Some(Commands::PrUpload { bintray }) => {
+            commands::pr_upload(bintray)?;
         }
         None => {
             println!(
