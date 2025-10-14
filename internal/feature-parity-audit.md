@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 78 commands implemented
+- **bru**: 82 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 42 commands
+- **Gap**: 38 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (78 commands)
+### ✅ Implemented (82 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -58,7 +58,11 @@
 - bottle (generate bottle from formula - stub)
 - postinstall (stub - requires Phase 3)
 - vendor-gems (install vendored gems - stub)
+- install-bundler-gems (install bundler gems - stub)
 - ruby (run Homebrew's Ruby - stub)
+- irb (interactive Ruby shell - stub)
+- prof (profile commands - stub)
+- tap-readme (generate tap README)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
