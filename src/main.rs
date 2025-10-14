@@ -120,6 +120,10 @@ enum Commands {
     Upgrade {
         /// Formula names (or all if empty)
         formulae: Vec<String>,
+
+        /// Upgrade casks instead of formulae
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Reinstall formulae
@@ -157,6 +161,12 @@ enum Commands {
 
     /// Remove a tap
     Untap {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
+
+    /// Show tap information
+    TapInfo {
         /// Tap name (user/repo format)
         tap: String,
     },
@@ -427,8 +437,8 @@ async fn main() -> anyhow::Result<()> {
                 commands::install(&api, &formulae, only_dependencies).await?;
             }
         }
-        Some(Commands::Upgrade { formulae }) => {
-            commands::upgrade(&api, &formulae).await?;
+        Some(Commands::Upgrade { formulae, cask }) => {
+            commands::upgrade(&api, &formulae, cask).await?;
         }
         Some(Commands::Reinstall { formulae }) => {
             commands::reinstall(&api, &formulae).await?;
@@ -448,6 +458,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Untap { tap }) => {
             commands::untap(&tap)?;
+        }
+        Some(Commands::TapInfo { tap }) => {
+            commands::tap_info(&tap)?;
         }
         Some(Commands::Update) => {
             commands::update()?;

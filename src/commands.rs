@@ -804,7 +804,13 @@ fn build_runtime_deps(
         .collect()
 }
 
-pub async fn upgrade(api: &BrewApi, formula_names: &[String]) -> Result<()> {
+pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> {
+    if cask {
+        return upgrade_cask(api, names).await;
+    }
+
+    let formula_names = names;
+
     // Determine which formulae to upgrade
     let to_upgrade = if formula_names.is_empty() {
         // Upgrade all outdated
@@ -1295,6 +1301,72 @@ pub fn untap(tap_name: &str) -> Result<()> {
         "✓".green(),
         tap_name.bold().green()
     );
+
+    Ok(())
+}
+
+pub fn tap_info(tap_name: &str) -> Result<()> {
+    println!("{} Tap information for {}", "ℹ".bold(), tap_name.cyan().bold());
+    println!();
+
+    if !crate::tap::is_tapped(tap_name)? {
+        println!("  {} Tap {} is not installed", "⚠".yellow(), tap_name.bold());
+        return Ok(());
+    }
+
+    let tap_dir = crate::tap::tap_directory(tap_name)?;
+
+    println!("{}", "Location:".bold());
+    println!("  {}", tap_dir.display().to_string().cyan());
+    println!();
+
+    // Count formulae in the tap (recursively for letter-organized directories)
+    let formula_dir = tap_dir.join("Formula");
+    let mut formula_count = 0;
+
+    if formula_dir.exists() {
+        fn count_rb_files(dir: &std::path::Path) -> usize {
+            let mut count = 0;
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rb") {
+                        count += 1;
+                    } else if path.is_dir() {
+                        count += count_rb_files(&path);
+                    }
+                }
+            }
+            count
+        }
+        formula_count = count_rb_files(&formula_dir);
+    }
+
+    // Count casks in the tap
+    let casks_dir = tap_dir.join("Casks");
+    let mut cask_count = 0;
+
+    if casks_dir.exists() {
+        fn count_rb_files(dir: &std::path::Path) -> usize {
+            let mut count = 0;
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rb") {
+                        count += 1;
+                    } else if path.is_dir() {
+                        count += count_rb_files(&path);
+                    }
+                }
+            }
+            count
+        }
+        cask_count = count_rb_files(&casks_dir);
+    }
+
+    println!("{}", "Contents:".bold());
+    println!("  {}: {}", "Formulae".dimmed(), formula_count.to_string().cyan());
+    println!("  {}: {}", "Casks".dimmed(), cask_count.to_string().cyan());
 
     Ok(())
 }
@@ -3295,6 +3367,61 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     }
 
     println!("\n{} Cask installation complete", "✓".green().bold());
+    Ok(())
+}
+
+pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
+    // Determine which casks to upgrade
+    let to_upgrade = if cask_names.is_empty() {
+        // Upgrade all outdated casks
+        println!("{} Checking for outdated casks...", "🔍".bold());
+
+        let installed_casks = crate::cask::list_installed_casks()?;
+        let mut outdated = Vec::new();
+
+        for (token, installed_version) in installed_casks {
+            if let Ok(cask) = api.fetch_cask(&token).await
+                && let Some(latest) = &cask.version
+                && latest != &installed_version {
+                    outdated.push(token);
+                }
+        }
+
+        if outdated.is_empty() {
+            println!("\n{} All casks are up to date", "✓".green());
+            return Ok(());
+        }
+
+        println!(
+            "{} {} casks to upgrade: {}",
+            "→".bold(),
+            outdated.len().to_string().bold(),
+            outdated.join(", ").cyan()
+        );
+        outdated
+    } else {
+        cask_names.to_vec()
+    };
+
+    println!(
+        "\n{} Upgrading {} casks...",
+        "⬆".bold(),
+        to_upgrade.len()
+    );
+
+    for cask_name in &to_upgrade {
+        println!("  {} Upgrading {}...", "→".bold(), cask_name.cyan());
+
+        // First uninstall the old version
+        uninstall_cask(&[cask_name.clone()])?;
+
+        // Then install the new version
+        install_cask(api, &[cask_name.clone()]).await?;
+
+        println!("  {} Upgraded {}", "✓".green(), cask_name.bold().green());
+    }
+
+    println!("\n{} Cask upgrade complete", "✓".green().bold());
     Ok(())
 }
 
