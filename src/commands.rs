@@ -4383,3 +4383,120 @@ pub fn command_not_found_init(shell: Option<&str>) -> Result<()> {
 
     Ok(())
 }
+
+pub fn man() -> anyhow::Result<()> {
+    println!("{} Opening Homebrew man page...", "📖".bold());
+
+    let status = std::process::Command::new("man")
+        .arg("brew")
+        .status();
+
+    match status {
+        Ok(exit_status) if exit_status.success() => {
+            Ok(())
+        }
+        Ok(_) => {
+            println!("\n{} Man page not found", "⚠".yellow());
+            println!("  Try: {}", "brew install man-db".cyan());
+            Ok(())
+        }
+        Err(e) => {
+            println!("{} Failed to open man page: {}", "❌".red(), e);
+            println!("\n  Documentation available at: {}", "https://docs.brew.sh".cyan());
+            Ok(())
+        }
+    }
+}
+
+pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
+    let tap = tap_name.unwrap_or("homebrew/core");
+
+    println!("{} Resetting tap: {}", "🔄".bold(), tap.cyan());
+
+    let tap_dir = if tap == "homebrew/core" {
+        cellar::detect_prefix().join("Library/Taps/homebrew/homebrew-core")
+    } else {
+        crate::tap::tap_directory(tap)?
+    };
+
+    if !tap_dir.exists() {
+        println!("{} Tap not found: {}", "❌".red(), tap);
+        return Ok(());
+    }
+
+    let git_dir = tap_dir.join(".git");
+    if !git_dir.exists() {
+        println!("{} Not a git repository: {}", "⚠".yellow(), tap);
+        return Ok(());
+    }
+
+    println!("  {} Fetching latest changes...", "→".bold());
+
+    let fetch_status = std::process::Command::new("git")
+        .current_dir(&tap_dir)
+        .args(["fetch", "origin"])
+        .status()?;
+
+    if !fetch_status.success() {
+        println!("{} Failed to fetch", "❌".red());
+        return Ok(());
+    }
+
+    println!("  {} Resetting to origin/master...", "→".bold());
+
+    let reset_status = std::process::Command::new("git")
+        .current_dir(&tap_dir)
+        .args(["reset", "--hard", "origin/master"])
+        .status()?;
+
+    if !reset_status.success() {
+        let reset_main_status = std::process::Command::new("git")
+            .current_dir(&tap_dir)
+            .args(["reset", "--hard", "origin/main"])
+            .status()?;
+
+        if !reset_main_status.success() {
+            println!("{} Failed to reset", "❌".red());
+            return Ok(());
+        }
+    }
+
+    println!("\n{} Tap reset complete: {}", "✓".green().bold(), tap.bold());
+
+    Ok(())
+}
+
+pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!(
+        "{} Checking style for {} formulae...",
+        "🎨".bold(),
+        formula_names.len().to_string().bold()
+    );
+
+    if fix {
+        println!("  {} Auto-fix enabled", "ℹ".blue());
+    }
+
+    println!("\n{} Style checking requires RuboCop (Phase 3)", "ℹ".blue());
+    println!("  Formula style would be validated against Homebrew standards:");
+    println!("  - Naming conventions");
+    println!("  - Method ordering");
+    println!("  - Spacing and indentation");
+    println!("  - Ruby best practices");
+
+    for formula in formula_names {
+        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("    {} Would check formula style", "ℹ".dimmed());
+    }
+
+    if fix {
+        println!("\n{} Auto-fix would correct violations", "ℹ".blue());
+    }
+
+    Ok(())
+}

@@ -462,6 +462,25 @@ enum Commands {
         /// Shell type
         shell: Option<String>,
     },
+
+    /// Open Homebrew man page
+    Man,
+
+    /// Reset Homebrew/homebrew-core tap to latest
+    UpdateReset {
+        /// Tap name (or homebrew/core if empty)
+        tap: Option<String>,
+    },
+
+    /// Check formula style with RuboCop
+    Style {
+        /// Formula names
+        formulae: Vec<String>,
+
+        /// Fix style violations automatically
+        #[arg(long)]
+        fix: bool,
+    },
 }
 
 #[tokio::main]
@@ -685,6 +704,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::CommandNotFoundInit { shell }) => {
             commands::command_not_found_init(shell.as_deref())?;
+        }
+        Some(Commands::Man) => {
+            commands::man()?;
+        }
+        Some(Commands::UpdateReset { tap }) => {
+            commands::update_reset(tap.as_deref())?;
+        }
+        Some(Commands::Style { formulae, fix }) => {
+            commands::style(&formulae, fix)?;
         }
         None => {
             println!(
