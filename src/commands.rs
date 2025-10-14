@@ -369,17 +369,26 @@ pub async fn outdated(api: &BrewApi) -> Result<()> {
         return Ok(());
     }
 
-    let mut outdated_packages = Vec::new();
-
-    // Check each package against API
-    for pkg in packages {
-        // Fetch current version from API
-        if let Ok(formula) = api.fetch_formula(&pkg.name).await
-            && let Some(latest_version) = &formula.versions.stable
-            && latest_version != &pkg.version {
-                outdated_packages.push((pkg, latest_version.clone()));
+    // Fetch all formula versions in parallel
+    let fetch_futures: Vec<_> = packages
+        .iter()
+        .map(|pkg| async move {
+            match api.fetch_formula(&pkg.name).await {
+                Ok(formula) => {
+                    if let Some(latest) = &formula.versions.stable {
+                        if latest != &pkg.version {
+                            return Some((pkg.clone(), latest.clone()));
+                        }
+                    }
+                }
+                Err(_) => {}
             }
-    }
+            None
+        })
+        .collect();
+
+    let results = futures::future::join_all(fetch_futures).await;
+    let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
 
     if outdated_packages.is_empty() {
         println!("\n{} All packages are up to date", "✓".green());
