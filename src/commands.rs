@@ -3351,8 +3351,40 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             }
 
         } else if filename.ends_with(".zip") {
-            println!("  {} ZIP installation not yet implemented", "⚠".yellow());
-            continue;
+            // Extract ZIP
+            println!("  {} Extracting ZIP...", "→".bold());
+            let extract_dir = match crate::cask::extract_zip(&download_path) {
+                Ok(dir) => {
+                    println!("    {} Extracted to {}", "✓".green(), dir.display().to_string().dimmed());
+                    dir
+                }
+                Err(e) => {
+                    println!("  {} Failed to extract: {}", "❌".red(), e);
+                    continue;
+                }
+            };
+
+            // Install apps from extracted directory
+            for app in &apps {
+                println!("  {} Installing {}...", "→".bold(), app.cyan());
+                let app_path = extract_dir.join(app);
+
+                if !app_path.exists() {
+                    println!("    {} App not found in ZIP: {}", "⚠".yellow(), app);
+                    continue;
+                }
+
+                match crate::cask::install_app(&app_path, app) {
+                    Ok(target) => {
+                        println!("    {} Installed to {}", "✓".green(), target.display().to_string().bold());
+                    }
+                    Err(e) => {
+                        println!("  {} Failed to install: {}", "❌".red(), e);
+                        continue;
+                    }
+                }
+            }
+
         } else {
             println!("  {} Unsupported file type: {}", "⚠".yellow(), filename);
             continue;

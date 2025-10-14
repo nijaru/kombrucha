@@ -202,6 +202,34 @@ pub fn list_installed_casks() -> Result<Vec<(String, String)>> {
     Ok(casks)
 }
 
+/// Extract a ZIP file and return the extraction directory
+pub fn extract_zip(zip_path: &PathBuf) -> Result<PathBuf> {
+    let cache_dir = crate::download::cache_dir();
+    let extract_dir = cache_dir.join(format!("{}_extracted",
+        zip_path.file_stem().unwrap().to_string_lossy()));
+
+    // Remove existing extraction directory if present
+    if extract_dir.exists() {
+        std::fs::remove_dir_all(&extract_dir)?;
+    }
+
+    std::fs::create_dir_all(&extract_dir)?;
+
+    // Extract ZIP file
+    let status = Command::new("unzip")
+        .args(["-q", "-o"]) // quiet, overwrite
+        .arg(zip_path)
+        .arg("-d")
+        .arg(&extract_dir)
+        .status()?;
+
+    if !status.success() {
+        anyhow::bail!("Failed to extract ZIP file");
+    }
+
+    Ok(extract_dir)
+}
+
 /// Quit an application before uninstalling
 pub fn quit_app(bundle_id: &str) -> Result<()> {
     let output = Command::new("osascript")
