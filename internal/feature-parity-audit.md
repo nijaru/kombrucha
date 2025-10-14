@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 58 commands implemented
+- **bru**: 63 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 62 commands
+- **Gap**: 57 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (58 commands)
+### ✅ Implemented (63 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -26,12 +26,15 @@
 - leaves, missing, cat, log
 - which-formula, options
 - livecheck (check for newer versions)
+- formulae (list all ~7,968 formulae)
+- casks (list all ~7,625 casks)
+- unbottled (list formulae without bottles)
 
 **Repository Management**:
-- tap, untap, tap-info, update
+- tap, untap, tap-info, tap-new, update
 
 **System**:
-- config, doctor, env, home, shellenv
+- config, doctor, env, home, shellenv, docs
 - cache, analytics, commands, completions
 - prefix, cellar, repository, formula
 
