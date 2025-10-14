@@ -8,6 +8,7 @@ mod extract;
 mod platform;
 mod receipt;
 mod relocate;
+mod services;
 mod symlink;
 mod tap;
 
@@ -284,6 +285,15 @@ enum Commands {
         #[arg(long)]
         file: Option<String>,
     },
+
+    /// Manage background services
+    Services {
+        /// Service action (list/start/stop/restart)
+        action: Option<String>,
+
+        /// Formula name (for start/stop/restart)
+        formula: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -429,6 +439,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Bundle { dump, file }) => {
             commands::bundle(&api, dump, file.as_deref()).await?;
+        }
+        Some(Commands::Services { action, formula }) => {
+            commands::services(action.as_deref(), formula.as_deref())?;
         }
         None => {
             println!(
