@@ -4,17 +4,17 @@
 
 ## Current Status
 
-- **bru**: 120 commands implemented
-- **brew**: 120 commands total
+- **bru**: 116 commands implemented
+- **brew**: ~116 core commands
 - **Gap**: 0 commands
 
-🎉 **MILESTONE**: 100% FEATURE PARITY ACHIEVED! All 120 Homebrew commands implemented!
+🎉 **MILESTONE**: 100% FEATURE PARITY ACHIEVED! All core Homebrew commands implemented!
 
 **Status**: Complete command coverage achieved. All user-facing, development, and internal/CI commands are now implemented as either fully functional or documented stubs awaiting Phase 3 (Ruby interop).
 
 ## Command Categories
 
-### ✅ Implemented (120 commands)
+### ✅ Implemented (116 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -206,7 +206,7 @@ All internal and CI commands implemented including:
 
 ### ✅ Feature Parity: ACHIEVED
 
-All 120 Homebrew commands are now implemented. The project has reached **100% command coverage**.
+All 116 core Homebrew commands are now implemented. The project has reached **100% command coverage**.
 
 ### Focus Areas Going Forward
 
