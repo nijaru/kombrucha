@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 88 commands implemented
+- **bru**: 94 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 32 commands
+- **Gap**: 26 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (88 commands)
+### ✅ Implemented (94 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -69,6 +69,12 @@
 - update-python-resources (update Python deps - stub)
 - determine-test-runners (detect test framework - stub)
 - dispatch-build-bottle (CI/CD bottle dispatch - stub)
+- bump-formula-pr (create PR to update formula - stub)
+- bump-cask-pr (create PR to update cask - stub)
+- generate-formula-api (generate formula JSON API - stub)
+- generate-cask-api (generate cask JSON API - stub)
+- pr-pull (download and apply PR - stub)
+- pr-upload (upload bottles for PR - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
