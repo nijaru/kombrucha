@@ -708,6 +708,37 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Generate man pages and completions
+    GenerateManCompletions,
+
+    /// Merge bottle metadata
+    BottleMerge {
+        /// Bottle files
+        bottles: Vec<String>,
+    },
+
+    /// Install Homebrew's bundler
+    InstallBundler,
+
+    /// Create a new version bump PR
+    Bump {
+        /// Formula name
+        formula: String,
+
+        /// Options
+        #[arg(long)]
+        no_audit: bool,
+    },
+
+    /// Show analytics state
+    AnalyticsState,
+
+    /// Display GitHub sponsors
+    Sponsor {
+        /// User or org to sponsor
+        target: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -1042,6 +1073,24 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::FixBottleTags { formulae }) => {
             commands::fix_bottle_tags(&formulae)?;
+        }
+        Some(Commands::GenerateManCompletions) => {
+            commands::generate_man_completions()?;
+        }
+        Some(Commands::BottleMerge { bottles }) => {
+            commands::bottle_merge(&bottles)?;
+        }
+        Some(Commands::InstallBundler) => {
+            commands::install_bundler()?;
+        }
+        Some(Commands::Bump { formula, no_audit }) => {
+            commands::bump(&formula, no_audit)?;
+        }
+        Some(Commands::AnalyticsState) => {
+            commands::analytics_state()?;
+        }
+        Some(Commands::Sponsor { target }) => {
+            commands::sponsor(target.as_deref())?;
         }
         None => {
             println!(
