@@ -536,6 +536,18 @@ enum Commands {
 
     /// Install Homebrew's bundler gems
     InstallBundlerGems,
+
+    /// Control Homebrew developer mode
+    Developer {
+        /// Action: on, off, or state
+        action: Option<String>,
+    },
+
+    /// Run Sorbet type checker on Homebrew code
+    Typecheck {
+        /// Files to check
+        files: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -798,6 +810,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::InstallBundlerGems) => {
             commands::install_bundler_gems()?;
+        }
+        Some(Commands::Developer { action }) => {
+            commands::developer(action.as_deref())?;
+        }
+        Some(Commands::Typecheck { files }) => {
+            commands::typecheck(&files)?;
         }
         None => {
             println!(

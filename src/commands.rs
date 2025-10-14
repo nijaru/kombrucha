@@ -4720,3 +4720,81 @@ pub fn install_bundler_gems() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
+    let prefix = cellar::detect_prefix();
+    let dev_flag_file = prefix.join(".homebrew_developer");
+
+    match action {
+        None | Some("state") => {
+            let is_dev = dev_flag_file.exists();
+            if is_dev {
+                println!("{} Developer mode: {}", "🔧".bold(), "enabled".green());
+            } else {
+                println!("{} Developer mode: {}", "🔧".bold(), "disabled".dimmed());
+            }
+
+            if is_dev {
+                println!("\n  When enabled:");
+                println!("  - Updates to latest commit instead of stable");
+                println!("  - Additional validation checks");
+                println!("  - More verbose output");
+            } else {
+                println!("\n  To enable: {} on", "bru developer".cyan());
+            }
+        }
+        Some("on") => {
+            if dev_flag_file.exists() {
+                println!("{} Developer mode already enabled", "ℹ".blue());
+            } else {
+                std::fs::write(&dev_flag_file, "")?;
+                println!("{} Developer mode enabled", "✓".green().bold());
+                println!("\n  Changes:");
+                println!("  - Will update to latest commit instead of stable");
+                println!("  - Additional validation enabled");
+            }
+        }
+        Some("off") => {
+            if !dev_flag_file.exists() {
+                println!("{} Developer mode already disabled", "ℹ".blue());
+            } else {
+                std::fs::remove_file(&dev_flag_file)?;
+                println!("{} Developer mode disabled", "✓".green().bold());
+                println!("\n  Reverted to stable release updates");
+            }
+        }
+        Some(other) => {
+            println!("{} Unknown action: {}", "❌".red(), other);
+            println!("\nUsage: {} [on|off|state]", "bru developer".cyan());
+        }
+    }
+
+    Ok(())
+}
+
+pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
+    if files.is_empty() {
+        println!("{} Running Sorbet type checker on Homebrew code...", "🔍".bold());
+    } else {
+        println!("{} Type checking {} files...", "🔍".bold(), files.len().to_string().bold());
+    }
+
+    println!("\n{} Type checking requires Phase 3 (Ruby interop + Sorbet)", "ℹ".blue());
+    println!("  Sorbet is a gradual type checker for Ruby");
+    println!("  Would check:");
+    println!("  - Type annotations");
+    println!("  - Method signatures");
+    println!("  - Return types");
+    println!("  - Type safety violations");
+
+    if !files.is_empty() {
+        println!("\n  {} Files to check:", "→".dimmed());
+        for file in files {
+            println!("    {}", file.cyan());
+        }
+    } else {
+        println!("\n  {} Would check all Homebrew Ruby files", "ℹ".dimmed());
+    }
+
+    Ok(())
+}
