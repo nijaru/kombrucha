@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 69 commands implemented
+- **bru**: 72 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 51 commands
+- **Gap**: 48 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (69 commands)
+### ✅ Implemented (72 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -46,6 +46,9 @@
 - alias, gist-logs, link, unlink
 - unpack (show source extraction target)
 - command-not-found-init (shell integration)
+- man (open Homebrew man page)
+- update-reset (reset tap to latest)
+- style (check formula style with RuboCop - stub)
 
 **Development**:
 - edit (open formula in editor)
