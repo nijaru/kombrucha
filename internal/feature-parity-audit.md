@@ -8,14 +8,16 @@
 - **brew**: 120 commands total
 - **Gap**: 62 commands
 
+**Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
+
 ## Command Categories
 
 ### ✅ Implemented (58 commands)
 
 **Core Package Management**:
-- install, uninstall, upgrade, reinstall
-- fetch, list, outdated
-- autoremove, cleanup, pin, unpin
+- install, uninstall, upgrade, reinstall (with --cask support)
+- fetch, list, outdated (with --cask support)
+- autoremove, cleanup (with --cask and --dry-run), pin, unpin
 - bundle (install from Brewfile, dump to Brewfile)
 - services (list, start, stop, restart)
 
