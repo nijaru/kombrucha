@@ -4,19 +4,20 @@
 
 ## Current Status
 
-- **bru**: 44 commands implemented
+- **bru**: 45 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 76 commands
+- **Gap**: 75 commands
 
 ## Command Categories
 
-### ✅ Implemented (44 commands)
+### ✅ Implemented (45 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
 - fetch, list, outdated
 - autoremove, cleanup, pin, unpin
 - bundle (install from Brewfile, dump to Brewfile)
+- services (list, start, stop, restart)
 
 **Information & Query**:
 - search, info, desc, deps, uses
@@ -37,12 +38,13 @@
 
 These are user-facing commands needed for feature parity:
 
-1. **services** - Manage background services (postgres, redis, nginx, etc.)
+1. ✅ **services** - Manage background services (postgres, redis, nginx, etc.)
    - `brew services list` - List all services
    - `brew services start <formula>` - Start service
    - `brew services stop <formula>` - Stop service
    - `brew services restart <formula>` - Restart service
    - Impact: HIGH - Many users run databases/services
+   - Status: IMPLEMENTED
 
 2. **Cask support** - Install macOS applications
    - `brew install --cask <app>` - Install GUI app
@@ -134,7 +136,7 @@ Developer/CI commands, low user impact:
 3. ✅ Implement `options` command - DONE
 
 **High-Value Features** (2-3 weeks):
-4. 🔴 Services management (launchd integration) - TODO
+4. ✅ Services management (launchd integration) - DONE
 5. ✅ Bundle/Brewfile support - DONE
 6. ✅ Basic cask support (info/search) - DONE
 
