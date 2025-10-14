@@ -331,6 +331,36 @@ enum Commands {
         /// Formula names
         formulae: Vec<String>,
     },
+
+    /// Display Homebrew install path
+    Prefix {
+        /// Formula name (show formula prefix)
+        formula: Option<String>,
+    },
+
+    /// Display Homebrew Cellar path
+    Cellar {
+        /// Formula name (show formula cellar)
+        formula: Option<String>,
+    },
+
+    /// Display Homebrew repository path
+    Repository {
+        /// Tap name (optional)
+        tap: Option<String>,
+    },
+
+    /// Display formula file path
+    Formula {
+        /// Formula name
+        name: String,
+    },
+
+    /// Run post-install script
+    Postinstall {
+        /// Formula names
+        formulae: Vec<String>,
+    },
 }
 
 #[tokio::main]
@@ -500,6 +530,21 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Audit { formulae }) => {
             commands::audit(&api, &formulae).await?;
+        }
+        Some(Commands::Prefix { formula }) => {
+            commands::prefix(formula.as_deref())?;
+        }
+        Some(Commands::Cellar { formula }) => {
+            commands::cellar_cmd(formula.as_deref())?;
+        }
+        Some(Commands::Repository { tap }) => {
+            commands::repository(tap.as_deref())?;
+        }
+        Some(Commands::Formula { name }) => {
+            commands::formula(&name)?;
+        }
+        Some(Commands::Postinstall { formulae }) => {
+            commands::postinstall(&formulae)?;
         }
         None => {
             println!(

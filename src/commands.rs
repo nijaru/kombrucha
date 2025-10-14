@@ -3255,3 +3255,132 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
     println!("\n{} Cask uninstallation complete", "✓".green().bold());
     Ok(())
 }
+
+pub fn prefix(formula_name: Option<&str>) -> anyhow::Result<()> {
+    let prefix = cellar::detect_prefix();
+    
+    if let Some(name) = formula_name {
+        // Show formula prefix
+        let versions = cellar::get_installed_versions(name)?;
+        if versions.is_empty() {
+            anyhow::bail!("Formula '{}' is not installed", name);
+        }
+        
+        let version = &versions[0].version;
+        let formula_prefix = cellar::cellar_path().join(name).join(version);
+        
+        println!("{}", formula_prefix.display());
+    } else {
+        // Show Homebrew prefix
+        println!("{}", prefix.display());
+    }
+    
+    Ok(())
+}
+
+pub fn cellar_cmd(formula_name: Option<&str>) -> anyhow::Result<()> {
+    let cellar = cellar::cellar_path();
+    
+    if let Some(name) = formula_name {
+        // Show formula cellar
+        println!("{}", cellar.join(name).display());
+    } else {
+        // Show Cellar path
+        println!("{}", cellar.display());
+    }
+    
+    Ok(())
+}
+
+pub fn repository(tap_name: Option<&str>) -> anyhow::Result<()> {
+    let prefix = cellar::detect_prefix();
+    
+    if let Some(tap) = tap_name {
+        // Show tap repository path
+        let tap_path = crate::tap::tap_directory(tap)?;
+        println!("{}", tap_path.display());
+    } else {
+        // Show main repository path (homebrew-core)
+        let repo = prefix.join("Library/Taps/homebrew/homebrew-core");
+        println!("{}", repo.display());
+    }
+    
+    Ok(())
+}
+
+pub fn formula(formula_name: &str) -> anyhow::Result<()> {
+    let prefix = cellar::detect_prefix();
+    let taps_dir = prefix.join("Library/Taps");
+    
+    // Try to find formula file
+    let first_letter = formula_name.chars().next().unwrap_or('a').to_lowercase().to_string();
+    let core_formula_letter = taps_dir
+        .join("homebrew/homebrew-core/Formula")
+        .join(&first_letter)
+        .join(format!("{}.rb", formula_name));
+    let core_formula_flat = taps_dir
+        .join("homebrew/homebrew-core/Formula")
+        .join(format!("{}.rb", formula_name));
+    
+    if core_formula_letter.exists() {
+        println!("{}", core_formula_letter.display());
+    } else if core_formula_flat.exists() {
+        println!("{}", core_formula_flat.display());
+    } else {
+        // Search all taps
+        let mut found = false;
+        if taps_dir.exists() {
+            for tap_entry in std::fs::read_dir(&taps_dir)?.flatten() {
+                let tap_path = tap_entry.path();
+                if tap_path.is_dir() {
+                    for repo_entry in std::fs::read_dir(&tap_path)?.flatten() {
+                        let repo_path = repo_entry.path();
+                        let fp = repo_path.join("Formula").join(format!("{}.rb", formula_name));
+                        if fp.exists() {
+                            println!("{}", fp.display());
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if found {
+                    break;
+                }
+            }
+        }
+        
+        if !found {
+            anyhow::bail!("Formula '{}' not found", formula_name);
+        }
+    }
+    
+    Ok(())
+}
+
+pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+    
+    println!("{} Running post-install for {} formulae...", "🔧".bold(), formula_names.len().to_string().bold());
+    println!();
+    
+    for formula_name in formula_names {
+        println!("{} {}", "→".bold(), formula_name.cyan());
+        
+        // Check if installed
+        let versions = cellar::get_installed_versions(formula_name)?;
+        if versions.is_empty() {
+            println!("  {} Not installed", "⚠".yellow());
+            continue;
+        }
+        
+        // Post-install would run .rb postinstall block
+        // For now, this is a stub since we don't have Ruby interop yet
+        println!("  {} Post-install not yet implemented", "ℹ".blue());
+        println!("  Requires Phase 3 (Ruby interop) to execute formula post-install blocks");
+    }
+    
+    Ok(())
+}
