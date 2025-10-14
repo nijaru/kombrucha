@@ -4,13 +4,13 @@
 
 ## Current Status
 
-- **bru**: 45 commands implemented
+- **bru**: 49 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 75 commands
+- **Gap**: 71 commands
 
 ## Command Categories
 
-### ✅ Implemented (45 commands)
+### ✅ Implemented (49 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
@@ -23,6 +23,7 @@
 - search, info, desc, deps, uses
 - leaves, missing, cat, log
 - which-formula, options
+- livecheck (check for newer versions)
 
 **Repository Management**:
 - tap, untap, update
@@ -33,6 +34,11 @@
 
 **Utilities**:
 - alias, gist-logs, link, unlink
+
+**Development**:
+- edit (open formula in editor)
+- create (generate formula template)
+- audit (validate formula files)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
@@ -72,20 +78,25 @@ These are user-facing commands needed for feature parity:
 
 Useful for formula developers:
 
-6. **create** - Create new formula
+6. ✅ **create** - Create new formula
    - `brew create <url>` - Generate formula template
+   - Status: IMPLEMENTED
 
-7. **edit** - Edit formula in editor
+7. ✅ **edit** - Edit formula in editor
    - `brew edit <formula>` - Open formula in $EDITOR
+   - Status: IMPLEMENTED
 
 8. **test** - Run formula tests
    - `brew test <formula>` - Run test suite
+   - Status: Requires Phase 3 (Ruby interop)
 
-9. **audit** - Check formula for issues
+9. ✅ **audit** - Check formula for issues
    - `brew audit <formula>` - Lint formula
+   - Status: IMPLEMENTED (basic checks)
 
-10. **livecheck** - Check for newer versions
+10. ✅ **livecheck** - Check for newer versions
     - `brew livecheck <formula>` - Check upstream
+    - Status: IMPLEMENTED (placeholder)
 
 ### 🟢 Missing Internal Commands (Priority 3)
 
