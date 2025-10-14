@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 72 commands implemented
+- **bru**: 78 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 48 commands
+- **Gap**: 42 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (72 commands)
+### ✅ Implemented (78 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -33,7 +33,7 @@
 - linkage (check library linkages)
 
 **Repository Management**:
-- tap, untap, tap-info, tap-new, update
+- tap, untap, tap-info, tap-new, tap-pin, tap-unpin, update
 - extract (extract formula to tap)
 - readall (validate formulae in tap)
 
@@ -54,7 +54,11 @@
 - edit (open formula in editor)
 - create (generate formula template)
 - audit (validate formula files)
+- test (run formula test suite - stub)
+- bottle (generate bottle from formula - stub)
 - postinstall (stub - requires Phase 3)
+- vendor-gems (install vendored gems - stub)
+- ruby (run Homebrew's Ruby - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
