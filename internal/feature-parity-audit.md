@@ -4,15 +4,15 @@
 
 ## Current Status
 
-- **bru**: 84 commands implemented
+- **bru**: 88 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 36 commands
+- **Gap**: 32 commands
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (84 commands)
+### ✅ Implemented (88 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -36,6 +36,7 @@
 - tap, untap, tap-info, tap-new, tap-pin, tap-unpin, update
 - extract (extract formula to tap)
 - readall (validate formulae in tap)
+- update-report (show changes from last update)
 
 **System**:
 - config, doctor, env, home, shellenv, docs
@@ -65,6 +66,9 @@
 - prof (profile commands - stub)
 - tap-readme (generate tap README)
 - typecheck (run Sorbet type checker - stub)
+- update-python-resources (update Python deps - stub)
+- determine-test-runners (detect test framework - stub)
+- dispatch-build-bottle (CI/CD bottle dispatch - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
