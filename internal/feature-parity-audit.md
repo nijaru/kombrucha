@@ -57,9 +57,9 @@ These are user-facing commands needed for feature parity:
 2. ✅ **Cask support** - Install macOS applications
    - `brew install --cask <app>` - Install GUI app
    - `brew uninstall --cask <app>` - Remove app
-   - `brew outdated --cask` - Check outdated apps (pending)
+   - `brew outdated --cask` - Check outdated apps
    - Impact: HIGH - ~50% of Homebrew usage on macOS
-   - Status: IMPLEMENTED (install/uninstall working, outdated pending)
+   - Status: FULLY IMPLEMENTED
 
 3. ✅ **bundle** - Install from Brewfile
    - `brew bundle` - Install from Brewfile
@@ -152,7 +152,7 @@ Developer/CI commands, low user impact:
 **High-Value Features** (2-3 weeks):
 4. ✅ Services management (launchd integration) - DONE
 5. ✅ Bundle/Brewfile support - DONE
-6. ✅ Basic cask support (info/search) - DONE
+6. ✅ Full cask support (install/uninstall/outdated) - DONE
 
 **Feature Complete** (3-4 weeks):
 7. 🔴 Phase 3: Ruby interop + source builds
