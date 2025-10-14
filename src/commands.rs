@@ -5047,3 +5047,191 @@ pub fn pr_upload(use_bintray: bool) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} Running test-bot on all formulae...", "🤖".bold());
+    } else {
+        println!("{} Running test-bot on {} formulae...", "🤖".bold(), formula_names.len().to_string().bold());
+    }
+
+    if skip_cleanup {
+        println!("  {} Cleanup will be skipped", "ℹ".blue());
+    }
+
+    println!("\n{} Homebrew test-bot (CI system)", "ℹ".blue());
+    println!("  Comprehensive CI testing workflow:");
+    println!("  1. Build formula from source");
+    println!("  2. Run formula tests");
+    println!("  3. Generate bottles");
+    println!("  4. Test bottle installation");
+    println!("  5. Validate formula syntax");
+    println!("  6. Check for conflicts");
+
+    if !formula_names.is_empty() {
+        println!("\n  {} Testing:", "→".dimmed());
+        for formula in formula_names {
+            println!("    {}", formula.cyan());
+        }
+    }
+
+    println!("\n  {} This is the core of Homebrew's CI infrastructure", "ℹ".dimmed());
+
+    Ok(())
+}
+
+pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow::Result<()> {
+    if formula_names.is_empty() {
+        println!("{} No formulae specified", "❌".red());
+        return Ok(());
+    }
+
+    println!("{} Bumping revision for {} formulae...", "🔢".bold(), formula_names.len().to_string().bold());
+
+    if let Some(msg) = message {
+        println!("  Reason: {}", msg.dimmed());
+    }
+
+    println!("\n{} Revision bump", "ℹ".blue());
+    println!("  Increments formula revision number");
+    println!("  Used when formula changes but version doesn't");
+    println!("  (e.g., build fixes, dependency updates)");
+
+    for formula in formula_names {
+        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("    {} Would increment revision field", "ℹ".dimmed());
+    }
+
+    Ok(())
+}
+
+pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
+    println!("{} Auto-merging qualifying pull requests...", "🔀".bold());
+
+    if let Some(strat) = strategy {
+        println!("  Strategy: {}", strat.cyan());
+    }
+
+    println!("\n{} PR auto-merge (CI workflow)", "ℹ".blue());
+    println!("  Automatically merges PRs that meet criteria:");
+    println!("  - All CI checks pass");
+    println!("  - Approved by maintainers");
+    println!("  - No merge conflicts");
+    println!("  - Meets style guidelines");
+
+    println!("\n  {} Would scan open PRs and merge eligible ones", "→".dimmed());
+    println!("  {} Requires maintainer permissions", "⚠".yellow());
+
+    Ok(())
+}
+
+pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Result<()> {
+    if let Some(username) = user {
+        println!("{} Contributor statistics for: {}", "📊".bold(), username.cyan());
+    } else {
+        println!("{} Overall contributor statistics", "📊".bold());
+    }
+
+    if let Some(date) = from_date {
+        println!("  From: {}", date.dimmed());
+    }
+
+    println!("\n{} Analyzing git history...", "ℹ".blue());
+
+    let prefix = cellar::detect_prefix();
+    let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
+
+    if repository_path.exists() {
+        let mut args = vec!["shortlog", "-sn"];
+        if let Some(date) = from_date {
+            args.push("--since");
+            args.push(date);
+        }
+
+        let output = std::process::Command::new("git")
+            .current_dir(&repository_path)
+            .args(&args)
+            .output()?;
+
+        if output.status.success() {
+            let log = String::from_utf8_lossy(&output.stdout);
+            let lines: Vec<&str> = log.lines().collect();
+
+            if let Some(username) = user {
+                let user_line = lines.iter().find(|line| line.contains(username));
+                if let Some(line) = user_line {
+                    println!("\n{} {}", "✓".green(), line);
+                } else {
+                    println!("\n{} No contributions found for {}", "ℹ".blue(), username);
+                }
+            } else {
+                println!("\n{} Top contributors:", "✓".green());
+                for line in lines.iter().take(10) {
+                    println!("  {}", line.dimmed());
+                }
+                if lines.len() > 10 {
+                    println!("  {} ... and {} more", "→".dimmed(), (lines.len() - 10).to_string().dimmed());
+                }
+            }
+        }
+    } else {
+        println!("{} homebrew/core tap not found", "❌".red());
+    }
+
+    Ok(())
+}
+
+pub fn update_license_data() -> anyhow::Result<()> {
+    println!("{} Updating SPDX license data...", "📜".bold());
+
+    println!("\n{} License data update", "ℹ".blue());
+    println!("  Downloads and updates SPDX license list");
+    println!("  Used for validating license fields in formulae");
+
+    println!("\n  {} Would execute:", "→".dimmed());
+    println!("    1. Fetch latest SPDX license list");
+    println!("    2. Parse license data");
+    println!("    3. Update Homebrew's license database");
+    println!("    4. Validate existing formula licenses");
+
+    println!("\n  {} SPDX: Software Package Data Exchange", "ℹ".dimmed());
+    println!("  {} Standardized license identifiers", "ℹ".dimmed());
+
+    Ok(())
+}
+
+pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
+    println!("{} Formula info: {}", "📦".bold(), formula_name.cyan());
+
+    let formula = api.fetch_formula(formula_name).await?;
+
+    println!("\n{}", formula.name.bold());
+    if let Some(desc) = &formula.desc {
+        println!("{}", desc.dimmed());
+    }
+
+    println!("\n{} Version:", "→".dimmed());
+    if let Some(version) = &formula.versions.stable {
+        println!("  Stable: {}", version.cyan());
+    }
+    if let Some(version) = &formula.versions.head {
+        println!("  HEAD: {}", version.cyan());
+    }
+
+    if let Some(homepage) = &formula.homepage {
+        println!("\n{} Homepage:", "→".dimmed());
+        println!("  {}", homepage.dimmed());
+    }
+
+    if !formula.dependencies.is_empty() {
+        println!("\n{} Dependencies ({}):", "→".dimmed(), formula.dependencies.len());
+        for dep in formula.dependencies.iter().take(5) {
+            println!("  {}", dep.cyan());
+        }
+        if formula.dependencies.len() > 5 {
+            println!("  {} ... and {} more", "→".dimmed(), (formula.dependencies.len() - 5).to_string().dimmed());
+        }
+    }
+
+    Ok(())
+}

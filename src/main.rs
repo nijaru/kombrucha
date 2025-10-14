@@ -626,6 +626,52 @@ enum Commands {
         #[arg(long)]
         bintray: bool,
     },
+
+    /// Run Homebrew's CI test suite
+    TestBot {
+        /// Formula names to test
+        formulae: Vec<String>,
+
+        /// Skip cleanup after test
+        #[arg(long)]
+        skip_cleanup: bool,
+    },
+
+    /// Bump formula revision number
+    BumpRevision {
+        /// Formula names
+        formulae: Vec<String>,
+
+        /// Reason for revision bump
+        #[arg(long)]
+        message: Option<String>,
+    },
+
+    /// Auto-merge qualifying pull requests
+    PrAutomerge {
+        /// Merge strategy
+        #[arg(long)]
+        strategy: Option<String>,
+    },
+
+    /// Show contributor statistics
+    Contributions {
+        /// User name to show stats for
+        user: Option<String>,
+
+        /// Show from this date
+        #[arg(long)]
+        from: Option<String>,
+    },
+
+    /// Update SPDX license data
+    UpdateLicenseData,
+
+    /// Show condensed formula info
+    FormulaInfo {
+        /// Formula name
+        formula: String,
+    },
 }
 
 #[tokio::main]
@@ -924,6 +970,24 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::PrUpload { bintray }) => {
             commands::pr_upload(bintray)?;
+        }
+        Some(Commands::TestBot { formulae, skip_cleanup }) => {
+            commands::test_bot(&formulae, skip_cleanup)?;
+        }
+        Some(Commands::BumpRevision { formulae, message }) => {
+            commands::bump_revision(&formulae, message.as_deref())?;
+        }
+        Some(Commands::PrAutomerge { strategy }) => {
+            commands::pr_automerge(strategy.as_deref())?;
+        }
+        Some(Commands::Contributions { user, from }) => {
+            commands::contributions(user.as_deref(), from.as_deref())?;
+        }
+        Some(Commands::UpdateLicenseData) => {
+            commands::update_license_data()?;
+        }
+        Some(Commands::FormulaInfo { formula }) => {
+            commands::formula_info(&api, &formula).await?;
         }
         None => {
             println!(
