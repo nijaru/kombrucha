@@ -290,71 +290,113 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn list(_api: &BrewApi, show_versions: bool, json: bool) -> Result<()> {
-    let packages = cellar::list_installed()?;
+pub async fn list(_api: &BrewApi, show_versions: bool, json: bool, cask: bool) -> Result<()> {
+    if cask {
+        // List installed casks
+        let casks = crate::cask::list_installed_casks()?;
 
-    if json {
-        // Output as JSON
-        #[derive(serde::Serialize)]
-        struct PackageInfo {
-            name: String,
-            versions: Vec<String>,
-        }
-
-        // Group by formula name
-        let mut by_name: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
-        for pkg in packages {
-            by_name.entry(pkg.name.clone()).or_default().push(pkg.version.clone());
-        }
-
-        let mut package_list: Vec<PackageInfo> = by_name
-            .into_iter()
-            .map(|(name, versions)| PackageInfo { name, versions })
-            .collect();
-
-        package_list.sort_by(|a, b| a.name.cmp(&b.name));
-
-        let json_str = serde_json::to_string_pretty(&package_list)?;
-        println!("{}", json_str);
-    } else {
-        println!("{} Installed packages:", "📦".bold());
-
-        if packages.is_empty() {
-            println!("\n{} No packages installed", "ℹ".blue());
-            return Ok(());
-        }
-
-        // Group by formula name
-        let mut by_name: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
-        for pkg in packages {
-            by_name.entry(pkg.name.clone()).or_default().push(pkg);
-        }
-
-        let mut names: Vec<_> = by_name.keys().cloned().collect();
-        names.sort();
-
-        println!();
-        for name in names {
-            let versions = &by_name[&name];
-
-            if show_versions && versions.len() > 1 {
-                println!("{}", name.bold().green());
-                for pkg in versions {
-                    println!("  {}", pkg.version);
-                }
-            } else {
-                // Just show the first version (usually only one)
-                let pkg = &versions[0];
-                print!("{}", name.bold().green());
-                println!(" {}", pkg.version.dimmed());
+        if json {
+            // Output as JSON
+            #[derive(serde::Serialize)]
+            struct CaskInfo {
+                token: String,
+                version: String,
             }
-        }
 
-        println!(
-            "\n{} {} packages installed",
-            "✓".green(),
-            by_name.len().to_string().bold()
-        );
+            let cask_list: Vec<CaskInfo> = casks
+                .into_iter()
+                .map(|(token, version)| CaskInfo { token, version })
+                .collect();
+
+            let json_str = serde_json::to_string_pretty(&cask_list)?;
+            println!("{}", json_str);
+        } else {
+            println!("{} Installed casks:", "📦".bold());
+
+            if casks.is_empty() {
+                println!("\n{} No casks installed", "ℹ".blue());
+                return Ok(());
+            }
+
+            println!();
+            for (token, version) in &casks {
+                print!("{}", token.bold().green());
+                println!(" {}", version.dimmed());
+            }
+
+            println!(
+                "\n{} {} casks installed",
+                "✓".green(),
+                casks.len().to_string().bold()
+            );
+        }
+    } else {
+        // List installed formulae (existing logic)
+        let packages = cellar::list_installed()?;
+
+        if json {
+            // Output as JSON
+            #[derive(serde::Serialize)]
+            struct PackageInfo {
+                name: String,
+                versions: Vec<String>,
+            }
+
+            // Group by formula name
+            let mut by_name: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
+            for pkg in packages {
+                by_name.entry(pkg.name.clone()).or_default().push(pkg.version.clone());
+            }
+
+            let mut package_list: Vec<PackageInfo> = by_name
+                .into_iter()
+                .map(|(name, versions)| PackageInfo { name, versions })
+                .collect();
+
+            package_list.sort_by(|a, b| a.name.cmp(&b.name));
+
+            let json_str = serde_json::to_string_pretty(&package_list)?;
+            println!("{}", json_str);
+        } else {
+            println!("{} Installed packages:", "📦".bold());
+
+            if packages.is_empty() {
+                println!("\n{} No packages installed", "ℹ".blue());
+                return Ok(());
+            }
+
+            // Group by formula name
+            let mut by_name: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
+            for pkg in packages {
+                by_name.entry(pkg.name.clone()).or_default().push(pkg);
+            }
+
+            let mut names: Vec<_> = by_name.keys().cloned().collect();
+            names.sort();
+
+            println!();
+            for name in names {
+                let versions = &by_name[&name];
+
+                if show_versions && versions.len() > 1 {
+                    println!("{}", name.bold().green());
+                    for pkg in versions {
+                        println!("  {}", pkg.version);
+                    }
+                } else {
+                    // Just show the first version (usually only one)
+                    let pkg = &versions[0];
+                    print!("{}", name.bold().green());
+                    println!(" {}", pkg.version.dimmed());
+                }
+            }
+
+            println!(
+                "\n{} {} packages installed",
+                "✓".green(),
+                by_name.len().to_string().bold()
+            );
+        }
     }
 
     Ok(())
@@ -1578,6 +1620,28 @@ pub fn config() -> Result<()> {
     println!("  {}: {}", "Version".dimmed(), env!("CARGO_PKG_VERSION").cyan());
     println!("  {}: {}", "Architecture".dimmed(), std::env::consts::ARCH.cyan());
     println!("  {}: {}", "OS".dimmed(), std::env::consts::OS.cyan());
+
+    Ok(())
+}
+
+pub fn env() -> Result<()> {
+    let prefix = cellar::detect_prefix();
+    let cellar = cellar::cellar_path();
+    let cache = crate::download::cache_dir();
+    let taps = crate::tap::taps_path();
+    let logs = prefix.join("var/log");
+    let caskroom = crate::cask::caskroom_dir();
+
+    println!("HOMEBREW_PREFIX=\"{}\"", prefix.display());
+    println!("HOMEBREW_CELLAR=\"{}\"", cellar.display());
+    println!("HOMEBREW_REPOSITORY=\"{}\"", prefix.display());
+    println!("HOMEBREW_CACHE=\"{}\"", cache.display());
+    println!("HOMEBREW_TAPS=\"{}\"", taps.display());
+    println!("HOMEBREW_LOGS=\"{}\"", logs.display());
+    println!("HOMEBREW_CASKROOM=\"{}\"", caskroom.display());
+    println!("HOMEBREW_ARCH=\"{}\"", std::env::consts::ARCH);
+    println!("HOMEBREW_OS=\"{}\"", std::env::consts::OS);
+    println!("HOMEBREW_VERSION=\"{}\"", env!("CARGO_PKG_VERSION"));
 
     Ok(())
 }

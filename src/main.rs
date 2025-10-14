@@ -83,6 +83,10 @@ enum Commands {
         /// Output as JSON
         #[arg(long)]
         json: bool,
+
+        /// List casks instead of formulae
+        #[arg(long)]
+        cask: bool,
     },
 
     /// Show outdated installed packages
@@ -182,6 +186,9 @@ enum Commands {
 
     /// Check system for potential problems
     Doctor,
+
+    /// Show Homebrew environment variables
+    Env,
 
     /// Open formula homepage in browser
     Home {
@@ -400,8 +407,8 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Uses { formula }) => {
             commands::uses(&api, &formula).await?;
         }
-        Some(Commands::List { versions, json }) => {
-            commands::list(&api, versions, json).await?;
+        Some(Commands::List { versions, json, cask }) => {
+            commands::list(&api, versions, json, cask).await?;
         }
         Some(Commands::Outdated { cask }) => {
             commands::outdated(&api, cask).await?;
@@ -456,6 +463,9 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Doctor) => {
             commands::doctor()?;
+        }
+        Some(Commands::Env) => {
+            commands::env()?;
         }
         Some(Commands::Home { formula }) => {
             commands::home(&api, &formula).await?;
