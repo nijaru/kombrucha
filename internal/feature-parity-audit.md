@@ -4,13 +4,13 @@
 
 ## Current Status
 
-- **bru**: 54 commands implemented
+- **bru**: 56 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 66 commands
+- **Gap**: 64 commands
 
 ## Command Categories
 
-### ✅ Implemented (54 commands)
+### ✅ Implemented (56 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
@@ -29,7 +29,7 @@
 - tap, untap, update
 
 **System**:
-- config, doctor, home, shellenv
+- config, doctor, env, home, shellenv
 - cache, analytics, commands, completions
 - prefix, cellar, repository, formula
 
