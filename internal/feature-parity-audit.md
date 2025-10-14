@@ -4,13 +4,13 @@
 
 ## Current Status
 
-- **bru**: 49 commands implemented
+- **bru**: 54 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 71 commands
+- **Gap**: 66 commands
 
 ## Command Categories
 
-### ✅ Implemented (49 commands)
+### ✅ Implemented (54 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall
@@ -31,6 +31,7 @@
 **System**:
 - config, doctor, home, shellenv
 - cache, analytics, commands, completions
+- prefix, cellar, repository, formula
 
 **Utilities**:
 - alias, gist-logs, link, unlink
@@ -39,6 +40,7 @@
 - edit (open formula in editor)
 - create (generate formula template)
 - audit (validate formula files)
+- postinstall (stub - requires Phase 3)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
@@ -104,7 +106,7 @@ Useful for formula developers:
 Developer/CI commands, low user impact:
 
 - bump-*, pr-*, test-bot, generate-*
-- bottle, unbottled, postinstall
+- bottle, unbottled
 - ruby, irb, debugger
 - update-*, vendor-*, readall
 - etc. (~60 commands)
