@@ -4,17 +4,17 @@
 
 ## Current Status
 
-- **bru**: 100 commands implemented
+- **bru**: 106 commands implemented
 - **brew**: 120 commands total
-- **Gap**: 20 commands
+- **Gap**: 14 commands
 
-🎉 **MILESTONE**: 100 commands implemented! 83.3% feature parity achieved.
+🎉 **MILESTONE**: 88.3% feature parity achieved! Only 14 commands remaining.
 
 **Note**: All Priority 1 (Critical) and Priority 2 (Development) commands are now implemented. Remaining gap consists primarily of internal/CI commands with low user impact.
 
 ## Command Categories
 
-### ✅ Implemented (100 commands)
+### ✅ Implemented (106 commands)
 
 **Core Package Management**:
 - install, uninstall, upgrade, reinstall (with --cask support)
@@ -35,12 +35,15 @@
 - linkage (check library linkages)
 - formula-info (condensed formula info)
 - contributions (contributor statistics)
+- uses-cask (cask usage statistics)
+- abv-cask (cask info alias)
 
 **Repository Management**:
 - tap, untap, tap-info, tap-new, tap-pin, tap-unpin, update
 - extract (extract formula to tap)
 - readall (validate formulae in tap)
 - update-report (show changes from last update)
+- tap-cmd (run external tap command)
 
 **System**:
 - config, doctor, env, home, shellenv, docs
@@ -83,6 +86,9 @@
 - pr-automerge (auto-merge PRs - stub)
 - test-bot (run CI test suite - stub)
 - update-license-data (update SPDX data - stub)
+- install-formula-api (install formula API locally - stub)
+- setup (setup development environment - stub)
+- fix-bottle-tags (fix bottle tags - stub)
 
 ### 🔴 Missing Critical Commands (Priority 1)
 
