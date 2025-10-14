@@ -402,6 +402,15 @@ enum Commands {
         /// Formula names (or all if empty)
         formulae: Vec<String>,
     },
+
+    /// Open Homebrew documentation
+    Docs,
+
+    /// Create a new tap
+    TapNew {
+        /// Tap name (user/repo format)
+        tap: String,
+    },
 }
 
 #[tokio::main]
@@ -601,6 +610,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Unbottled { formulae }) => {
             commands::unbottled(&api, &formulae).await?;
+        }
+        Some(Commands::Docs) => {
+            commands::docs()?;
+        }
+        Some(Commands::TapNew { tap }) => {
+            commands::tap_new(&tap)?;
         }
         None => {
             println!(

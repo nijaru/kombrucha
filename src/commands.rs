@@ -3915,3 +3915,102 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
     Ok(())
 }
+
+pub fn docs() -> Result<()> {
+    let docs_url = "https://docs.brew.sh";
+    println!("{} Opening documentation: {}", "📖".bold(), docs_url.cyan());
+
+    // Try to open URL in browser
+    let status = std::process::Command::new("open")
+        .arg(docs_url)
+        .status()?;
+
+    if !status.success() {
+        println!("{} Failed to open browser. Visit: {}", "⚠".yellow(), docs_url);
+    }
+
+    Ok(())
+}
+
+pub fn tap_new(tap_name: &str) -> Result<()> {
+    // Validate tap name format (should be user/repo)
+    if !tap_name.contains('/') {
+        println!(
+            "{} Invalid tap name. Format: {}",
+            "❌".red(),
+            "user/repo".cyan()
+        );
+        return Ok(());
+    }
+
+    let parts: Vec<&str> = tap_name.split('/').collect();
+    if parts.len() != 2 {
+        println!(
+            "{} Invalid tap name. Format: {}",
+            "❌".red(),
+            "user/repo".cyan()
+        );
+        return Ok(());
+    }
+
+    let user = parts[0];
+    let repo = parts[1];
+    let full_repo_name = if repo.starts_with("homebrew-") {
+        repo.to_string()
+    } else {
+        format!("homebrew-{}", repo)
+    };
+
+    let tap_path = crate::tap::taps_path()
+        .join(user)
+        .join(&full_repo_name);
+
+    if tap_path.exists() {
+        println!(
+            "{} Tap already exists: {}",
+            "⚠".yellow(),
+            tap_path.display().to_string().cyan()
+        );
+        return Ok(());
+    }
+
+    println!("{} Creating new tap: {}", "🚰".bold(), tap_name.cyan());
+
+    // Create directory structure
+    std::fs::create_dir_all(&tap_path)?;
+    std::fs::create_dir_all(tap_path.join("Formula"))?;
+    std::fs::create_dir_all(tap_path.join("Casks"))?;
+
+    // Create README
+    let readme_content = format!(
+        "# {}/{}\n\nHomebrew tap for custom formulae and casks.\n\n## Usage\n\n```bash\nbrew tap {}\n```\n",
+        user, full_repo_name, tap_name
+    );
+    std::fs::write(tap_path.join("README.md"), readme_content)?;
+
+    // Initialize git repository
+    let status = std::process::Command::new("git")
+        .args(["init"])
+        .current_dir(&tap_path)
+        .status()?;
+
+    if !status.success() {
+        println!("  {} Failed to initialize git repository", "⚠".yellow());
+    }
+
+    println!(
+        "\n{} Tap created at: {}",
+        "✓".green().bold(),
+        tap_path.display().to_string().cyan()
+    );
+    println!(
+        "\nAdd formulae to: {}",
+        tap_path.join("Formula").display().to_string().dimmed()
+    );
+    println!(
+        "Add casks to: {}",
+        tap_path.join("Casks").display().to_string().dimmed()
+    );
+
+    Ok(())
+}
