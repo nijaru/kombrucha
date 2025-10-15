@@ -229,6 +229,6 @@ All 116 core Homebrew commands are now implemented. The project has reached **10
 
 ### Version Milestones
 
-- **v0.1.0** (Current): 100% command parity, bottle-based installs working
-- **v0.2.0** (Next): Phase 3 complete, source builds working
+- **v0.0.x** (Current): 100% command parity, bottle-based installs working
+- **v0.1.0** (Future): Phase 3 complete, source builds working
 - **v1.0.0** (Future): Production-ready Homebrew replacement
