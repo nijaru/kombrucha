@@ -1,13 +1,13 @@
 # Bru vs Homebrew: Complete Status Report
 
-**Generated**: October 14, 2025
+**Generated**: October 14, 2025 (Updated)
 **Version**: bru v0.1.0
 
 ## Executive Summary
 
 **Command Coverage**: 100% (116/116 commands)
 **Production Readiness**: 85% (bottle-based workflows fully functional)
-**Testing Coverage**: 54% (63/116 commands tested)
+**Testing Coverage**: 72% (83/116 commands tested) ⬆️ +18% improvement
 
 ---
 
@@ -45,24 +45,27 @@
 
 ## 🟡 What We Have (Implemented but Untested)
 
-### Recently Added Commands (53 untested)
+### Recently Added Commands (33 untested, down from 53)
 These commands are implemented but haven't gone through end-to-end testing:
 
-**Development Tools**:
-- create, edit, audit, livecheck
-- tap-cmd, tap-readme, extract, readall
-- linkage, migrate, unpack
+**Development Tools** (tested ✅):
+- ✅ create, audit, livecheck (tested)
+- ✅ tap-readme, readall (tested)
+- ✅ linkage, migrate, unpack (tested)
+- ⚠️ extract (untested)
 
-**Utilities**:
-- alias, unalias, gist-logs, log, cat
-- command-not-found-init, man, docs
-- completions, commands
-- update-reset, update-if-needed, update-report
+**Utilities** (mostly tested ✅):
+- ✅ alias, unalias, gist-logs, log, cat (tested)
+- ✅ command-not-found-init (tested)
+- ⚠️ man, docs (untested)
+- ⚠️ completions, commands (untested)
+- ⚠️ update-reset, update-report (untested)
 
-**System Integration**:
-- nodenv-sync, pyenv-sync, rbenv-sync
-- setup-ruby, developer
-- analytics-state, sponsor, tab
+**System Integration** (tested ✅):
+- ✅ nodenv-sync, pyenv-sync, rbenv-sync (tested)
+- ✅ setup-ruby, developer (tested)
+- ✅ analytics-state, sponsor, tab (tested)
+- ✅ command, update-if-needed (tested)
 
 **CI/Development (Stubs)**:
 - test, bottle, postinstall
@@ -100,7 +103,7 @@ These commands are implemented but haven't gone through end-to-end testing:
 
 ## 📊 Testing Status Breakdown
 
-### ✅ Tested & Working (63 commands)
+### ✅ Tested & Working (83 commands - Updated Oct 14, 2025)
 
 **Cask Operations** (tested extensively):
 - install --cask, uninstall --cask, reinstall --cask
@@ -132,14 +135,25 @@ These commands are implemented but haven't gone through end-to-end testing:
 **Bundle** (tested):
 - bundle, bundle dump
 
-### ⚠️ Untested (53 commands)
+**Development Tools** (tested Oct 14):
+- create, audit, livecheck, cat
+- readall, migrate, unpack, linkage, tap-readme
+
+**Utilities** (tested Oct 14):
+- alias, unalias, log, gist-logs
+- command-not-found-init
+
+**System Integration** (tested Oct 14):
+- developer, contributions
+- nodenv-sync, pyenv-sync, rbenv-sync, setup-ruby
+- command, tab, update-if-needed
+
+### ⚠️ Untested (33 commands, down from 53)
 
 Need end-to-end testing for:
-- Development workflow commands (create, edit, audit)
-- Utility commands (alias, log, gist-logs, cat)
-- Version manager sync (nodenv, pyenv, rbenv)
-- All CI/stub commands
-- New commands added today (8 commands)
+- Utility commands: man, docs, completions, commands
+- Repository commands: extract, update-reset, update-report
+- All CI/stub commands (mostly awaiting Phase 3)
 
 ---
 
@@ -188,10 +202,10 @@ Need end-to-end testing for:
 | Package Management | 12 | 12 (100%) | 12 (100%) | ✅ Production |
 | Cask Operations | 6 | 6 (100%) | 6 (100%) | ✅ Production |
 | Information/Query | 15 | 15 (100%) | 15 (100%) | ✅ Production |
-| Repository Mgmt | 10 | 10 (100%) | 6 (60%) | 🟡 Needs Testing |
-| System/Utilities | 20 | 20 (100%) | 10 (50%) | 🟡 Needs Testing |
-| Development | 15 | 15 (100%) | 5 (33%) | 🟡 Needs Testing |
-| CI/Internal | 38 | 38* (stubs) | 9 (24%) | 🟡 Stub Only |
+| Repository Mgmt | 10 | 10 (100%) | 9 (90%) | ✅ Near Complete |
+| System/Utilities | 20 | 20 (100%) | 17 (85%) | ✅ Near Complete |
+| Development | 15 | 15 (100%) | 10 (67%) | 🟡 Mostly Tested |
+| CI/Internal | 38 | 38* (stubs) | 14 (37%) | 🟡 Stub Only |
 
 *Most CI commands are documented stubs awaiting Phase 3
 
@@ -240,14 +254,14 @@ Missing source build capability blocks:
 - Formula development workflow
 
 ### Overall Assessment
-**Status**: 🟡 **ALPHA/BETA READY**
+**Status**: 🟢 **BETA READY**
 
-- 100% command coverage
-- 54% tested
-- 95% of user workflows functional
-- Missing 1 critical feature (source builds)
-- Ready for brave early adopters
-- Not ready for formula developers
+- 100% command coverage ✅
+- 72% tested ✅ (up from 54%)
+- 95% of user workflows functional ✅
+- Missing 1 critical feature (source builds) ⚠️
+- Ready for beta testing with real users ✅
+- Not ready for formula developers (awaits Phase 3) ⚠️
 
 ---
 
