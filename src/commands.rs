@@ -644,9 +644,38 @@ pub async fn install(
     println!("Installing {} formulae...",formula_names.len().to_string().bold()
     );
 
-    // Step 1: Resolve all dependencies
+    // Step 1: Validate requested formulae and collect errors
     println!("\nResolving dependencies...");
-    let (all_formulae, dep_order) = resolve_dependencies(api, formula_names).await?;
+    let mut errors = Vec::new();
+    let mut valid_formulae = Vec::new();
+
+    for name in formula_names {
+        match api.fetch_formula(name).await {
+            Ok(_) => valid_formulae.push(name.clone()),
+            Err(e) => {
+                errors.push((name.clone(), e));
+            }
+        }
+    }
+
+    // If no valid formulae, report errors and exit
+    if valid_formulae.is_empty() {
+        for (name, err) in &errors {
+            println!("{} {}: {}", "❌".red(), name, err);
+        }
+        return Ok(());
+    }
+
+    // Report any invalid formulae but continue with valid ones
+    if !errors.is_empty() {
+        for (name, err) in &errors {
+            println!("{} {}: {}", "⚠".yellow(), name, err);
+        }
+        println!();
+    }
+
+    // Resolve dependencies for valid formulae only
+    let (all_formulae, dep_order) = resolve_dependencies(api, &valid_formulae).await?;
 
     // Filter installed packages (unless --force)
     let installed = cellar::list_installed()?;
@@ -952,7 +981,18 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool, dry_run: bool,
         let old_version = &installed_versions[0].version;
 
         // Fetch latest version
-        let formula = api.fetch_formula(formula_name).await?;
+        let formula = match api.fetch_formula(formula_name).await {
+            Ok(f) => f,
+            Err(e) => {
+                println!(
+                    "  {} Failed to fetch {}: {}",
+                    "⚠".yellow(),
+                    formula_name.bold(),
+                    e
+                );
+                continue;
+            }
+        };
         let new_version = formula
             .versions
             .stable
