@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
-    println!("{} Searching for: {}", "🔍".bold(), query.cyan());
+    println!("Searching for: {}", query.cyan());
 
     let results = api.search(query).await?;
 
@@ -97,7 +97,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
 
 pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     if !json {
-        println!("{} Fetching info for: {}", "📦".bold(), formula.cyan());
+        println!("Fetching info for: {}", formula.cyan());
     }
 
     // Try formula first, then cask
@@ -180,9 +180,9 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
 
 pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool) -> Result<()> {
     if tree {
-        println!("{} Dependency tree for: {}", "🌳".bold(), formula.cyan());
+        println!("Dependency tree for: {}", formula.cyan());
     } else {
-        println!("{} Dependencies for: {}", "📊".bold(), formula.cyan());
+        println!("Dependencies for: {}", formula.cyan());
     }
 
     let formula_data = api.fetch_formula(formula).await?;
