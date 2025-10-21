@@ -248,10 +248,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 }
 
 pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
-    println!(
-        "{} Finding formulae that depend on: {}",
-        "🔍".bold(),
-        formula.cyan()
+    println!("Finding formulae that depend on: {}",formula.cyan()
     );
 
     // Fetch all formulae
@@ -587,10 +584,7 @@ pub async fn install(
     formula_names: &[String],
     _only_dependencies: bool,
 ) -> Result<()> {
-    println!(
-        "{} Installing {} formulae...",
-        "📦".bold(),
-        formula_names.len().to_string().bold()
+    println!("Installing {} formulae...",formula_names.len().to_string().bold()
     );
 
     // Step 1: Resolve all dependencies
@@ -970,10 +964,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         return Ok(());
     }
 
-    println!(
-        "{} Reinstalling {} formulae...",
-        "🔄".bold(),
-        formula_names.len().to_string().bold()
+    println!("Reinstalling {} formulae...",formula_names.len().to_string().bold()
     );
 
     for formula_name in formula_names {
@@ -1052,10 +1043,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         return Ok(());
     }
 
-    println!(
-        "{} Uninstalling {} formulae...",
-        "🗑".bold(),
-        formula_names.len().to_string().bold()
+    println!("Uninstalling {} formulae...",formula_names.len().to_string().bold()
     );
 
     // Get all installed packages to check dependencies
@@ -1272,7 +1260,7 @@ pub fn tap(tap_name: Option<&str>) -> Result<()> {
         }
         Some(tap) => {
             // Add a tap
-            println!("{} Tapping {}...", "🔗".bold(), tap.cyan());
+            println!("Tapping {}...",tap.cyan());
 
             if crate::tap::is_tapped(tap)? {
                 println!("  {} {} already tapped", "✓".green(), tap.bold());
@@ -1292,7 +1280,7 @@ pub fn tap(tap_name: Option<&str>) -> Result<()> {
 }
 
 pub fn untap(tap_name: &str) -> Result<()> {
-    println!("{} Untapping {}...", "🔗".bold(), tap_name.cyan());
+    println!("Untapping {}...",tap_name.cyan());
 
     if !crate::tap::is_tapped(tap_name)? {
         println!("  {} {} is not tapped", "⚠".yellow(), tap_name.bold());
@@ -1843,7 +1831,7 @@ pub fn doctor() -> Result<()> {
 }
 
 pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
-    println!("{} Opening homepage for {}...", "🌐".bold(), formula_name.cyan());
+    println!("Opening homepage for {}...",formula_name.cyan());
 
     let formula = api.fetch_formula(formula_name).await?;
 
@@ -2509,7 +2497,7 @@ pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
 }
 
 pub fn log(formula_name: &str) -> Result<()> {
-    println!("{} Checking logs for {}", "📋".bold(), formula_name.cyan());
+    println!("Checking logs for {}",formula_name.cyan());
     println!();
 
     // Check if formula is installed
@@ -2602,7 +2590,7 @@ pub fn log(formula_name: &str) -> Result<()> {
 }
 
 pub fn which_formula(command: &str) -> Result<()> {
-    println!("{} Finding formula for command: {}", "🔍".bold(), command.cyan());
+    println!("Finding formula for command: {}",command.cyan());
     
     let prefix = cellar::detect_prefix();
     let bin_dir = prefix.join("bin");
@@ -2641,7 +2629,7 @@ pub fn which_formula(command: &str) -> Result<()> {
 }
 
 pub async fn options(api: &BrewApi, formula_name: &str) -> Result<()> {
-    println!("{} Checking options for: {}", "🔍".bold(), formula_name.cyan());
+    println!("Checking options for: {}",formula_name.cyan());
     
     // Verify formula exists
     match api.fetch_formula(formula_name).await {
@@ -2704,7 +2692,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         );
     } else {
         // Install from Brewfile
-        println!("{} Reading {}...", "📖".bold(), brewfile_path.cyan());
+        println!("Reading {}...",brewfile_path.cyan());
         
         if !std::path::Path::new(brewfile_path).exists() {
             println!("\n{} {} not found", "❌".red(), brewfile_path.bold());
@@ -2868,7 +2856,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
         }
         Some("start") => {
             let formula = formula.ok_or_else(|| anyhow::anyhow!("Formula name required"))?;
-            println!("{} Starting service: {}", "▶".bold(), formula.cyan());
+            println!("Starting service: {}",formula.cyan());
 
             if !crate::services::service_exists(formula) {
                 println!("\n{} Service file not found for {}", "⚠".yellow(), formula.bold());
@@ -2889,7 +2877,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
         }
         Some("stop") => {
             let formula = formula.ok_or_else(|| anyhow::anyhow!("Formula name required"))?;
-            println!("{} Stopping service: {}", "■".bold(), formula.cyan());
+            println!("Stopping service: {}",formula.cyan());
 
             if !crate::services::service_exists(formula) {
                 println!("\n{} Service file not found for {}", "⚠".yellow(), formula.bold());
@@ -2907,7 +2895,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
         }
         Some("restart") => {
             let formula = formula.ok_or_else(|| anyhow::anyhow!("Formula name required"))?;
-            println!("{} Restarting service: {}", "🔄".bold(), formula.cyan());
+            println!("Restarting service: {}",formula.cyan());
 
             if !crate::services::service_exists(formula) {
                 println!("\n{} Service file not found for {}", "⚠".yellow(), formula.bold());
@@ -3029,7 +3017,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
 }
 
 pub fn create(url: &str, name: Option<&str>) -> Result<()> {
-    println!("{} Creating formula from URL: {}", "📝".bold(), url.cyan());
+    println!("Creating formula from URL: {}",url.cyan());
     
     // Extract name from URL if not provided
     let formula_name = if let Some(n) = name {
@@ -3109,7 +3097,7 @@ pub fn create(url: &str, name: Option<&str>) -> Result<()> {
 }
 
 pub async fn livecheck(api: &BrewApi, formula_name: &str) -> Result<()> {
-    println!("{} Checking for newer versions of {}...", "🔍".bold(), formula_name.cyan());
+    println!("Checking for newer versions of {}...",formula_name.cyan());
     
     let formula = api.fetch_formula(formula_name).await?;
     
@@ -3142,7 +3130,7 @@ pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
         return Ok(());
     }
     
-    println!("{} Auditing {} formulae...", "🔍".bold(), formula_names.len().to_string().bold());
+    println!("Auditing {} formulae...",formula_names.len().to_string().bold());
     println!();
     
     let prefix = cellar::detect_prefix();
@@ -3241,10 +3229,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{} Installing {} casks...",
-        "📦".bold(),
-        cask_names.len().to_string().bold()
+    println!("Installing {} casks...",cask_names.len().to_string().bold()
     );
 
     for cask_name in cask_names {
@@ -3417,10 +3402,7 @@ pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> 
         return Ok(());
     }
 
-    println!(
-        "{} Reinstalling {} casks...",
-        "🔄".bold(),
-        cask_names.len().to_string().bold()
+    println!("Reinstalling {} casks...",cask_names.len().to_string().bold()
     );
 
     for cask_name in cask_names {
@@ -3629,10 +3611,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{} Uninstalling {} casks...",
-        "🗑".bold(),
-        cask_names.len().to_string().bold()
+    println!("Uninstalling {} casks...",cask_names.len().to_string().bold()
     );
 
     for cask_name in cask_names {
@@ -3810,7 +3789,7 @@ pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
         return Ok(());
     }
     
-    println!("{} Running post-install for {} formulae...", "🔧".bold(), formula_names.len().to_string().bold());
+    println!("Running post-install for {} formulae...",formula_names.len().to_string().bold());
     println!();
 
     for formula_name in formula_names {
@@ -3950,7 +3929,7 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
 pub fn docs() -> Result<()> {
     let docs_url = "https://docs.brew.sh";
-    println!("{} Opening documentation: {}", "📖".bold(), docs_url.cyan());
+    println!("Opening documentation: {}",docs_url.cyan());
 
     // Try to open URL in browser
     let status = std::process::Command::new("open")
@@ -4006,7 +3985,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
         return Ok(());
     }
 
-    println!("{} Creating new tap: {}", "🚰".bold(), tap_name.cyan());
+    println!("Creating new tap: {}",tap_name.cyan());
 
     // Create directory structure
     std::fs::create_dir_all(&tap_path)?;
@@ -4048,7 +4027,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
 }
 
 pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
-    println!("{} Migrating formula: {}", "🔄".bold(), formula_name.cyan());
+    println!("Migrating formula: {}",formula_name.cyan());
 
     // Check if formula is installed
     let versions = cellar::get_installed_versions(formula_name)?;
@@ -4184,7 +4163,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
 pub fn readall(tap_name: Option<&str>) -> Result<()> {
     let tap = tap_name.unwrap_or("homebrew/core");
 
-    println!("{} Reading all formulae in tap: {}", "📖".bold(), tap.cyan());
+    println!("Reading all formulae in tap: {}",tap.cyan());
 
     let tap_dir = if tap == "homebrew/core" {
         cellar::detect_prefix().join("Library/Taps/homebrew/homebrew-core")
@@ -4243,7 +4222,7 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
 }
 
 pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
-    println!("{} Extracting formula: {}", "📤".bold(), formula_name.cyan());
+    println!("Extracting formula: {}",formula_name.cyan());
     println!("  Target tap: {}", target_tap.cyan());
 
     // Find the formula file
@@ -4311,7 +4290,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
 }
 
 pub async fn unpack(api: &BrewApi, formula_name: &str, dest_dir: Option<&str>) -> Result<()> {
-    println!("{} Unpacking source for: {}", "📦".bold(), formula_name.cyan());
+    println!("Unpacking source for: {}",formula_name.cyan());
 
     // Fetch formula info
     let formula = api.fetch_formula(formula_name).await?;
@@ -4411,7 +4390,7 @@ pub fn man() -> anyhow::Result<()> {
 pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
     let tap = tap_name.unwrap_or("homebrew/core");
 
-    println!("{} Resetting tap: {}", "🔄".bold(), tap.cyan());
+    println!("Resetting tap: {}",tap.cyan());
 
     let tap_dir = if tap == "homebrew/core" {
         cellar::detect_prefix().join("Library/Taps/homebrew/homebrew-core")
@@ -4472,10 +4451,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{} Checking style for {} formulae...",
-        "🎨".bold(),
-        formula_names.len().to_string().bold()
+    println!("Checking style for {} formulae...",formula_names.len().to_string().bold()
     );
 
     if fix {
@@ -4502,7 +4478,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
 }
 
 pub fn test(formula_name: &str) -> anyhow::Result<()> {
-    println!("{} Running tests for: {}", "🧪".bold(), formula_name.cyan());
+    println!("Running tests for: {}",formula_name.cyan());
 
     println!("\n{} Formula testing requires Phase 3 (Ruby interop)", "ℹ".blue());
     println!("  Test suite would be executed from formula's test block");
@@ -4523,10 +4499,7 @@ pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{} Generating bottles for {} formulae...",
-        "🍾".bold(),
-        formula_names.len().to_string().bold()
+    println!("Generating bottles for {} formulae...",formula_names.len().to_string().bold()
     );
 
     if write {
@@ -4550,7 +4523,7 @@ pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
 }
 
 pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
-    println!("{} Pinning tap: {}", "📌".bold(), tap_name.cyan());
+    println!("Pinning tap: {}",tap_name.cyan());
 
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
@@ -4580,7 +4553,7 @@ pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
 }
 
 pub fn tap_unpin(tap_name: &str) -> anyhow::Result<()> {
-    println!("{} Unpinning tap: {}", "📌".bold(), tap_name.cyan());
+    println!("Unpinning tap: {}",tap_name.cyan());
 
     let prefix = cellar::detect_prefix();
     let pinned_dir = prefix.join("Library/PinnedTaps");
@@ -4662,7 +4635,7 @@ pub fn prof(args: &[String]) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("{} Profiling command: {}", "📊".bold(), args.join(" ").cyan());
+    println!("Profiling command: {}",args.join(" ").cyan());
 
     println!("\n{} Profiling functionality", "ℹ".blue());
     println!("  Would measure:");
@@ -4677,7 +4650,7 @@ pub fn prof(args: &[String]) -> anyhow::Result<()> {
 }
 
 pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
-    println!("{} Generating README for tap: {}", "📝".bold(), tap_name.cyan());
+    println!("Generating README for tap: {}",tap_name.cyan());
 
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
@@ -4729,9 +4702,9 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
         None | Some("state") => {
             let is_dev = dev_flag_file.exists();
             if is_dev {
-                println!("{} Developer mode: {}", "🔧".bold(), "enabled".green());
+                println!("Developer mode: {}","enabled".green());
             } else {
-                println!("{} Developer mode: {}", "🔧".bold(), "disabled".dimmed());
+                println!("Developer mode: {}","disabled".dimmed());
             }
 
             if is_dev {
@@ -4776,7 +4749,7 @@ pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
     if files.is_empty() {
         println!("{} Running Sorbet type checker on Homebrew code...", "🔍".bold());
     } else {
-        println!("{} Type checking {} files...", "🔍".bold(), files.len().to_string().bold());
+        println!("Type checking {} files...",files.len().to_string().bold());
     }
 
     println!("\n{} Type checking requires Phase 3 (Ruby interop + Sorbet)", "ℹ".blue());
@@ -4838,7 +4811,7 @@ pub fn update_report() -> anyhow::Result<()> {
 }
 
 pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::Result<()> {
-    println!("{} Updating Python resources for: {}", "🐍".bold(), formula_name.cyan());
+    println!("Updating Python resources for: {}",formula_name.cyan());
 
     if print_only {
         println!("  {} Print-only mode enabled", "ℹ".blue());
@@ -4866,7 +4839,7 @@ pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("{} Determining test runners for {} formulae...", "🧪".bold(), formula_names.len().to_string().bold());
+    println!("Determining test runners for {} formulae...",formula_names.len().to_string().bold());
 
     println!("\n{} Test runner detection", "ℹ".blue());
     println!("  Would analyze formulae to determine:");
@@ -4904,7 +4877,7 @@ pub fn dispatch_build_bottle(formula_name: &str, platform: Option<&str>) -> anyh
 }
 
 pub fn bump_formula_pr(formula_name: &str, version: Option<&str>, url: Option<&str>) -> anyhow::Result<()> {
-    println!("{} Creating PR to update formula: {}", "🔄".bold(), formula_name.cyan());
+    println!("Creating PR to update formula: {}",formula_name.cyan());
 
     if let Some(ver) = version {
         println!("  New version: {}", ver.cyan());
@@ -4929,7 +4902,7 @@ pub fn bump_formula_pr(formula_name: &str, version: Option<&str>, url: Option<&s
 }
 
 pub fn bump_cask_pr(cask_name: &str, version: Option<&str>) -> anyhow::Result<()> {
-    println!("{} Creating PR to update cask: {}", "🔄".bold(), cask_name.cyan());
+    println!("Creating PR to update cask: {}",cask_name.cyan());
 
     if let Some(ver) = version {
         println!("  New version: {}", ver.cyan());
@@ -4954,7 +4927,7 @@ pub async fn generate_formula_api(formula_names: &[String]) -> anyhow::Result<()
     if formula_names.is_empty() {
         println!("{} Generating formula API for all formulae...", "🔧".bold());
     } else {
-        println!("{} Generating formula API for {} formulae...", "🔧".bold(), formula_names.len().to_string().bold());
+        println!("Generating formula API for {} formulae...",formula_names.len().to_string().bold());
     }
 
     println!("\n{} API generation", "ℹ".blue());
@@ -4982,7 +4955,7 @@ pub async fn generate_cask_api(cask_names: &[String]) -> anyhow::Result<()> {
     if cask_names.is_empty() {
         println!("{} Generating cask API for all casks...", "🔧".bold());
     } else {
-        println!("{} Generating cask API for {} casks...", "🔧".bold(), cask_names.len().to_string().bold());
+        println!("Generating cask API for {} casks...",cask_names.len().to_string().bold());
     }
 
     println!("\n{} API generation", "ℹ".blue());
@@ -5052,7 +5025,7 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
     if formula_names.is_empty() {
         println!("{} Running test-bot on all formulae...", "🤖".bold());
     } else {
-        println!("{} Running test-bot on {} formulae...", "🤖".bold(), formula_names.len().to_string().bold());
+        println!("Running test-bot on {} formulae...",formula_names.len().to_string().bold());
     }
 
     if skip_cleanup {
@@ -5086,7 +5059,7 @@ pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow:
         return Ok(());
     }
 
-    println!("{} Bumping revision for {} formulae...", "🔢".bold(), formula_names.len().to_string().bold());
+    println!("Bumping revision for {} formulae...",formula_names.len().to_string().bold());
 
     if let Some(msg) = message {
         println!("  Reason: {}", msg.dimmed());
@@ -5127,7 +5100,7 @@ pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
 
 pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Result<()> {
     if let Some(username) = user {
-        println!("{} Contributor statistics for: {}", "📊".bold(), username.cyan());
+        println!("Contributor statistics for: {}",username.cyan());
     } else {
         println!("{} Overall contributor statistics", "📊".bold());
     }
@@ -5201,7 +5174,7 @@ pub fn update_license_data() -> anyhow::Result<()> {
 }
 
 pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
-    println!("{} Formula info: {}", "📦".bold(), formula_name.cyan());
+    println!("Formula info: {}",formula_name.cyan());
 
     let formula = api.fetch_formula(formula_name).await?;
 
@@ -5279,7 +5252,7 @@ pub fn install_formula_api() -> anyhow::Result<()> {
 }
 
 pub fn uses_cask(cask_name: &str) -> anyhow::Result<()> {
-    println!("{} Checking what uses cask: {}", "🔍".bold(), cask_name.cyan());
+    println!("Checking what uses cask: {}",cask_name.cyan());
 
     println!("\n{} Cask usage analysis", "ℹ".blue());
     println!("  Unlike formulae, casks typically don't have dependents");
@@ -5292,7 +5265,7 @@ pub fn uses_cask(cask_name: &str) -> anyhow::Result<()> {
 }
 
 pub async fn abv_cask(api: &BrewApi, cask_name: &str) -> anyhow::Result<()> {
-    println!("{} Cask info: {}", "📦".bold(), cask_name.cyan());
+    println!("Cask info: {}",cask_name.cyan());
 
     let cask = api.fetch_cask(cask_name).await?;
 
@@ -5387,7 +5360,7 @@ pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("{} Merging {} bottle files...", "🍾".bold(), bottle_files.len().to_string().bold());
+    println!("Merging {} bottle files...",bottle_files.len().to_string().bold());
 
     println!("\n{} Bottle merge (CI workflow)", "ℹ".blue());
     println!("  Merges bottle metadata from multiple builds");
@@ -5481,7 +5454,7 @@ pub fn analytics_state() -> anyhow::Result<()> {
 
 pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
     if let Some(name) = target {
-        println!("{} Sponsor: {}", "💖".bold(), name.cyan());
+        println!("Sponsor: {}",name.cyan());
     } else {
         println!("{} Homebrew Sponsors", "💖".bold());
     }
@@ -5502,7 +5475,7 @@ pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
 }
 
 pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
-    println!("{} Running Homebrew sub-command: {}", "🔧".bold(), subcommand.cyan());
+    println!("Running Homebrew sub-command: {}",subcommand.cyan());
 
     if !args.is_empty() {
         println!("  {} Arguments: {}", "→".dimmed(), args.join(" ").dimmed());
@@ -5629,7 +5602,7 @@ pub fn setup_ruby() -> anyhow::Result<()> {
 }
 
 pub async fn tab(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
-    println!("{} Formula info (tab-separated): {}", "📋".bold(), formula_name.cyan());
+    println!("Formula info (tab-separated): {}",formula_name.cyan());
 
     let formula = api.fetch_formula(formula_name).await?;
 
