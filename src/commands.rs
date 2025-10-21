@@ -588,7 +588,7 @@ pub async fn install(
     );
 
     // Step 1: Resolve all dependencies
-    println!("\n{} Resolving dependencies...", "🔍".bold());
+    println!("\nResolving dependencies...");
     let (all_formulae, dep_order) = resolve_dependencies(api, formula_names).await?;
 
     // Filter installed packages
@@ -624,7 +624,7 @@ pub async fn install(
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
     // Step 3: Install in dependency order
-    println!("\n{} Installing packages...", "🔧".bold());
+    println!("\nInstalling packages...");
     let requested_set: HashSet<_> = formula_names.iter().map(|s| s.as_str()).collect();
 
     for formula_name in &dep_order {
@@ -849,8 +849,7 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> 
         // Skip pinned formulae
         if pinned.contains(formula_name) {
             println!(
-                "  {} {} is pinned, skipping",
-                "📌".bold(),
+                "  {} is pinned, skipping",
                 formula_name.bold()
             );
             continue;
@@ -977,8 +976,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
         let version = &installed_versions[0].version;
         println!(
-            "  {} Reinstalling {} {}",
-            "🔄".bold(),
+            "  Reinstalling {} {}",
             formula_name.cyan(),
             version.dimmed()
         );
@@ -1208,7 +1206,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
 
     // Remove packages
     for pkg in &to_remove {
-        println!("  {} Uninstalling {} {}", "🗑".bold(), pkg.name.cyan(), pkg.version.dimmed());
+        println!("  Uninstalling {} {}", pkg.name.cyan(), pkg.version.dimmed());
 
         // Unlink symlinks
         let unlinked = symlink::unlink_formula(&pkg.name, &pkg.version)?;
@@ -2021,7 +2019,7 @@ pub fn link(formula_names: &[String]) -> Result<()> {
         }
 
         let version = &versions[0].version;
-        println!("  {} Linking {} {}", "🔗".bold(), formula_name.cyan(), version.dimmed());
+        println!("  Linking {} {}", formula_name.cyan(), version.dimmed());
 
         let linked = symlink::link_formula(formula_name, version)?;
         println!(
@@ -2050,7 +2048,7 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
         }
 
         let version = &versions[0].version;
-        println!("  {} Unlinking {} {}", "🔗".bold(), formula_name.cyan(), version.dimmed());
+        println!("  Unlinking {} {}", formula_name.cyan(), version.dimmed());
 
         let unlinked = symlink::unlink_formula(formula_name, version)?;
         println!(
