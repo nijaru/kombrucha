@@ -2,6 +2,7 @@ mod api;
 mod cache;
 mod cask;
 mod cellar;
+mod colors;
 mod commands;
 mod download;
 mod error;
@@ -793,6 +794,9 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn")),
         )
         .init();
+
+    // Initialize color support (respects NO_COLOR, CLICOLOR, TTY)
+    colors::init_colors();
 
     let cli = Cli::parse();
 
