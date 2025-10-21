@@ -747,12 +747,14 @@ pub async fn install(
         }
     }
 
-    // If no valid formulae, report errors and exit
+    // If no valid formulae, report errors and fail
     if valid_formulae.is_empty() {
         for (name, err) in &errors {
             println!("{} {}: {}", "❌".red(), name, err);
         }
-        return Ok(());
+        return Err(crate::error::BruError::Other(anyhow::anyhow!(
+            "All formulae failed to install"
+        )));
     }
 
     // Report any invalid formulae but continue with valid ones
