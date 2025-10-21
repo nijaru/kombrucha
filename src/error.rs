@@ -9,8 +9,10 @@ pub enum BruError {
     JsonError(#[from] serde_json::Error),
 
     #[error("Formula not found: {0}")]
-    #[allow(dead_code)]
     FormulaNotFound(String),
+
+    #[error("Cask not found: {0}")]
+    CaskNotFound(String),
 
     #[error("Network error: {0}")]
     #[allow(dead_code)]

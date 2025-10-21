@@ -120,6 +120,23 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                     println!("{}: {}", "Version".bold(), version);
                 }
 
+                if formula.keg_only {
+                    if let Some(reason) = &formula.keg_only_reason {
+                        let reason_display = match reason.reason.as_str() {
+                            ":provided_by_macos" => "provided by macOS",
+                            ":shadowed_by_macos" => "shadowed by macOS",
+                            ":versioned_formula" => "versioned formula",
+                            _ => &reason.reason,
+                        };
+                        println!("{}: {}", "Keg-only".bold().yellow(), reason_display);
+                        if !reason.explanation.is_empty() {
+                            println!("  {}", reason.explanation.dimmed());
+                        }
+                    } else {
+                        println!("{}: {}", "Keg-only".bold().yellow(), "yes");
+                    }
+                }
+
                 if !formula.dependencies.is_empty() {
                     println!(
                         "{}: {}",

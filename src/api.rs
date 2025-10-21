@@ -5,6 +5,14 @@ use std::time::Duration;
 const HOMEBREW_API_BASE: &str = "https://formulae.brew.sh/api";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
+/// Keg-only reason metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KegOnlyReason {
+    pub reason: String,
+    #[serde(default)]
+    pub explanation: String,
+}
+
 /// Homebrew formula metadata from JSON API
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Formula {
@@ -23,6 +31,10 @@ pub struct Formula {
     pub build_dependencies: Vec<String>,
     #[serde(default)]
     pub bottle: Option<Bottle>,
+    #[serde(default)]
+    pub keg_only: bool,
+    #[serde(default)]
+    pub keg_only_reason: Option<KegOnlyReason>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -134,14 +146,26 @@ impl BrewApi {
     /// Fetch specific formula by name
     pub async fn fetch_formula(&self, name: &str) -> Result<Formula> {
         let url = format!("{}/formula/{}.json", HOMEBREW_API_BASE, name);
-        let formula = self.client.get(&url).send().await?.json().await?;
+        let response = self.client.get(&url).send().await?;
+
+        if response.status() == 404 {
+            return Err(crate::error::BruError::FormulaNotFound(name.to_string()));
+        }
+
+        let formula = response.json().await?;
         Ok(formula)
     }
 
     /// Fetch specific cask by token
     pub async fn fetch_cask(&self, token: &str) -> Result<Cask> {
         let url = format!("{}/cask/{}.json", HOMEBREW_API_BASE, token);
-        let cask = self.client.get(&url).send().await?.json().await?;
+        let response = self.client.get(&url).send().await?;
+
+        if response.status() == 404 {
+            return Err(crate::error::BruError::CaskNotFound(token.to_string()));
+        }
+
+        let cask = response.json().await?;
         Ok(cask)
     }
 
