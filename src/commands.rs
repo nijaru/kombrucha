@@ -287,7 +287,12 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn list(_api: &BrewApi, show_versions: bool, json: bool, cask: bool) -> Result<()> {
+pub async fn list(_api: &BrewApi, show_versions: bool, json: bool, cask: bool, quiet: bool) -> Result<()> {
+    // Detect if stdout is a TTY (for pipe-aware behavior)
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+    // Use quiet mode if explicitly requested OR if output is piped (and not json)
+    let use_quiet = quiet || (!is_tty && !json);
+
     if cask {
         // List installed casks
         let casks = crate::cask::list_installed_casks()?;
@@ -307,7 +312,17 @@ pub async fn list(_api: &BrewApi, show_versions: bool, json: bool, cask: bool) -
 
             let json_str = serde_json::to_string_pretty(&cask_list)?;
             println!("{}", json_str);
+        } else if use_quiet {
+            // Quiet mode: just package names, one per line
+            if casks.is_empty() {
+                return Ok(());
+            }
+
+            for (token, _version) in &casks {
+                println!("{}", token);
+            }
         } else {
+            // Normal mode: headers, colors, versions
             println!("Installed casks:");
 
             if casks.is_empty() {
@@ -354,7 +369,26 @@ pub async fn list(_api: &BrewApi, show_versions: bool, json: bool, cask: bool) -
 
             let json_str = serde_json::to_string_pretty(&package_list)?;
             println!("{}", json_str);
+        } else if use_quiet {
+            // Quiet mode: just package names, one per line
+            if packages.is_empty() {
+                return Ok(());
+            }
+
+            // Group by formula name to get unique names
+            let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
+            for pkg in packages {
+                names.insert(pkg.name.clone());
+            }
+
+            let mut sorted_names: Vec<_> = names.into_iter().collect();
+            sorted_names.sort();
+
+            for name in sorted_names {
+                println!("{}", name);
+            }
         } else {
+            // Normal mode: headers, colors, versions
             println!("Installed packages:");
 
             if packages.is_empty() {
