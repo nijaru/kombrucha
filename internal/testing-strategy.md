@@ -477,6 +477,144 @@ Before each release:
 - Focus on critical paths
 - Test user-facing behavior, not implementation
 
+## Edge Case Findings (2025-10-21)
+
+### Keg-Only Formulae
+
+**Discovery**: bru does not capture or display `keg_only` status from the Homebrew API.
+
+**Missing API fields** (src/api.rs:10-26):
+- `keg_only: bool`
+- `keg_only_reason: Option<KegOnlyReason>`
+
+**Known keg-only formulae**:
+- `sqlite` - keg-only (`:provided_by_macos`)
+- `readline` - keg-only (`:shadowed_by_macos`)
+- `ncurses` - keg-only (`:provided_by_macos`)
+- Many others (check API: `curl -s 'https://formulae.brew.sh/api/formula/<name>.json' | jq '.keg_only'`)
+
+**Critical safety issue**:
+- Uninstalling keg-only formulae can break system dependencies
+- Example: removing `ncurses` breaks `zsh` (dynamic library dependency)
+- **DO NOT test keg-only uninstalls locally** - use CI with throwaway environments
+
+**Testing approach**:
+- ✅ Use `--dry-run` mode to test install/upgrade logic
+- ✅ Test dependency resolution with already-installed keg-only formulae
+- ✅ Verify keg-only formulae appear in dependency trees correctly
+- ❌ Do NOT uninstall keg-only formulae locally for testing
+- 🤖 Use CI for destructive keg-only tests (install/uninstall/upgrade)
+
+**API verification**:
+```bash
+# Check if a formula is keg-only
+curl -s 'https://formulae.brew.sh/api/formula/sqlite.json' | jq '{name, keg_only, reason: .keg_only_reason.reason}'
+# Output: {"name": "sqlite", "keg_only": true, "reason": ":provided_by_macos"}
+```
+
+**Future work**:
+- Add `keg_only` fields to Formula struct
+- Display keg-only status in `bru info` output
+- Warn users when installing/upgrading keg-only formulae
+- Add CI tests for keg-only handling
+
+### Error Handling Inconsistencies
+
+**Discovery**: Commands handle API errors inconsistently.
+
+**Issue**: HTTP 404 responses return HTML, but some commands try to parse as JSON (src/api.rs:135-138).
+
+**Affected commands**:
+- `install` - Shows ugly stack backtrace for non-existent formulae
+- `upgrade` - Shows ugly stack backtrace for non-existent formulae
+- `deps` - Shows ugly stack backtrace for non-existent formulae
+- `info` - Shows clean error message ✓ (catches errors at command level)
+- `search` - Handles empty queries well ✓
+
+**Example error**:
+```bash
+$ bru install nonexistent-12345
+Error: API request failed: error decoding response body
+Caused by:
+    0: error decoding response body
+    1: expected value at line 1 column 1
+Stack backtrace:
+   0: __mh_execute_header
+   ...
+```
+
+**Root cause**:
+```rust
+// src/api.rs:135-138
+pub async fn fetch_formula(&self, name: &str) -> Result<Formula> {
+    let url = format!("{}/formula/{}.json", HOMEBREW_API_BASE, name);
+    let formula = self.client.get(&url).send().await?.json().await?;
+    Ok(formula)
+}
+```
+
+Problem: `.send().await?` doesn't check HTTP status before `.json().await?`
+
+**Fix strategy**:
+Either:
+1. Check HTTP status in API layer before parsing JSON
+2. Catch errors at command layer like `info` does (lines 163-173)
+
+**Testing**:
+```bash
+# Clean error (info command)
+$ bru info nonexistent-12345
+❌ No formula or cask found for 'nonexistent-12345'
+
+# Ugly error (install/upgrade/deps)
+$ bru install nonexistent-12345
+Error: API request failed... [stack trace]
+```
+
+### Performance Testing Results
+
+**Search performance** (2025-10-21):
+```bash
+$ time bru search rust
+Found 145 results
+Real: 0.050s (user: 0.04s, sys: 0.01s)
+
+$ time brew search rust
+Found ~40 results
+Real: 1.030s (user: 0.78s, sys: 0.11s)
+
+Speedup: 20x faster
+```
+
+**Key advantages**:
+- Parallel formulae + casks fetch (tokio::join!)
+- Compiled binary (no Ruby interpreter startup)
+- Efficient filtering with spawn_blocking
+
+### Dependency Resolution Testing
+
+**Tested formulae**:
+- `node` - 12 runtime deps, 2 build deps - ✓ All resolved correctly
+- `python@3.13` - 4 runtime deps, 1 build dep - ✓ All resolved correctly
+- `ffmpeg` - 44 runtime deps, 1 build dep - ✓ All resolved correctly
+- `vim` - 6 runtime deps - ✓ Correctly skipped (already installed)
+
+**Multi-formula install**:
+```bash
+$ bru install --dry-run tree htop wget curl ripgrep fd bat fzf
+→ 2 formulae to install: htop, tree
+✓ Correctly identified 6 already installed
+```
+
+**Transitive dependencies**:
+- ffmpeg → aom → jpeg-xl, libvmaf ✓
+- Recursive resolution working correctly
+
+**Edge cases found**:
+- Non-existent formula in list causes entire install to fail
+- No partial progress reporting during resolution
+- No indication of keg-only status in dependency tree
+
 ## Resources
 
 - Homebrew's test suite: https://github.com/Homebrew/brew/tree/master/Library/Homebrew/test
