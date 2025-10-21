@@ -60,18 +60,27 @@
 - ✅ Reinstall
 - ✅ Upgrade
 
+**Tested (2025-10-21):**
+- ✅ Keg-only formulae (sqlite, readline, ncurses) - Working, status displayed in info
+- ✅ Formulae with 10+ dependencies (node: 12 deps, ffmpeg: 44 deps) - Working correctly
+- ✅ Multi-level dependency resolution (ffmpeg → aom → jpeg-xl, libvmaf) - Working
+
 **Untested:**
-- ⚠️ Keg-only formulae (openssl, icu4c, etc.)
-- ⚠️ Formulae with 10+ dependencies
 - ⚠️ Formulae with circular dependency patterns
 - ⚠️ Concurrent installs (race conditions?)
 - ⚠️ Failed download recovery
 - ⚠️ Corrupt bottle handling
 - ⚠️ Conflicting formula installs
 
-### Known Issues from Testing
+### Known Issues from Testing (2025-10-21)
 
-None documented yet - need comprehensive testing
+**Fixed:**
+- ✅ Error handling: Commands showed ugly stack traces for non-existent formulae - FIXED
+- ✅ Keg-only support: Missing from API/display - FIXED
+
+**Remaining:**
+- ⚠️ Single non-existent formula in multi-formula install causes entire install to fail
+- ⚠️ No partial progress reporting during dependency resolution
 
 ---
 

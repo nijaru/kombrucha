@@ -22,12 +22,18 @@ This directory contains internal documentation, research, and AI agent instructi
 
 ### Planning & Tracking
 
-**`SESSION-STATUS-2025-10-21.md`** ⭐ **LATEST STATUS**
-- Most recent session work (UX improvements)
+**`session-2025-10-21-edge-testing.md`** ⭐ **LATEST STATUS**
+- Edge case testing results and findings
+- Error handling improvements (clean error messages)
+- Keg-only support implementation
+- Performance benchmarks (20x search speedup)
+- Safety guidelines and production readiness
+
+**`SESSION-STATUS-2025-10-21.md`**
+- Earlier session work (UX improvements)
 - Symbol cleanup progress and challenges
-- Systematic approach for emoji cleanup
-- Current build status and next steps
-- Lessons learned and documentation improvements
+- NO_COLOR support, pipe-aware output
+- --dry-run and --force flags
 
 **`implementation-roadmap.md`**
 - Complete phase-by-phase implementation plan
@@ -128,8 +134,8 @@ This directory contains internal documentation, research, and AI agent instructi
 
 ## Quick Links
 
-- **For New Contributors**: Start with `SESSION-STATUS-2025-10-21.md` for latest work, then `status-report.md` for overall state, then `SPEC.md` for architecture
-- **For AI Agents**: Read `SESSION-STATUS-2025-10-21.md` first for current context, then `status-report.md`, `feature-parity-audit.md`, and `emoji-cleanup-systematic-approach.md` for next tasks
+- **For New Contributors**: Start with `session-2025-10-21-edge-testing.md` for latest work, then `status-report.md` for overall state, then `SPEC.md` for architecture
+- **For AI Agents**: Read `session-2025-10-21-edge-testing.md` first for current context, then `testing-strategy.md`, `reality-check.md`, and `status-report.md`
 - **For Researchers**: See `research-findings.md` and `performance-analysis.md`
 - **For Project Planning**: Review `implementation-roadmap.md` and `feasibility-assessment.md`
 - **For UX Work**: See `ux-analysis.md` and `emoji-cleanup-systematic-approach.md`
