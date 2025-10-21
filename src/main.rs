@@ -99,6 +99,10 @@ enum Commands {
         /// Check outdated casks instead of formulae
         #[arg(long)]
         cask: bool,
+
+        /// Show only names (one per line, no versions or headers)
+        #[arg(short, long)]
+        quiet: bool,
     },
 
     /// Download bottles for formulae
@@ -870,8 +874,8 @@ async fn main() -> anyhow::Result<()> {
         }) => {
             commands::list(&api, versions, json, cask, quiet).await?;
         }
-        Some(Commands::Outdated { cask }) => {
-            commands::outdated(&api, cask).await?;
+        Some(Commands::Outdated { cask, quiet }) => {
+            commands::outdated(&api, cask, quiet).await?;
         }
         Some(Commands::Fetch { formulae }) => {
             commands::fetch(&api, &formulae).await?;

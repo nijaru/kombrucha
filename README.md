@@ -1,6 +1,6 @@
 # kombrucha (bru)
 
-⚡ A blazingly fast Homebrew-compatible package manager written in Rust
+⚡ Blazing fast Homebrew-compatible package manager
 
 ## Status: Beta Ready 🚀
 
@@ -14,7 +14,7 @@ See [internal/status-report.md](internal/status-report.md) for detailed status.
 ## Features
 
 - **Fast**: 2-20x faster than Homebrew (8x average, verified benchmarks)
-- **Efficient**: Minimal CPU usage with compiled Rust binary
+- **Efficient**: Minimal CPU usage with compiled binary
 - **Compatible**: Full compatibility with Homebrew formulae and infrastructure
 - **Beautiful**: Colorized output with NO_COLOR support and pipe-aware formatting
 - **Parallel**: Concurrent operations for maximum performance

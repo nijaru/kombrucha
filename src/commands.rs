@@ -468,15 +468,30 @@ pub async fn list(
     Ok(())
 }
 
-pub async fn outdated(api: &BrewApi, cask: bool) -> Result<()> {
+/// Strip bottle revision from version string (e.g., "1.4.0_32" → "1.4.0")
+fn strip_bottle_revision(version: &str) -> &str {
+    if let Some(pos) = version.rfind('_') {
+        // Check if everything after _ is digits (bottle revision)
+        if version[pos + 1..].chars().all(|c| c.is_ascii_digit()) {
+            return &version[..pos];
+        }
+    }
+    version
+}
+
+pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
     if cask {
         // Check outdated casks
-        println!("Checking for outdated casks...");
+        if !quiet {
+            println!("Checking for outdated casks...");
+        }
 
         let installed_casks = crate::cask::list_installed_casks()?;
 
         if installed_casks.is_empty() {
-            println!("\n{} No casks installed", "ℹ".blue());
+            if !quiet {
+                println!("\n{} No casks installed", "ℹ".blue());
+            }
             return Ok(());
         }
 
@@ -506,34 +521,73 @@ pub async fn outdated(api: &BrewApi, cask: bool) -> Result<()> {
         let outdated_casks: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated_casks.is_empty() {
-            println!("\n{} All casks are up to date", "✓".green());
+            if !quiet {
+                println!("\n{} All casks are up to date", "✓".green());
+            }
             return Ok(());
         }
 
-        println!(
-            "\n{} Found {} outdated casks:\n",
-            "⚠".yellow(),
-            outdated_casks.len().to_string().bold()
-        );
-
-        for (token, installed, latest) in outdated_casks {
+        if !quiet {
             println!(
-                "{} {} {}",
-                token.bold().yellow(),
-                installed.dimmed(),
-                format!("→ {}", latest).cyan()
+                "\n{} Found {} outdated casks:\n",
+                "⚠".yellow(),
+                outdated_casks.len().to_string().bold()
             );
         }
+
+        for (token, installed, latest) in outdated_casks {
+            if quiet {
+                println!("{}", token);
+            } else {
+                println!(
+                    "{} {} {}",
+                    token.bold().yellow(),
+                    installed.dimmed(),
+                    format!("→ {}", latest).cyan()
+                );
+            }
+        }
     } else {
-        // Check outdated formulae (existing logic)
-        println!("Checking for outdated packages...");
+        // Check outdated formulae
+        if !quiet {
+            println!("Checking for outdated packages...");
+        }
 
-        let packages = cellar::list_installed()?;
+        let all_packages = cellar::list_installed()?;
 
-        if packages.is_empty() {
-            println!("\n{} No packages installed", "ℹ".blue());
+        if all_packages.is_empty() {
+            if !quiet {
+                println!("\n{} No packages installed", "ℹ".blue());
+            }
             return Ok(());
         }
+
+        // Deduplicate multiple versions - keep only the most recent for each formula
+        let mut package_map: std::collections::HashMap<String, cellar::InstalledPackage> =
+            std::collections::HashMap::new();
+
+        for pkg in all_packages {
+            package_map
+                .entry(pkg.name.clone())
+                .and_modify(|existing| {
+                    // Compare modification times - keep the more recent one
+                    if let (Ok(existing_meta), Ok(pkg_meta)) = (
+                        std::fs::metadata(&existing.path),
+                        std::fs::metadata(&pkg.path),
+                    ) {
+                        if let (Ok(existing_time), Ok(pkg_time)) =
+                            (existing_meta.modified(), pkg_meta.modified())
+                        {
+                            if pkg_time > existing_time {
+                                *existing = pkg.clone();
+                            }
+                        }
+                    }
+                })
+                .or_insert(pkg);
+        }
+
+        let packages: Vec<_> = package_map.into_values().collect();
 
         // Fetch all formula versions in parallel
         let fetch_futures: Vec<_> = packages
@@ -542,7 +596,11 @@ pub async fn outdated(api: &BrewApi, cask: bool) -> Result<()> {
                 match api.fetch_formula(&pkg.name).await {
                     Ok(formula) => {
                         if let Some(latest) = &formula.versions.stable {
-                            if latest != &pkg.version {
+                            // Strip bottle revisions before comparison
+                            let installed_stripped = strip_bottle_revision(&pkg.version);
+                            let latest_stripped = strip_bottle_revision(latest);
+
+                            if installed_stripped != latest_stripped {
                                 return Some((pkg.clone(), latest.clone()));
                             }
                         }
@@ -557,23 +615,31 @@ pub async fn outdated(api: &BrewApi, cask: bool) -> Result<()> {
         let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated_packages.is_empty() {
-            println!("\n{} All packages are up to date", "✓".green());
+            if !quiet {
+                println!("\n{} All packages are up to date", "✓".green());
+            }
             return Ok(());
         }
 
-        println!(
-            "\n{} Found {} outdated packages:\n",
-            "⚠".yellow(),
-            outdated_packages.len().to_string().bold()
-        );
+        if !quiet {
+            println!(
+                "\n{} Found {} outdated packages:\n",
+                "⚠".yellow(),
+                outdated_packages.len().to_string().bold()
+            );
+        }
 
         for (pkg, latest) in outdated_packages {
-            println!(
-                "{} {} {}",
-                pkg.name.bold().yellow(),
-                pkg.version.dimmed(),
-                format!("→ {}", latest).cyan()
-            );
+            if quiet {
+                println!("{}", pkg.name);
+            } else {
+                println!(
+                    "{} {} {}",
+                    pkg.name.bold().yellow(),
+                    pkg.version.dimmed(),
+                    format!("→ {}", latest).cyan()
+                );
+            }
         }
     }
 

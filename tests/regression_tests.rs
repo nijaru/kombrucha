@@ -241,13 +241,26 @@ fn test_parity_outdated_count() {
         return;
     }
 
+    // IMPORTANT: Update taps first to ensure brew and bru use the same data
+    // bru uses the online API (formulae.brew.sh) which is always current
+    // brew uses local tap data which needs to be updated
+    let update_result = Command::new("brew")
+        .args(["update", "--quiet"])
+        .output()
+        .expect("Failed to run brew update");
+
+    // Don't fail the test if update fails (might be network issues)
+    if !update_result.status.success() {
+        eprintln!("Warning: brew update failed, test may be inaccurate");
+    }
+
     let brew_output = Command::new("brew")
         .args(["outdated", "--quiet"])
         .output()
         .expect("Failed to run brew outdated");
 
     let bru_output = Command::new(bru_bin())
-        .args(["outdated"])
+        .args(["outdated", "--quiet"])
         .output()
         .expect("Failed to run bru outdated");
 
