@@ -22,7 +22,7 @@ exclude = [
 clap = { version = "4", features = ["derive", "cargo"] }
 clap_complete = "4"
 indicatif = "0.17"
-owo-colors = "4"
+colored = "2"
 
 # Async & HTTP
 tokio = { version = "1", features = ["full"] }

@@ -1,5 +1,5 @@
 use crate::cellar;
-use owo_colors::OwoColorize;
+use colored::Colorize;
 use std::path::PathBuf;
 use std::process::Command;
 

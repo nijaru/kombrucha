@@ -15,7 +15,7 @@ mod symlink;
 mod tap;
 
 use clap::{CommandFactory, Parser, Subcommand};
-use owo_colors::OwoColorize;
+use colored::Colorize;
 
 #[derive(Parser)]
 #[command(name = "bru")]

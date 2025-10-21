@@ -2,7 +2,7 @@ use crate::api::{BrewApi, Formula};
 use crate::cellar::{self, RuntimeDependency};
 use crate::error::Result;
 use crate::{download, extract, receipt, symlink};
-use owo_colors::OwoColorize;
+use colored::Colorize;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
