@@ -21,8 +21,8 @@ This document tracks all missing command-line flags across all commands. Flags a
 
 | Flag | brew | bru | Priority | Notes |
 |------|------|-----|----------|-------|
-| `-f, --force` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - force install even if already installed |
-| `-n, --dry-run` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 |
+| `-f, --force` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-21 - force install even if already installed |
+| `-n, --dry-run` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-21 - show what would be installed without installing |
 | `--formula, --formulae` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - disambiguation flag |
 | `-d, --debug` | ✅ | ❌ | ⚠️ MEDIUM | Interactive debugging session |
 | `--display-times` | ✅ | ❌ | 💡 LOW | Print install times at end |
@@ -39,8 +39,8 @@ This document tracks all missing command-line flags across all commands. Flags a
 
 | Flag | brew | bru | Priority | Notes |
 |------|------|-----|----------|-------|
-| `-n, --dry-run` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 |
-| `-f, --force` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - force upgrade even if no change detected |
+| `-n, --dry-run` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-21 - show what would be upgraded without upgrading |
+| `-f, --force` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-21 - force upgrade even if already at latest version |
 | `--formula, --formulae` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - disambiguation flag |
 | `-d, --debug` | ✅ | ❌ | 💡 LOW | Interactive debugging |
 | `--display-times` | ✅ | ❌ | 💡 LOW | Print upgrade times |
@@ -112,7 +112,7 @@ This document tracks all missing command-line flags across all commands. Flags a
 |------|------|-----|----------|-------|
 | `--full-name` | ✅ | ❌ | 💡 LOW | Fully-qualified names |
 | `--multiple` | ✅ | ❌ | 💡 LOW | Only show formulae with multiple versions |
-| `--pinned` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-17 - show pinned formulae |
+| `--pinned` | ✅ | ❌ | 💡 LOW | Not implemented - would show only pinned formulae |
 | `--installed-on-request` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - show manually installed packages |
 | `--installed-as-dependency` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - show dependency installs |
 | `--poured-from-bottle` | ✅ | ❌ | 💡 LOW | Show bottle vs source installs |
@@ -175,8 +175,8 @@ This document tracks all missing command-line flags across all commands. Flags a
 
 | Flag | brew | bru | Priority | Notes |
 |------|------|-----|----------|-------|
-| `--recursive` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-18 - show dependents of dependents |
-| `--installed` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-18 - only show installed dependents |
+| `--recursive` | ✅ | ❌ | 💡 LOW | Not implemented - would show recursive dependents |
+| `--installed` | ✅ | ❌ | 💡 LOW | Not implemented - would filter to installed only |
 | `--include-build` | ✅ | ❌ | 💡 LOW | Include build dependents |
 | `--include-optional` | ✅ | ❌ | 💡 LOW | Include optional dependents |
 | `--include-test` | ✅ | ❌ | 💡 LOW | Include test dependents |
