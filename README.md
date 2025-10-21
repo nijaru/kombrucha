@@ -1,6 +1,6 @@
 # kombrucha (bru)
 
-⚡ Blazing fast Homebrew-compatible package manager
+⚡ A blazing fast Homebrew-compatible package manager
 
 ## Status: Beta Ready 🚀
 
