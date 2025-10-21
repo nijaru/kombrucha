@@ -95,6 +95,7 @@ pub fn store_casks(casks: &Vec<Cask>) -> Result<()> {
 }
 
 /// Clear all caches
+#[allow(dead_code)]
 pub fn clear_caches() -> Result<()> {
     let cache_path = cache_dir();
 

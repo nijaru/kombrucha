@@ -231,6 +231,7 @@ pub fn extract_zip(zip_path: &PathBuf) -> Result<PathBuf> {
 }
 
 /// Quit an application before uninstalling
+#[allow(dead_code)]
 pub fn quit_app(bundle_id: &str) -> Result<()> {
     let output = Command::new("osascript")
         .args(["-e", &format!("quit app id \"{}\"", bundle_id)])
