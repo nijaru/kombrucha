@@ -1083,8 +1083,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
         let version = &installed_versions[0].version;
         println!(
-            "  {} Uninstalling {} {}",
-            "🗑".bold(),
+            "  Uninstalling {} {}",
             formula_name.cyan(),
             version.dimmed()
         );
@@ -1507,8 +1506,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
                 );
             } else {
                 println!(
-                    "  {} Removing {} {} ({})",
-                    "🗑".bold(),
+                    "  Removing {} {} ({})",
                     old.name.cyan(),
                     old.version.dimmed(),
                     format_size(size).dimmed()
@@ -2750,7 +2748,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         
         // Install taps first
         if !taps_to_add.is_empty() {
-            println!("\n{} Adding taps...", "🔗".bold());
+            println!("\nAdding taps...");
             for tap_name in &taps_to_add {
                 if crate::tap::is_tapped(tap_name)? {
                     println!("  {} {} already tapped", "✓".green(), tap_name.dimmed());
@@ -2766,7 +2764,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         
         // Install formulae
         if !formulae_to_install.is_empty() {
-            println!("\n{} Installing formulae...", "📦".bold());
+            println!("\nInstalling formulae...");
             match install(api, &formulae_to_install, false).await {
                 Ok(_) => {}
                 Err(e) => {
@@ -3410,7 +3408,7 @@ pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> 
             continue;
         }
 
-        println!("  {} Reinstalling {}...", "🔄".bold(), cask_name.cyan());
+        println!("  Reinstalling {}...", cask_name.cyan());
 
         // Uninstall
         uninstall_cask(&[cask_name.clone()])?;
@@ -3503,8 +3501,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
                 );
             } else {
                 println!(
-                    "  {} Removing {} {} ({})",
-                    "🗑".bold(),
+                    "  Removing {} {} ({})",
                     token.cyan(),
                     version_name.to_string_lossy().dimmed(),
                     format_size(size).dimmed()
@@ -3651,7 +3648,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
             let app_path = PathBuf::from("/Applications").join(app_name);
 
             if app_path.exists() {
-                println!("  {} Removing {}...", "🗑".bold(), app_name.cyan());
+                println!("  Removing {}...", app_name.cyan());
 
                 match std::fs::remove_dir_all(&app_path) {
                     Ok(_) => {
@@ -4114,7 +4111,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                             let stdout = String::from_utf8_lossy(&output.stdout);
 
                             if show_all {
-                                println!("  {} {}:", "📄".dimmed(), path.file_name().unwrap().to_string_lossy());
+                                println!("  {}:", path.file_name().unwrap().to_string_lossy());
                                 for line in stdout.lines().skip(1) {
                                     let trimmed = line.trim();
                                     if !trimmed.is_empty() {
@@ -4246,7 +4243,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
 
     // If not found in core, search other taps
     if formula_path.is_none() {
-        println!("  {} Searching taps...", "🔍".dimmed());
+        println!("  Searching taps...");
         // This is a simplified search - real implementation would be more thorough
     }
 
@@ -5466,7 +5463,7 @@ pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
     } else {
         println!("\n  {} Homebrew's sponsors:", "→".dimmed());
         println!("    https://github.com/sponsors/Homebrew");
-        println!("\n  {} Thank you to all our sponsors!", "💖".green());
+        println!("\n  Thank you to all our sponsors!");
     }
 
     Ok(())
