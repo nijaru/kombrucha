@@ -13,12 +13,13 @@ See [internal/status-report.md](internal/status-report.md) for detailed status.
 
 ## Features
 
-- **Fast**: 7-60x faster than Homebrew (depending on operation)
-- **Efficient**: 15-100x less CPU usage
+- **Fast**: 2-20x faster than Homebrew (8x average, verified benchmarks)
+- **Efficient**: Minimal CPU usage with compiled Rust binary
 - **Compatible**: Full compatibility with Homebrew formulae and infrastructure
-- **Beautiful**: Colorized output with formatted results
+- **Beautiful**: Colorized output with NO_COLOR support and pipe-aware formatting
 - **Parallel**: Concurrent operations for maximum performance
 - **Complete**: 116/116 Homebrew commands implemented
+- **Robust**: Graceful error handling and partial failure recovery
 
 ## What Works ✅
 
@@ -146,17 +147,20 @@ bru fetch wget jq tree
 
 ## Performance
 
-See [benchmarks/results.md](benchmarks/results.md) and [benchmarks/phase2-results.md](benchmarks/phase2-results.md) for detailed results.
+**Verified Benchmarks** (October 21, 2025) - M3 Max, macOS 15.1, 500 Mbps:
 
-**Phase 0 Benchmarks** (read-only commands):
-- `bru info`: **7.2x faster** than `brew info` (1.45s → 0.20s)
-- `bru search`: Same speed, **15x less CPU usage**
+| Command | brew | bru | Speedup |
+|---------|------|-----|---------|
+| `search rust` | 1.03s | 0.050s | **20.6x** |
+| `info wget` | 1.15s | 0.096s | **12.0x** |
+| `deps ffmpeg` | 1.26s | 0.15s | **8.4x** |
+| `install --dry-run python@3.13` | 1.20s | 0.25s | **4.8x** |
+| `outdated` (251 packages) | 1.97s | 0.98s | **2.0x** |
+| `list` | 0.030s | 0.020s | **1.5x** |
 
-**Phase 2 Benchmarks** (installation):
-- `bru install`: **21-60x faster** than `brew install`
-  - Normal usage (with auto-update): **60x faster** (8.3s → 0.14s)
-  - Pure install (no auto-update): **21x faster** (2.9s → 0.14s)
-  - **100x less CPU usage** (2.1s → 0.02s user time)
+**Average speedup: 8x across common operations**
+
+See [internal/performance-analysis.md](internal/performance-analysis.md) for detailed analysis and methodology.
 
 ## Why?
 

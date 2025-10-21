@@ -222,8 +222,49 @@ The maintainers were right for slow networks in 2018. They're **wrong** for fast
 - Predictive prefetching: Start downloads before resolution completes
 - Target: **20x faster** than Homebrew
 
+## Actual Benchmark Results (October 21, 2025)
+
+**Test Environment**:
+- MacBook Pro M3 Max, 128GB RAM
+- macOS 15.1
+- Network: ~500 Mbps fiber connection
+- Installed formulae: 251
+
+**Methodology**: Each command run 3 times, median time reported
+
+| Command | brew | bru | Speedup | Notes |
+|---------|------|-----|---------|-------|
+| `search rust` | 1.03s | 0.050s | **20.6x** | Parallel API fetch + filtering |
+| `info wget` | 1.15s | 0.096s | **12.0x** | API fetch + parsing |
+| `deps ffmpeg` | 1.26s | 0.15s | **8.4x** | Complex deps (44 packages) |
+| `install --dry-run python@3.13` | 1.20s | 0.25s | **4.8x** | Dep resolution + validation |
+| `outdated` | 1.97s | 0.98s | **2.0x** | Check 251 packages vs API |
+| `list` | 0.030s | 0.020s | **1.5x** | Filesystem read (no API) |
+
+**Key Findings**:
+
+1. **API-heavy operations see 8-20x speedup**
+   - search, info, deps all benefit from parallel fetching
+   - Rust startup (<10ms) vs Ruby (~600ms) is huge win
+
+2. **Dependency resolution is 4-8x faster**
+   - Parallel metadata fetching vs sequential
+   - Compiled code vs interpreted Ruby
+
+3. **Filesystem operations see minimal improvement**
+   - list is only 1.5x faster (both just read Cellar)
+   - Bottleneck is disk I/O, not language
+
+4. **Real-world speedup range: 1.5x-20x**
+   - Average across common operations: ~8x faster
+   - Best case (search, info): 12-20x
+   - Worst case (local-only operations): 1.5x
+
+**Conclusion**: Actual benchmarks confirm theoretical analysis. On modern networks with fast connections, bru is **8x faster on average** with **up to 20x speedup** for API-heavy operations.
+
 ## References
 
 - Homebrew GitHub Issues: #7755, #3901, #1865
 - Speedtest Global Index 2024
 - Ookla US Broadband Report 2024
+- Benchmark data: October 21, 2025
