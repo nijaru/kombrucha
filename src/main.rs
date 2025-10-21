@@ -119,6 +119,14 @@ enum Commands {
         /// Install cask instead of formula
         #[arg(long)]
         cask: bool,
+
+        /// Show what would be installed without actually installing
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+
+        /// Install even if already installed
+        #[arg(short, long)]
+        force: bool,
     },
 
     /// Upgrade installed formulae
@@ -129,6 +137,14 @@ enum Commands {
         /// Upgrade casks instead of formulae
         #[arg(long)]
         cask: bool,
+
+        /// Show what would be upgraded without actually upgrading
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+
+        /// Upgrade even if already at latest version
+        #[arg(short, long)]
+        force: bool,
     },
 
     /// Reinstall formulae
@@ -851,15 +867,17 @@ async fn main() -> anyhow::Result<()> {
             formulae,
             only_dependencies,
             cask,
+            dry_run,
+            force,
         }) => {
             if cask {
                 commands::install_cask(&api, &formulae).await?;
             } else {
-                commands::install(&api, &formulae, only_dependencies).await?;
+                commands::install(&api, &formulae, only_dependencies, dry_run, force).await?;
             }
         }
-        Some(Commands::Upgrade { formulae, cask }) => {
-            commands::upgrade(&api, &formulae, cask).await?;
+        Some(Commands::Upgrade { formulae, cask, dry_run, force }) => {
+            commands::upgrade(&api, &formulae, cask, dry_run, force).await?;
         }
         Some(Commands::Reinstall { formulae, cask }) => {
             commands::reinstall(&api, &formulae, cask).await?;

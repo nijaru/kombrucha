@@ -617,7 +617,13 @@ pub async fn install(
     api: &BrewApi,
     formula_names: &[String],
     _only_dependencies: bool,
+    dry_run: bool,
+    force: bool,
 ) -> Result<()> {
+    if dry_run {
+        println!("{} Dry run mode - no packages will be installed", "ℹ".blue());
+    }
+
     println!("Installing {} formulae...",formula_names.len().to_string().bold()
     );
 
@@ -625,18 +631,27 @@ pub async fn install(
     println!("\nResolving dependencies...");
     let (all_formulae, dep_order) = resolve_dependencies(api, formula_names).await?;
 
-    // Filter installed packages
+    // Filter installed packages (unless --force)
     let installed = cellar::list_installed()?;
     let installed_names: HashSet<_> = installed.iter().map(|p| p.name.as_str()).collect();
 
-    let to_install: Vec<_> = all_formulae
-        .values()
-        .filter(|f| !installed_names.contains(f.name.as_str()))
-        .cloned()
-        .collect();
+    let to_install: Vec<_> = if force {
+        // With --force, install all formulae even if already installed
+        all_formulae.values().cloned().collect()
+    } else {
+        // Normal mode: skip already installed
+        all_formulae
+            .values()
+            .filter(|f| !installed_names.contains(f.name.as_str()))
+            .cloned()
+            .collect()
+    };
 
     if to_install.is_empty() {
         println!("\n{} All formulae already installed", "✓".green());
+        if force {
+            println!("  {} Use without --force to install anyway", "→".dimmed());
+        }
         return Ok(());
     }
 
@@ -651,6 +666,12 @@ pub async fn install(
             .join(", ")
             .cyan()
     );
+
+    // If dry-run, stop here
+    if dry_run {
+        println!("\n{} Dry run complete - no packages were installed", "✓".green());
+        return Ok(());
+    }
 
     // Step 2: Download all bottles in parallel
     println!("\n{} Downloading bottles...", "⬇".bold());
@@ -832,9 +853,13 @@ fn build_runtime_deps(
         .collect()
 }
 
-pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> {
+pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool, dry_run: bool, force: bool) -> Result<()> {
     if cask {
         return upgrade_cask(api, names).await;
+    }
+
+    if dry_run {
+        println!("{} Dry run mode - no packages will be upgraded", "ℹ".blue());
     }
 
     let formula_names = names;
@@ -849,7 +874,7 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> 
         for pkg in packages {
             if let Ok(formula) = api.fetch_formula(&pkg.name).await
                 && let Some(latest) = &formula.versions.stable
-                && latest != &pkg.version {
+                && (force || latest != &pkg.version) {
                     outdated.push(pkg.name.clone());
                 }
         }
@@ -869,6 +894,12 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> 
     } else {
         formula_names.to_vec()
     };
+
+    // If dry-run, stop after showing what would be upgraded
+    if dry_run {
+        println!("\n{} Dry run complete - no packages were upgraded", "✓".green());
+        return Ok(());
+    }
 
     println!(
         "\n{} Upgrading {} packages...",
@@ -897,7 +928,7 @@ pub async fn upgrade(api: &BrewApi, names: &[String], cask: bool) -> Result<()> 
                 "ℹ".blue(),
                 formula_name.bold()
             );
-            install(api, std::slice::from_ref(formula_name), false).await?;
+            install(api, std::slice::from_ref(formula_name), false, false, false).await?;
             continue;
         }
 
@@ -2799,7 +2830,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         // Install formulae
         if !formulae_to_install.is_empty() {
             println!("\nInstalling formulae...");
-            match install(api, &formulae_to_install, false).await {
+            match install(api, &formulae_to_install, false, false, false).await {
                 Ok(_) => {}
                 Err(e) => {
                     println!("{} Failed to install some formulae: {}", "⚠".yellow(), e);
