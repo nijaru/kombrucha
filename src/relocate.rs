@@ -125,9 +125,10 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
 
     // Also fix the id if it's a library
     if let Some(ext) = path.extension()
-        && ext == "dylib" {
-            fix_library_id(path, prefix, cellar)?;
-        }
+        && ext == "dylib"
+    {
+        fix_library_id(path, prefix, cellar)?;
+    }
 
     Ok(())
 }

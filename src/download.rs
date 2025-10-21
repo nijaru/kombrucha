@@ -138,9 +138,10 @@ pub async fn download_bottle(
         .context("Failed to send request")?;
 
     if let Some(pb) = &pb
-        && let Some(total) = response.content_length() {
-            pb.set_length(total);
-        }
+        && let Some(total) = response.content_length()
+    {
+        pb.set_length(total);
+    }
 
     let mut file = fs::File::create(&output_path)
         .await

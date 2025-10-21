@@ -21,7 +21,7 @@ pub async fn download_cask(url: &str, token: &str) -> Result<PathBuf> {
     std::fs::create_dir_all(&cache_dir)?;
 
     // Extract filename from URL
-    let filename = url.split('/').last().unwrap_or(token);
+    let filename = url.split('/').next_back().unwrap_or(token);
     let dest_path = cache_dir.join(filename);
 
     // Skip if already downloaded
@@ -62,7 +62,9 @@ pub fn mount_dmg(dmg_path: &PathBuf) -> Result<PathBuf> {
         // Look for lines with /Volumes/
         if line.contains("/Volumes/") {
             // Split by tabs and whitespace
-            let parts: Vec<&str> = line.split(|c: char| c == '\t' || c.is_whitespace()).collect();
+            let parts: Vec<&str> = line
+                .split(|c: char| c == '\t' || c.is_whitespace())
+                .collect();
             for part in parts {
                 let trimmed = part.trim();
                 if trimmed.starts_with("/Volumes/") && !trimmed.is_empty() {
@@ -137,14 +139,13 @@ pub fn extract_app_artifacts(artifacts: &[serde_json::Value]) -> Vec<String> {
     let mut apps = Vec::new();
 
     for artifact in artifacts {
-        if let Some(obj) = artifact.as_object() {
-            if let Some(app_array) = obj.get("app") {
-                if let Some(arr) = app_array.as_array() {
-                    for item in arr {
-                        if let Some(app_name) = item.as_str() {
-                            apps.push(app_name.to_string());
-                        }
-                    }
+        if let Some(obj) = artifact.as_object()
+            && let Some(app_array) = obj.get("app")
+            && let Some(arr) = app_array.as_array()
+        {
+            for item in arr {
+                if let Some(app_name) = item.as_str() {
+                    apps.push(app_name.to_string());
                 }
             }
         }
@@ -169,10 +170,10 @@ pub fn get_installed_cask_version(token: &str) -> Option<String> {
     // Get the first (and typically only) version directory
     if let Ok(entries) = std::fs::read_dir(&caskroom) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                if let Some(version) = entry.file_name().to_str() {
-                    return Some(version.to_string());
-                }
+            if entry.path().is_dir()
+                && let Some(version) = entry.file_name().to_str()
+            {
+                return Some(version.to_string());
             }
         }
     }
@@ -205,8 +206,10 @@ pub fn list_installed_casks() -> Result<Vec<(String, String)>> {
 /// Extract a ZIP file and return the extraction directory
 pub fn extract_zip(zip_path: &PathBuf) -> Result<PathBuf> {
     let cache_dir = crate::download::cache_dir();
-    let extract_dir = cache_dir.join(format!("{}_extracted",
-        zip_path.file_stem().unwrap().to_string_lossy()));
+    let extract_dir = cache_dir.join(format!(
+        "{}_extracted",
+        zip_path.file_stem().unwrap().to_string_lossy()
+    ));
 
     // Remove existing extraction directory if present
     if extract_dir.exists() {

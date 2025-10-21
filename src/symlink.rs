@@ -187,11 +187,12 @@ fn unlink_directory(
                 };
 
                 if let Ok(canonical) = resolved.canonicalize()
-                    && canonical.starts_with(formula_path) {
-                        // Remove symlink
-                        fs::remove_file(&target_path)?;
-                        unlinked_files.push(target_path);
-                    }
+                    && canonical.starts_with(formula_path)
+                {
+                    // Remove symlink
+                    fs::remove_file(&target_path)?;
+                    unlinked_files.push(target_path);
+                }
             }
         }
     }

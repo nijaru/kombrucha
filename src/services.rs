@@ -50,9 +50,7 @@ pub fn service_exists(formula: &str) -> bool {
 
 /// List all running launchd services
 pub fn list_running_services() -> Result<Vec<(String, Option<i32>, Option<i32>)>> {
-    let output = Command::new("launchctl")
-        .arg("list")
-        .output()?;
+    let output = Command::new("launchctl").arg("list").output()?;
 
     if !output.status.success() {
         return Ok(vec![]);
@@ -102,8 +100,7 @@ pub fn get_service_status(formula: &str) -> Result<ServiceInfo> {
 
     // Check if service is loaded
     let running_services = list_running_services()?;
-    let service_entry = running_services.iter()
-        .find(|(l, _, _)| l == &label);
+    let service_entry = running_services.iter().find(|(l, _, _)| l == &label);
 
     let status = match service_entry {
         Some((_, Some(_pid), _)) => ServiceStatus::Started,
@@ -169,9 +166,21 @@ pub fn list_all_services() -> Result<Vec<ServiceInfo>> {
 /// (Common service formulae)
 fn service_could_exist(formula: &str) -> bool {
     const COMMON_SERVICES: &[&str] = &[
-        "postgresql", "mysql", "redis", "mongodb", "nginx", "apache",
-        "memcached", "rabbitmq", "elasticsearch", "dnsmasq", "unbound",
-        "mariadb", "cassandra", "dbus", "atuin"
+        "postgresql",
+        "mysql",
+        "redis",
+        "mongodb",
+        "nginx",
+        "apache",
+        "memcached",
+        "rabbitmq",
+        "elasticsearch",
+        "dnsmasq",
+        "unbound",
+        "mariadb",
+        "cassandra",
+        "dbus",
+        "atuin",
     ];
 
     COMMON_SERVICES.iter().any(|&s| formula.starts_with(s))

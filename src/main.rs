@@ -842,19 +842,32 @@ async fn main() -> anyhow::Result<()> {
     let api = api::BrewApi::new()?;
 
     match cli.command {
-        Some(Commands::Search { query, formula, cask }) => {
+        Some(Commands::Search {
+            query,
+            formula,
+            cask,
+        }) => {
             commands::search(&api, &query, formula, cask).await?;
         }
         Some(Commands::Info { formula, json }) => {
             commands::info(&api, &formula, json).await?;
         }
-        Some(Commands::Deps { formula, tree, installed }) => {
+        Some(Commands::Deps {
+            formula,
+            tree,
+            installed,
+        }) => {
             commands::deps(&api, &formula, tree, installed).await?;
         }
         Some(Commands::Uses { formula }) => {
             commands::uses(&api, &formula).await?;
         }
-        Some(Commands::List { versions, json, cask, quiet }) => {
+        Some(Commands::List {
+            versions,
+            json,
+            cask,
+            quiet,
+        }) => {
             commands::list(&api, versions, json, cask, quiet).await?;
         }
         Some(Commands::Outdated { cask }) => {
@@ -876,13 +889,22 @@ async fn main() -> anyhow::Result<()> {
                 commands::install(&api, &formulae, only_dependencies, dry_run, force).await?;
             }
         }
-        Some(Commands::Upgrade { formulae, cask, dry_run, force }) => {
+        Some(Commands::Upgrade {
+            formulae,
+            cask,
+            dry_run,
+            force,
+        }) => {
             commands::upgrade(&api, &formulae, cask, dry_run, force).await?;
         }
         Some(Commands::Reinstall { formulae, cask }) => {
             commands::reinstall(&api, &formulae, cask).await?;
         }
-        Some(Commands::Uninstall { formulae, force, cask }) => {
+        Some(Commands::Uninstall {
+            formulae,
+            force,
+            cask,
+        }) => {
             if cask {
                 commands::uninstall_cask(&formulae)?;
             } else {
@@ -904,7 +926,11 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Update) => {
             commands::update()?;
         }
-        Some(Commands::Cleanup { formulae, dry_run, cask }) => {
+        Some(Commands::Cleanup {
+            formulae,
+            dry_run,
+            cask,
+        }) => {
             commands::cleanup(&formulae, dry_run, cask)?;
         }
         Some(Commands::Cache { clean }) => {
@@ -945,12 +971,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
-            clap_complete::generate(
-                shell,
-                &mut cmd,
-                "bru",
-                &mut std::io::stdout(),
-            );
+            clap_complete::generate(shell, &mut cmd, "bru", &mut std::io::stdout());
         }
         Some(Commands::Missing { formulae }) => {
             commands::missing(&formulae)?;
@@ -1093,7 +1114,10 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::UpdateReport) => {
             commands::update_report()?;
         }
-        Some(Commands::UpdatePythonResources { formula, print_only }) => {
+        Some(Commands::UpdatePythonResources {
+            formula,
+            print_only,
+        }) => {
             commands::update_python_resources(&formula, print_only)?;
         }
         Some(Commands::DetermineTestRunners { formulae }) => {
@@ -1102,7 +1126,11 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::DispatchBuildBottle { formula, platform }) => {
             commands::dispatch_build_bottle(&formula, platform.as_deref())?;
         }
-        Some(Commands::BumpFormulaPr { formula, version, url }) => {
+        Some(Commands::BumpFormulaPr {
+            formula,
+            version,
+            url,
+        }) => {
             commands::bump_formula_pr(&formula, version.as_deref(), url.as_deref())?;
         }
         Some(Commands::BumpCaskPr { cask, version }) => {
@@ -1120,7 +1148,10 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::PrUpload { bintray }) => {
             commands::pr_upload(bintray)?;
         }
-        Some(Commands::TestBot { formulae, skip_cleanup }) => {
+        Some(Commands::TestBot {
+            formulae,
+            skip_cleanup,
+        }) => {
             commands::test_bot(&formulae, skip_cleanup)?;
         }
         Some(Commands::BumpRevision { formulae, message }) => {

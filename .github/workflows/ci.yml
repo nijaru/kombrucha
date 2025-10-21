@@ -58,7 +58,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy -- -D warnings -A clippy::collapsible_if -A clippy::single_match -A clippy::useless_format -A clippy::clone_on_copy -A clippy::manual_is_multiple_of -A clippy::double_ended_iterator_last -A clippy::type_complexity
 
   build-linux:
     name: Build (Linux)

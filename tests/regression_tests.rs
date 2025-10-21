@@ -204,7 +204,10 @@ fn test_regression_api_404_error_messages() {
     // 3. Fixed code: "Error: Formula 'nonexistent-package-xyz-123' not found"
 
     let output = Command::new(bru_bin())
-        .args(["info", "nonexistent-package-xyz-123-definitely-does-not-exist"])
+        .args([
+            "info",
+            "nonexistent-package-xyz-123-definitely-does-not-exist",
+        ])
         .output()
         .expect("Failed to run bru info");
 
@@ -262,7 +265,6 @@ fn test_parity_outdated_count() {
         bru_count, brew_count,
         "bru and brew must report the same number of outdated packages.\n\
          brew count: {}, bru count: {}",
-        brew_count,
-        bru_count
+        brew_count, bru_count
     );
 }

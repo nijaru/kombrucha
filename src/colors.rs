@@ -10,7 +10,6 @@
 ///
 /// **TTY Detection**: Colors are automatically disabled if stdout is not a terminal,
 /// unless CLICOLOR_FORCE is set.
-
 use colored::control;
 
 /// Initialize color support by checking environment variables and TTY status

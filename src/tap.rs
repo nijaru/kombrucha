@@ -1,6 +1,6 @@
 //! Homebrew tap management - adding and removing third-party repositories
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -130,9 +130,11 @@ pub fn untap(tap_name: &str) -> Result<()> {
 
     // Remove user directory if empty
     if let Some(user_dir) = tap_dir.parent()
-        && user_dir.exists() && fs::read_dir(user_dir)?.next().is_none() {
-            fs::remove_dir(user_dir)?;
-        }
+        && user_dir.exists()
+        && fs::read_dir(user_dir)?.next().is_none()
+    {
+        fs::remove_dir(user_dir)?;
+    }
 
     Ok(())
 }
