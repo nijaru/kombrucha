@@ -610,10 +610,12 @@ $ bru install --dry-run tree htop wget curl ripgrep fd bat fzf
 - ffmpeg → aom → jpeg-xl, libvmaf ✓
 - Recursive resolution working correctly
 
-**Edge cases found**:
-- Non-existent formula in list causes entire install to fail
-- No partial progress reporting during resolution
-- No indication of keg-only status in dependency tree
+**Edge cases**:
+- ~~Non-existent formula in list causes entire install to fail~~ FIXED (2025-10-21)
+  - Now skips invalid formulae with warnings, continues with valid ones
+  - Shows ⚠ for skipped formulae, ❌ if all invalid
+- No partial progress reporting during resolution (future enhancement)
+- No indication of keg-only status in dependency tree (cosmetic)
 
 ## Resources
 

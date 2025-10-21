@@ -77,10 +77,10 @@
 **Fixed:**
 - ✅ Error handling: Commands showed ugly stack traces for non-existent formulae - FIXED
 - ✅ Keg-only support: Missing from API/display - FIXED
+- ✅ Partial failure handling: Single non-existent formula caused entire install to fail - FIXED
 
 **Remaining:**
-- ⚠️ Single non-existent formula in multi-formula install causes entire install to fail
-- ⚠️ No partial progress reporting during dependency resolution
+- ⚠️ No partial progress reporting during dependency resolution (future enhancement)
 
 ---
 
