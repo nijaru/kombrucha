@@ -117,7 +117,7 @@ This document tracks all missing command-line flags across all commands. Flags a
 | `--installed-as-dependency` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - show dependency installs |
 | `--poured-from-bottle` | ✅ | ❌ | 💡 LOW | Show bottle vs source installs |
 | `--built-from-source` | ✅ | ❌ | 💡 LOW | Show source builds |
-| `-1` | ✅ | ✅ | ✅ DONE | bru always outputs one per line |
+| `-1, --quiet` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-21 - pipe-aware quiet mode |
 | `-l` | ✅ | ❌ | 💡 LOW | Long format (ls -l style) |
 | `--formula, --formulae` | ✅ | ✅ | ✅ DONE | Implemented 2025-10-15 - disambiguation flag |
 | `--cask, --casks` | ✅ | ✅ | ✅ DONE | Already implemented |
