@@ -22,6 +22,13 @@ This directory contains internal documentation, research, and AI agent instructi
 
 ### Planning & Tracking
 
+**`SESSION-STATUS-2025-10-21.md`** ⭐ **LATEST STATUS**
+- Most recent session work (UX improvements)
+- Symbol cleanup progress and challenges
+- Systematic approach for emoji cleanup
+- Current build status and next steps
+- Lessons learned and documentation improvements
+
 **`implementation-roadmap.md`**
 - Complete phase-by-phase implementation plan
 - Timeline: 8 weeks for MVP, 20 weeks for full release
@@ -42,7 +49,7 @@ This directory contains internal documentation, research, and AI agent instructi
 - Implementation priorities and categories
 - Version milestone planning
 
-**`status-report.md`** ⭐ **START HERE FOR CURRENT STATUS**
+**`status-report.md`**
 - Executive summary of project status
 - Production readiness assessment (85%)
 - Testing coverage (77% - 89/116 commands)
@@ -72,6 +79,13 @@ This directory contains internal documentation, research, and AI agent instructi
 - File system layout and conventions
 - Tap structure and management
 
+**`homebrew-edge-cases.md`**
+- Platform compatibility testing (macOS versions)
+- Bottle fallback scenarios
+- Version string formats
+- Dependency edge cases
+- Comprehensive testing matrix
+
 **`testing-strategy.md`**
 - Comprehensive testing approach
 - End-to-end testing methodology
@@ -90,12 +104,35 @@ This directory contains internal documentation, research, and AI agent instructi
 - Strategic recommendations
 - Project viability confirmation
 
+### UX & Development
+
+**`ux-analysis.md`**
+- Comprehensive UX evaluation
+- Comparison with modern CLIs (cargo, uv, git)
+- What we're doing well vs areas for improvement
+- Specific recommendations with priorities
+- Symbol and emoji usage analysis
+
+**`emoji-cleanup-systematic-approach.md`**
+- Documented incremental approach for removing emojis
+- Pattern categorization and complexity assessment
+- Phase-by-phase execution plan with testing strategy
+- Success criteria and rollback procedures
+- Ready for next session execution
+
+**`progress-implementation-plan.md`**
+- Progress indicator requirements
+- Terminal integration (OSC 9;4)
+- Implementation phases and milestones
+- Testing and compatibility considerations
+
 ## Quick Links
 
-- **For New Contributors**: Start with `status-report.md` for current state, then `SPEC.md` for architecture
-- **For AI Agents**: Read `status-report.md` first, then `feature-parity-audit.md` and `test-report.md`
+- **For New Contributors**: Start with `SESSION-STATUS-2025-10-21.md` for latest work, then `status-report.md` for overall state, then `SPEC.md` for architecture
+- **For AI Agents**: Read `SESSION-STATUS-2025-10-21.md` first for current context, then `status-report.md`, `feature-parity-audit.md`, and `emoji-cleanup-systematic-approach.md` for next tasks
 - **For Researchers**: See `research-findings.md` and `performance-analysis.md`
 - **For Project Planning**: Review `implementation-roadmap.md` and `feasibility-assessment.md`
+- **For UX Work**: See `ux-analysis.md` and `emoji-cleanup-systematic-approach.md`
 
 ## Key Insights
 
