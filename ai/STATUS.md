@@ -4,7 +4,7 @@ Last updated: 2025-10-22
 
 ## Current State
 
-**Version**: 0.1.1 (Beta)
+**Version**: 0.1.2 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -51,6 +51,12 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**v0.1.2** (2025-10-22):
+- Bug fixes: leaves command deduplication, error handling improvements
+- UX: Removed stack traces, accurate success/failure messages
+- Quality: Replaced unwrap() calls with proper error handling
+- All changes from extended session consolidated into release
 
 **v0.1.1** (2025-10-22):
 - Upgrade duplicates: Fixed deduplication by modification time
