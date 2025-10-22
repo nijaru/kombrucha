@@ -83,18 +83,23 @@ fn link_directory(
 /// Create a relative symlink from source to target
 fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> Result<()> {
     // If target already exists and points to same source, skip
-    if target.exists() || target.symlink_metadata().is_ok() {
+    if target.symlink_metadata().is_ok() {
         if let Ok(existing) = fs::read_link(target) {
-            // Resolve to absolute path for comparison
-            let existing_absolute = if existing.is_relative() {
-                target.parent().unwrap().join(&existing).canonicalize().ok()
+            // Build expected relative path
+            let expected_relative = if source.starts_with(cellar_root) {
+                let mut path = PathBuf::from("..");
+                if let Ok(rel) = source.strip_prefix(cellar_root.parent().unwrap_or(cellar_root)) {
+                    path = path.join(rel);
+                } else {
+                    path = source.to_path_buf();
+                }
+                path
             } else {
-                existing.canonicalize().ok()
+                source.to_path_buf()
             };
 
-            let source_absolute = source.canonicalize().ok();
-
-            if existing_absolute == source_absolute {
+            // Compare symlink targets directly without canonicalizing (avoids opening files)
+            if existing == expected_relative {
                 // Already linked correctly
                 return Ok(());
             }
@@ -180,15 +185,15 @@ fn unlink_directory(
         } else if target_path.symlink_metadata().is_ok() {
             // Check if this symlink points to our formula
             if let Ok(link_target) = fs::read_link(&target_path) {
+                // Resolve path without canonicalizing (avoids opening files)
                 let resolved = if link_target.is_relative() {
                     target_path.parent().unwrap().join(&link_target)
                 } else {
                     link_target.clone()
                 };
 
-                if let Ok(canonical) = resolved.canonicalize()
-                    && canonical.starts_with(formula_path)
-                {
+                // Check if resolved path starts with formula path (don't need to canonicalize)
+                if resolved.starts_with(formula_path) {
                     // Remove symlink
                     fs::remove_file(&target_path)?;
                     unlinked_files.push(target_path);
