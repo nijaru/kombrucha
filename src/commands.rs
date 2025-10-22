@@ -646,34 +646,39 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     );
 
     // Fetch formula metadata in parallel
-    let mut formulae = Vec::new();
-    for name in formula_names {
-        match api.fetch_formula(name).await {
-            Ok(formula) => {
-                // Check if bottle exists
-                if formula.bottle.is_none()
-                    || formula
-                        .bottle
-                        .as_ref()
-                        .and_then(|b| b.stable.as_ref())
-                        .is_none()
-                {
-                    println!("{} No bottle available for {}", "⚠".yellow(), name.bold());
-                    continue;
+    let fetch_futures: Vec<_> = formula_names
+        .iter()
+        .map(|name| async move {
+            match api.fetch_formula(name).await {
+                Ok(formula) => {
+                    // Check if bottle exists
+                    if formula.bottle.is_none()
+                        || formula
+                            .bottle
+                            .as_ref()
+                            .and_then(|b| b.stable.as_ref())
+                            .is_none()
+                    {
+                        println!("{} No bottle available for {}", "⚠".yellow(), name.bold());
+                        return None;
+                    }
+                    Some(formula)
                 }
-                formulae.push(formula);
+                Err(e) => {
+                    println!(
+                        "{} Failed to fetch formula {}: {}",
+                        "✗".red(),
+                        name.bold(),
+                        e
+                    );
+                    None
+                }
             }
-            Err(e) => {
-                println!(
-                    "{} Failed to fetch formula {}: {}",
-                    "✗".red(),
-                    name.bold(),
-                    e
-                );
-                continue;
-            }
-        }
-    }
+        })
+        .collect();
+
+    let results = futures::future::join_all(fetch_futures).await;
+    let formulae: Vec<_> = results.into_iter().flatten().collect();
 
     if formulae.is_empty() {
         println!("\n{} No formulae to download", "ℹ".blue());
@@ -725,17 +730,28 @@ pub async fn install(
         formula_names.len().to_string().bold()
     );
 
-    // Step 1: Validate requested formulae and collect errors
+    // Step 1: Validate requested formulae in parallel
     println!("\nResolving dependencies...");
+
+    let validation_futures: Vec<_> = formula_names
+        .iter()
+        .map(|name| async move {
+            match api.fetch_formula(name).await {
+                Ok(_) => Ok(name.clone()),
+                Err(e) => Err((name.clone(), e)),
+            }
+        })
+        .collect();
+
+    let validation_results = futures::future::join_all(validation_futures).await;
+
     let mut errors = Vec::new();
     let mut valid_formulae = Vec::new();
 
-    for name in formula_names {
-        match api.fetch_formula(name).await {
-            Ok(_) => valid_formulae.push(name.clone()),
-            Err(e) => {
-                errors.push((name.clone(), e));
-            }
+    for result in validation_results {
+        match result {
+            Ok(name) => valid_formulae.push(name),
+            Err((name, e)) => errors.push((name, e)),
         }
     }
 
@@ -904,32 +920,49 @@ pub async fn install(
     Ok(())
 }
 
-/// Resolve all dependencies recursively
+/// Resolve all dependencies recursively, parallelizing each level
 async fn resolve_dependencies(
     api: &BrewApi,
     root_formulae: &[String],
 ) -> Result<(HashMap<String, Formula>, Vec<String>)> {
     let mut all_formulae = HashMap::new();
-    let mut to_process = root_formulae.to_vec();
+    let mut current_level = root_formulae.to_vec();
     let mut processed = HashSet::new();
 
-    // Recursively fetch all dependencies
-    while let Some(name) = to_process.pop() {
-        if processed.contains(&name) {
-            continue;
+    // Process dependencies level by level in parallel
+    while !current_level.is_empty() {
+        // Filter out already processed formulae
+        current_level.retain(|name| !processed.contains(name));
+
+        if current_level.is_empty() {
+            break;
         }
 
-        let formula = api.fetch_formula(&name).await?;
+        // Fetch all formulae at this level in parallel
+        let fetch_futures: Vec<_> = current_level
+            .iter()
+            .map(|name| async move {
+                api.fetch_formula(name).await.ok()
+            })
+            .collect();
 
-        // Add dependencies to process queue
-        for dep in &formula.dependencies {
-            if !processed.contains(dep) {
-                to_process.push(dep.clone());
+        let results = futures::future::join_all(fetch_futures).await;
+
+        // Collect next level dependencies
+        let mut next_level = Vec::new();
+        for (formula, name) in results.into_iter().flatten().zip(current_level.iter()) {
+            // Add dependencies to next level
+            for dep in &formula.dependencies {
+                if !processed.contains(dep) && !all_formulae.contains_key(dep) {
+                    next_level.push(dep.clone());
+                }
             }
+
+            processed.insert(name.clone());
+            all_formulae.insert(formula.name.clone(), formula);
         }
 
-        processed.insert(name.clone());
-        all_formulae.insert(formula.name.clone(), formula);
+        current_level = next_level;
     }
 
     // Build dependency order (topological sort)
