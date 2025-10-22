@@ -1163,7 +1163,7 @@ pub async fn upgrade(
         receipt_data.write(&extracted_path)?;
 
         println!(
-            "    {} Linked {} files",
+            "    ├ {} Linked {} files",
             "✓".green(),
             linked.len().to_string().dimmed()
         );
@@ -1173,14 +1173,14 @@ pub async fn upgrade(
         if old_path.exists() {
             std::fs::remove_dir_all(&old_path)?;
             println!(
-                "    {} Removed old version {}",
+                "    ├ {} Removed old version {}",
                 "✓".green(),
                 old_version.dimmed()
             );
         }
 
         println!(
-            "    {} Upgraded {} to {}",
+            "    └ {} Upgraded {} to {}",
             "✓".green(),
             formula_name.bold().green(),
             new_version.dimmed()
@@ -1349,7 +1349,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         let unlinked = symlink::unlink_formula(formula_name, version)?;
         if !unlinked.is_empty() {
             println!(
-                "    {} Unlinked {} files",
+                "    ├ {} Unlinked {} files",
                 "✓".green(),
                 unlinked.len().to_string().dimmed()
             );
@@ -1368,7 +1368,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         }
 
         println!(
-            "    {} Uninstalled {} {}",
+            "    └ {} Uninstalled {} {}",
             "✓".green(),
             formula_name.bold().green(),
             version.dimmed()
