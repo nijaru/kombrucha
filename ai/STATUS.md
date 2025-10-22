@@ -23,6 +23,7 @@ Last updated: 2025-10-22
 - Services: launchd integration
 - Bundle: Brewfile install and dump
 - Modern CLI output: Tree connectors, clean formatting, command aliases
+- Distribution: Homebrew tap (brew install nijaru/tap/bru)
 
 ### What Doesn't Work ❌
 - Source builds: Formulae without bottles (~1-5%)
@@ -105,11 +106,10 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 
 ## Active Work
 
-Currently stabilizing v0.1.1 for wider testing:
-- ✅ Testing improvements (added 11 new non-ignored tests)
-- ✅ Modern CLI output (removed all decorative symbols)
-- ✅ Documentation reorganization (following agent-contexts patterns)
-- CI improvements (next)
+Post-v0.1.4 release:
+- ✅ README polish: User-focused documentation with clear value proposition
+- ✅ Homebrew tap: Created nijaru/homebrew-tap for `brew install nijaru/tap/bru`
+- Real-world stability testing (current)
 
 ## Blockers
 
