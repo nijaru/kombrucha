@@ -442,7 +442,8 @@ fn test_install_dry_run_validation() {
     assert!(
         combined.contains("not found") || combined.contains("No formula"),
         "Should show clear error for nonexistent formula. Got:\nstdout: {}\nstderr: {}",
-        stdout, stderr
+        stdout,
+        stderr
     );
 }
 
@@ -456,10 +457,7 @@ fn test_search_basic_functionality() {
         .output()
         .expect("Failed to run bru search");
 
-    assert!(
-        output.status.success(),
-        "Search should succeed"
-    );
+    assert!(output.status.success(), "Search should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -494,10 +492,7 @@ fn test_info_basic_functionality() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     // Should show key information
-    assert!(
-        stdout.contains("wget"),
-        "Should show formula name"
-    );
+    assert!(stdout.contains("wget"), "Should show formula name");
 
     assert!(
         stdout.contains("Homepage:") || stdout.contains("Version:"),
@@ -545,10 +540,7 @@ fn test_list_no_crash() {
         .expect("Failed to run bru list");
 
     // Should always succeed (even if empty)
-    assert!(
-        output.status.success(),
-        "List should never crash"
-    );
+    assert!(output.status.success(), "List should never crash");
 
     // Should not panic
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -573,10 +565,7 @@ fn test_autoremove_dry_run() {
         .output()
         .expect("Failed to run bru autoremove --dry-run");
 
-    assert!(
-        output.status.success(),
-        "Autoremove dry-run should succeed"
-    );
+    assert!(output.status.success(), "Autoremove dry-run should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -609,10 +598,7 @@ fn test_cleanup_dry_run() {
         .output()
         .expect("Failed to run bru cleanup --dry-run");
 
-    assert!(
-        output.status.success(),
-        "Cleanup dry-run should succeed"
-    );
+    assert!(output.status.success(), "Cleanup dry-run should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -642,7 +628,8 @@ fn test_fetch_validation() {
     assert!(
         combined.contains("not found") || combined.contains("Failed to fetch"),
         "Should show error for nonexistent formula. Got:\nstdout: {}\nstderr: {}",
-        stdout, stderr
+        stdout,
+        stderr
     );
 }
 
@@ -656,10 +643,7 @@ fn test_help_command() {
         .output()
         .expect("Failed to run bru help");
 
-    assert!(
-        output.status.success(),
-        "Help should always succeed"
-    );
+    assert!(output.status.success(), "Help should always succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -686,10 +670,7 @@ fn test_version_flag() {
         .output()
         .expect("Failed to run bru --version");
 
-    assert!(
-        output.status.success(),
-        "Version flag should succeed"
-    );
+    assert!(output.status.success(), "Version flag should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 

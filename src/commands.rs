@@ -32,10 +32,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     }) + (if show_casks { results.casks.len() } else { 0 });
 
     if total_to_show == 0 {
-        println!(
-            "\n{} No results found with the specified filter",
-            "✗".red()
-        );
+        println!("\n{} No results found with the specified filter", "✗".red());
         return Ok(());
     }
 
@@ -188,11 +185,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                             formula
                         );
                     } else {
-                        println!(
-                            "\n{} No formula or cask found for '{}'",
-                            "✗".red(),
-                            formula
-                        );
+                        println!("\n{} No formula or cask found for '{}'", "✗".red(), formula);
                     }
                 }
             }
@@ -1023,9 +1016,10 @@ pub async fn upgrade(
                 .entry(pkg.name.clone())
                 .and_modify(|existing| {
                     // Compare modification times - keep the more recent one
-                    if let (Ok(existing_meta), Ok(pkg_meta)) =
-                        (std::fs::metadata(&existing.path), std::fs::metadata(&pkg.path))
-                    {
+                    if let (Ok(existing_meta), Ok(pkg_meta)) = (
+                        std::fs::metadata(&existing.path),
+                        std::fs::metadata(&pkg.path),
+                    ) {
                         if let (Ok(existing_time), Ok(pkg_time)) =
                             (existing_meta.modified(), pkg_meta.modified())
                         {
@@ -2526,11 +2520,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
                 formula_name.bold()
             );
             for dep in missing_deps {
-                println!(
-                    "  {} {}",
-                    dep.full_name.cyan(),
-                    dep.version.dimmed()
-                );
+                println!("  {} {}", dep.full_name.cyan(), dep.version.dimmed());
             }
             println!();
         }
@@ -4632,11 +4622,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
 
     let tap = new_tap.unwrap();
 
-    println!(
-        "  Migrating {} to tap: {}",
-        formula_name,
-        tap.cyan()
-    );
+    println!("  Migrating {} to tap: {}", formula_name, tap.cyan());
     println!("\n{} Migration is a metadata operation only", "ℹ".blue());
     println!("  No reinstallation needed - formula remains at same location");
     println!("  Future upgrades will use the new tap");
@@ -5490,10 +5476,7 @@ pub fn update_report() -> anyhow::Result<()> {
                 println!("  {}", line.dimmed());
             }
             if lines.len() > 10 {
-                println!(
-                    "  ... and {} more",
-                    (lines.len() - 10).to_string().dimmed()
-                );
+                println!("  ... and {} more", (lines.len() - 10).to_string().dimmed());
             }
         }
     }
@@ -5836,9 +5819,7 @@ pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
     println!("  - No merge conflicts");
     println!("  - Meets style guidelines");
 
-    println!(
-        "\n  Would scan open PRs and merge eligible ones"
-    );
+    println!("\n  Would scan open PRs and merge eligible ones");
     println!("  {} Requires maintainer permissions", "⚠".yellow());
 
     Ok(())
@@ -5889,10 +5870,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
                     println!("  {}", line.dimmed());
                 }
                 if lines.len() > 10 {
-                    println!(
-                        "  ... and {} more",
-                        (lines.len() - 10).to_string().dimmed()
-                    );
+                    println!("  ... and {} more", (lines.len() - 10).to_string().dimmed());
                 }
             }
         }
@@ -5946,10 +5924,7 @@ pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<(
     }
 
     if !formula.dependencies.is_empty() {
-        println!(
-            "\nDependencies ({}):",
-            formula.dependencies.len()
-        );
+        println!("\nDependencies ({}):", formula.dependencies.len());
         for dep in formula.dependencies.iter().take(5) {
             println!("  {}", dep.cyan());
         }
@@ -5985,11 +5960,7 @@ pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result
 
     if cmd_dir.exists() {
         println!("\n  {} Tap has cmd/ directory", "✓".green());
-        println!(
-            "  Would execute: {}/{}",
-            tap_name,
-            command.cyan()
-        );
+        println!("  Would execute: {}/{}", tap_name, command.cyan());
     } else {
         println!("\n  {} Tap has no cmd/ directory", "⚠".yellow());
     }
@@ -6098,9 +6069,7 @@ pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
     for formula in formula_names {
         println!("\n  {}", formula.cyan());
         println!("    {} Would update bottle tags in formula", "ℹ".dimmed());
-        println!(
-            "    Example: monterey -> ventura -> sonoma"
-        );
+        println!("    Example: monterey -> ventura -> sonoma");
     }
 
     Ok(())
@@ -6476,9 +6445,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
     };
 
     if needs_update {
-        println!(
-            "\n  Update needed (>24 hours since last update)"
-        );
+        println!("\n  Update needed (>24 hours since last update)");
         println!("    Running: {}", "bru update".cyan());
 
         crate::commands::update()?;
