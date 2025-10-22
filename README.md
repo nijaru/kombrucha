@@ -1,8 +1,8 @@
 # bru
 
-⚡ **A blazing fast, Homebrew-compatible package manager written in Rust**
+**A fast, Homebrew-compatible package manager**
 
-**Faster than Homebrew** with modern UX and full compatibility.
+**Faster than Homebrew** with modern UX. Works with Homebrew's formulae and bottles.
 
 ```bash
 # Install packages with command aliases
@@ -22,7 +22,7 @@ bru install wget    # works exactly like brew
 | Startup time | ~100ms | **14ms** (7x faster) |
 | Parallel operations | Limited | **Fully parallelized** |
 | Memory usage | High (Ruby VM) | **Minimal** (compiled) |
-| Compatibility | ✅ | ✅ **100% compatible** |
+| Compatibility | ✅ | ✅ **Bottle-based** |
 | Installation | Built-in macOS | Install once |
 
 **Bottom line:** Same formulae, same ecosystem, just way faster.
@@ -30,10 +30,10 @@ bru install wget    # works exactly like brew
 ## Status: Beta (v0.1.4)
 
 - ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
-- ✅ **Bottle-Based**: Works with 95% of Homebrew formulae
+- ✅ **Bottle-Based**: Works with pre-built bottles (most common formulae)
 - ✅ **Well-Tested**: 27 automated tests, integration tests in CI
 - ✅ **Production-Ready**: Used in production, stable
-- ⏳ **Source Builds**: Not yet supported (~5% of formulae)
+- ⏳ **Source Builds**: Not yet supported (less common formulae)
 
 ## Installation
 
@@ -84,11 +84,11 @@ bru outdated
 ### 🚀 Performance
 
 **Fully parallelized** - All API operations happen concurrently:
-- Checking for updates: **53x faster** than previous versions
 - In-memory caching eliminates redundant API calls
 - Dependency resolution uses breadth-first parallelization
+- All fetches, validations, and checks run in parallel
 
-**Result:** Consistently 5-10x faster than Homebrew across all operations.
+**Result:** Faster than Homebrew across common operations (see benchmarks below).
 
 ### 🎨 Modern UX
 
@@ -117,7 +117,7 @@ Installing sccache...
 ### ⚡ Optimizations
 
 Every sequential operation has been parallelized:
-1. ✅ Upgrade checks (53x faster)
+1. ✅ Upgrade checks
 2. ✅ Fetch metadata
 3. ✅ Install validation
 4. ✅ Dependency resolution
@@ -151,18 +151,18 @@ Every sequential operation has been parallelized:
 
 ## What Doesn't Work ❌
 
-### Source Builds (5% of formulae)
+### Source Builds
 - Formulae without bottles
 - `--build-from-source` flag
 - `--HEAD` installations
 - Custom build options
 
-**Workaround:** Use `brew` for these edge cases or wait for Phase 3 (Ruby interop).
+**Workaround:** Use `brew` for these cases.
 
 ### Development Tools
 - `create`, `audit`, `livecheck`, `test` - Use `brew` instead
 
-For 95% of daily package management, bru works perfectly.
+For most daily package management, bru works well.
 
 ## Performance Benchmarks
 
@@ -177,16 +177,16 @@ For 95% of daily package management, bru works perfectly.
 | Startup | ~100ms | **14ms** | **7x** |
 
 **Why so fast?**
-- Compiled binary (no Ruby VM startup)
+- Compiled binary (no interpreter startup)
 - Parallel API calls (not sequential)
 - In-memory caching (no redundant requests)
-- Efficient data structures (Rust)
+- Efficient data structures
 
 See [v0.1.4 release notes](https://github.com/nijaru/kombrucha/releases/tag/v0.1.4) for optimization details.
 
 ## Compatibility
 
-**100% compatible with Homebrew:**
+**Compatible with Homebrew for bottle-based workflows:**
 - ✅ Same formulae (Homebrew API)
 - ✅ Same Cellar (`/opt/homebrew/Cellar`)
 - ✅ Same taps (all third-party taps work)
@@ -201,7 +201,7 @@ bru upgrade python     # Upgrade with bru
 brew uninstall python  # Uninstall with brew
 ```
 
-They're completely compatible - use whichever is faster for the task.
+For packages with pre-built bottles (most common packages), they work interchangeably.
 
 ## Shell Completions
 
@@ -266,7 +266,7 @@ cargo build --release
 Different tradeoffs. Homebrew prioritizes features and Ruby ecosystem. bru prioritizes speed and compiled efficiency. Both are valid approaches.
 
 ### What's the catch?
-Source builds aren't supported yet (~5% of formulae). For those, use `brew`.
+Source builds aren't supported yet. For those less common cases, use `brew`.
 
 ### Can I uninstall it?
 **Yes.** Since bru is just a faster frontend to Homebrew's infrastructure:
