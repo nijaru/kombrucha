@@ -2,9 +2,8 @@
 
 ## High Priority
 
-- [ ] Reorganize documentation (internal/ → ai/ and docs/)
 - [ ] Add more non-ignored regression tests
-- [ ] Update CLAUDE.md → AGENTS.md to follow new template
+- [ ] Improve CI test coverage
 
 ## Testing
 
@@ -17,10 +16,13 @@
 
 - [x] Create ai/ directory structure
 - [x] Create STATUS.md with current state
-- [ ] Create DECISIONS.md with architectural decisions
-- [ ] Create RESEARCH.md index
-- [ ] Move permanent specs to docs/architecture/
-- [ ] Archive old session files
+- [x] Create DECISIONS.md with architectural decisions
+- [x] Create RESEARCH.md index
+- [x] Move permanent specs to docs/architecture/
+- [x] Archive old session files
+- [x] Rename CLAUDE.md → AGENTS.md
+- [x] Update AGENTS.md to follow new template
+- [x] Update README.md with new structure
 
 ## Future (Backlog)
 
