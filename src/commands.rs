@@ -853,7 +853,7 @@ pub async fn install(
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula.name))?;
 
-        println!("  {} Installing {}...", "→".bold(), formula.name.cyan());
+        println!("  Installing {}...", formula.name.cyan());
 
         // Extract bottle
         let extracted_path = extract::extract_bottle(bottle_path, &formula.name, version)?;
@@ -3802,7 +3802,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         println!("  {}: {}", "Apps".dimmed(), apps.join(", ").cyan());
 
         // Download cask
-        println!("  {} Downloading...", "⬇".bold());
+        println!("  Downloading...");
         let download_path = match crate::cask::download_cask(url, cask_name).await {
             Ok(p) => p,
             Err(e) => {

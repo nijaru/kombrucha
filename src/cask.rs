@@ -98,7 +98,7 @@ pub fn install_app(app_path: &PathBuf, app_name: &str) -> Result<PathBuf> {
 
     // Remove existing app if present
     if target.exists() {
-        println!("  {} Removing existing {}", "→".dimmed(), app_name.dimmed());
+        println!("  Removing existing {}", app_name.dimmed());
         std::fs::remove_dir_all(&target)?;
     }
 
@@ -118,7 +118,7 @@ pub fn install_app(app_path: &PathBuf, app_name: &str) -> Result<PathBuf> {
 
 /// Install a PKG file
 pub fn install_pkg(pkg_path: &PathBuf) -> Result<()> {
-    println!("  {} Installing PKG (requires sudo)...", "→".bold());
+    println!("  Installing PKG (requires sudo)...");
 
     let status = Command::new("sudo")
         .args(["installer", "-pkg"])
