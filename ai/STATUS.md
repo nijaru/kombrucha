@@ -8,7 +8,7 @@ Last updated: 2025-10-22
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
-- **Test Coverage**: 26 tests run automatically (13 unit + 13 regression)
+- **Test Coverage**: 27 tests run automatically (13 unit + 14 regression)
 - **Integration Tests**: 15 tests (marked #[ignore], run manually)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae
@@ -54,10 +54,11 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 
 **v0.1.1** (2025-10-22):
 - Upgrade duplicates: Fixed deduplication by modification time
+- Leaves duplicates: Fixed deduplication (same bug as upgrade)
 - Bottle revision false positives: Strip _N revisions before comparison
 - Modern CLI output: Removed all 78 arrow symbols (→ ⬇ ⬆)
-- Added 11 new regression tests (install, search, info, deps, etc.)
-- Improved test coverage: 16 → 26 automated tests
+- Added 12 new regression tests (install, search, info, deps, leaves, etc.)
+- Improved test coverage: 16 → 27 automated tests
 - Documentation reorganization: agent-contexts patterns (ai/, docs/)
 
 **v0.1.0** (2025-10-21):
