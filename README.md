@@ -44,9 +44,8 @@ See [internal/status-report.md](internal/status-report.md) for detailed status.
 - `services` - launchd integration for background services
 - `bundle` - Brewfile install and dump
 
-**Development Tools** (informational stubs only):
+**Development Tools** (not implemented - use `brew` instead):
 - `create`, `audit`, `livecheck`, `linkage`, `test`, `style`
-- These commands print helpful messages but don't perform actual operations
 
 ## What Doesn't Work ❌
 
