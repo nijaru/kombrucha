@@ -777,9 +777,28 @@ pub async fn install(
     };
 
     if to_install.is_empty() {
-        println!("\n{} All formulae already installed", "✓".green());
+        // Show which packages are already installed
+        let already_installed: Vec<_> = all_formulae
+            .values()
+            .filter(|f| installed_names.contains(f.name.as_str()))
+            .map(|f| {
+                // Try to get the installed version
+                if let Ok(versions) = cellar::get_installed_versions(&f.name) {
+                    if let Some(first) = versions.first() {
+                        return format!("{} {}", f.name, first.version.dimmed().to_string());
+                    }
+                }
+                f.name.clone()
+            })
+            .collect();
+
+        println!("\n{} Already installed:", "ℹ".blue());
+        for pkg in &already_installed {
+            println!("  {}", pkg.cyan());
+        }
+
         if force {
-            println!("  Use without --force to install anyway");
+            println!("\n  Use {} to reinstall", "--force".dimmed());
         }
         return Ok(());
     }
@@ -1033,18 +1052,28 @@ pub async fn upgrade(
         }
 
         let packages: Vec<_> = package_map.into_values().collect();
-        let mut outdated = Vec::new();
 
-        for pkg in packages {
-            if let Ok(formula) = api.fetch_formula(&pkg.name).await
-                && let Some(latest) = &formula.versions.stable
-            {
+        // Fetch all formulae in parallel for better performance
+        let fetch_futures: Vec<_> = packages
+            .iter()
+            .map(|pkg| async move {
+                let formula = api.fetch_formula(&pkg.name).await.ok()?;
+                let latest = formula.versions.stable.as_ref()?;
+                Some((pkg.name.clone(), pkg.version.clone(), latest.clone()))
+            })
+            .collect();
+
+        let results = futures::future::join_all(fetch_futures).await;
+
+        let mut outdated = Vec::new();
+        for result in results {
+            if let Some((name, pkg_version, latest)) = result {
                 // Strip bottle revisions before comparison
-                let pkg_version_stripped = strip_bottle_revision(&pkg.version);
-                let latest_stripped = strip_bottle_revision(latest);
+                let pkg_version_stripped = strip_bottle_revision(&pkg_version);
+                let latest_stripped = strip_bottle_revision(&latest);
 
                 if force || pkg_version_stripped != latest_stripped {
-                    outdated.push(pkg.name.clone());
+                    outdated.push(name);
                 }
             }
         }
