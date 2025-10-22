@@ -60,6 +60,39 @@ jobs:
       - name: Run clippy
         run: cargo clippy -- -D warnings -A clippy::collapsible_if -A clippy::single_match -A clippy::useless_format -A clippy::clone_on_copy -A clippy::manual_is_multiple_of -A clippy::double_ended_iterator_last -A clippy::type_complexity
 
+  integration:
+    name: Integration Tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Run integration tests
+        run: cargo test --test integration_tests --release -- --ignored --test-threads=1
+
   build-linux:
     name: Build (Linux)
     runs-on: ubuntu-latest

@@ -3,7 +3,7 @@
 ## High Priority
 
 - [x] Add more non-ignored regression tests
-- [ ] Improve CI test coverage
+- [x] Improve CI test coverage
 
 ## Testing
 
@@ -12,7 +12,7 @@
 - [x] Add tests for autoremove and cleanup (--dry-run)
 - [x] Add test for fetch error handling
 - [x] Add test for help and version commands
-- [ ] Set up CI to run ignored tests in container
+- [x] Set up CI to run integration tests on macOS runner
 
 ## Documentation
 
