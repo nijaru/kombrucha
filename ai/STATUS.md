@@ -57,6 +57,8 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 - Leaves duplicates: Fixed deduplication (same bug as upgrade)
 - Bottle revision false positives: Strip _N revisions before comparison
 - Modern CLI output: Removed all 78 arrow symbols (→ ⬇ ⬆)
+- Error handling: Removed stack backtraces, added proper validation
+- Error messages: Accurate success/failure reporting for uninstall/reinstall
 - Added 12 new regression tests (install, search, info, deps, leaves, etc.)
 - Improved test coverage: 16 → 27 automated tests
 - Documentation reorganization: agent-contexts patterns (ai/, docs/)
