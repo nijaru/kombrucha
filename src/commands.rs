@@ -3849,27 +3849,38 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         cask_names.len().to_string().bold()
     );
 
-    for cask_name in cask_names {
+    // Fetch all cask metadata in parallel first
+    let fetch_futures: Vec<_> = cask_names
+        .iter()
+        .map(|name| async move {
+            // Check if already installed
+            if crate::cask::is_cask_installed(name) {
+                if let Some(version) = crate::cask::get_installed_cask_version(name) {
+                    return (name.clone(), Err(format!("Already installed: {}", version)));
+                }
+            }
+
+            match api.fetch_cask(name).await {
+                Ok(c) => (name.clone(), Ok(c)),
+                Err(e) => (name.clone(), Err(format!("Failed to fetch: {}", e))),
+            }
+        })
+        .collect();
+
+    let metadata_results = futures::future::join_all(fetch_futures).await;
+
+    // Process each cask sequentially (downloads and installs must be sequential)
+    for (cask_name, result) in metadata_results {
         println!("\nInstalling cask: {}", cask_name.cyan());
 
-        // Check if already installed
-        if crate::cask::is_cask_installed(cask_name) {
-            if let Some(version) = crate::cask::get_installed_cask_version(cask_name) {
-                println!(
-                    "  {} {} is already installed",
-                    "✓".green(),
-                    cask_name.bold()
-                );
-                println!("    Installed version: {}", version.dimmed());
-                continue;
-            }
-        }
-
-        // Fetch cask metadata
-        let cask = match api.fetch_cask(cask_name).await {
+        let cask = match result {
             Ok(c) => c,
-            Err(e) => {
-                println!("  {} Failed to fetch cask: {}", "✗".red(), e);
+            Err(msg) => {
+                if msg.starts_with("Already installed") {
+                    println!("  {} {}", "✓".green(), msg);
+                } else {
+                    println!("  {} {}", "✗".red(), msg);
+                }
                 continue;
             }
         };
@@ -3897,7 +3908,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
         // Download cask
         println!("  Downloading...");
-        let download_path = match crate::cask::download_cask(url, cask_name).await {
+        let download_path = match crate::cask::download_cask(url, &cask_name).await {
             Ok(p) => p,
             Err(e) => {
                 println!("  {} Failed to download: {}", "✗".red(), e);
@@ -4024,7 +4035,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         }
 
         // Create Caskroom directory to track installation
-        let cask_dir = crate::cask::cask_install_dir(cask_name, version);
+        let cask_dir = crate::cask::cask_install_dir(&cask_name, version);
         std::fs::create_dir_all(&cask_dir)?;
 
         // Write metadata file
@@ -4206,20 +4217,35 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
 pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     // Determine which casks to upgrade
     let to_upgrade = if cask_names.is_empty() {
-        // Upgrade all outdated casks
+        // Upgrade all outdated casks - check in parallel
         println!("Checking for outdated casks...");
 
         let installed_casks = crate::cask::list_installed_casks()?;
-        let mut outdated = Vec::new();
 
-        for (token, installed_version) in installed_casks {
-            if let Ok(cask) = api.fetch_cask(&token).await
-                && let Some(latest) = &cask.version
-                && latest != &installed_version
-            {
-                outdated.push(token);
-            }
-        }
+        // Fetch all cask metadata in parallel
+        let fetch_futures: Vec<_> = installed_casks
+            .iter()
+            .map(|(token, installed_version)| {
+                let token = token.clone();
+                let installed_version = installed_version.clone();
+                async move {
+                    match api.fetch_cask(&token).await {
+                        Ok(cask) => {
+                            if let Some(latest) = &cask.version {
+                                if latest != &installed_version {
+                                    return Some(token);
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                    None
+                }
+            })
+            .collect();
+
+        let results = futures::future::join_all(fetch_futures).await;
+        let outdated: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated.is_empty() {
             println!("\n{} All casks are up to date", "✓".green());
