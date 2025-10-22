@@ -1212,6 +1212,8 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         formula_names.len().to_string().bold()
     );
 
+    let mut actually_reinstalled = 0;
+
     for formula_name in formula_names {
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
@@ -1270,13 +1272,19 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             formula_name.bold().green(),
             version.dimmed()
         );
+        actually_reinstalled += 1;
     }
 
-    println!(
-        "\n{} Reinstalled {} packages",
-        "✓".green().bold(),
-        formula_names.len().to_string().bold()
-    );
+    if actually_reinstalled > 0 {
+        println!(
+            "\n{} Reinstalled {} package{}",
+            "✓".green().bold(),
+            actually_reinstalled.to_string().bold(),
+            if actually_reinstalled == 1 { "" } else { "s" }
+        );
+    } else {
+        println!("\n{} No packages were reinstalled", "ℹ".blue());
+    }
 
     Ok(())
 }
@@ -1294,6 +1302,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
     // Get all installed packages to check dependencies
     let all_installed = cellar::list_installed()?;
+    let mut actually_uninstalled = 0;
 
     for formula_name in formula_names {
         // Check if installed
@@ -1364,13 +1373,19 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             formula_name.bold().green(),
             version.dimmed()
         );
+        actually_uninstalled += 1;
     }
 
-    println!(
-        "\n{} Uninstalled {} packages",
-        "✓".green().bold(),
-        formula_names.len().to_string().bold()
-    );
+    if actually_uninstalled > 0 {
+        println!(
+            "\n{} Uninstalled {} package{}",
+            "✓".green().bold(),
+            actually_uninstalled.to_string().bold(),
+            if actually_uninstalled == 1 { "" } else { "s" }
+        );
+    } else {
+        println!("\n{} No packages were uninstalled", "ℹ".blue());
+    }
 
     Ok(())
 }
@@ -1651,8 +1666,15 @@ pub fn update() -> Result<()> {
         }
 
         // Run git pull
+        let tap_dir_str = match tap_dir.to_str() {
+            Some(s) => s,
+            None => {
+                println!("{} {}: invalid path", "⚠".yellow(), tap);
+                continue;
+            }
+        };
         let output = std::process::Command::new("git")
-            .args(["-C", tap_dir.to_str().unwrap(), "pull", "--ff-only"])
+            .args(["-C", tap_dir_str, "pull", "--ff-only"])
             .output();
 
         match output {
@@ -4214,10 +4236,14 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
             }
         } else {
             // Fallback: guess app name from cask name
-            vec![format!(
-                "{}.app",
-                cask_name.chars().next().unwrap().to_uppercase().to_string() + &cask_name[1..]
-            )]
+            if let Some(first_char) = cask_name.chars().next() {
+                vec![format!(
+                    "{}.app",
+                    first_char.to_uppercase().to_string() + &cask_name[1..]
+                )]
+            } else {
+                vec![]
+            }
         };
 
         // Remove apps from /Applications

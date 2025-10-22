@@ -805,7 +805,14 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
+    if let Err(e) = run().await {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> anyhow::Result<()> {
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
         unsafe {
