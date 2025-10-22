@@ -4,7 +4,7 @@ Last updated: 2025-10-22
 
 ## Current State
 
-**Version**: 0.1.2 (Beta)
+**Version**: 0.1.3 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -51,6 +51,13 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**v0.1.3** (2025-10-22):
+- Performance: 53x faster upgrade checks (39.5s → 0.74s) via parallelization
+- UX: Tree connectors (├ └) for visual hierarchy in install/upgrade/uninstall
+- UX: Command aliases (i, up, re, rm) for faster workflow
+- UX: Detailed "Already installed" messages with version numbers
+- CI: Integrated tests now run automatically on every push
 
 **v0.1.2** (2025-10-22):
 - Bug fixes: leaves command deduplication, error handling improvements
