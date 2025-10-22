@@ -2195,16 +2195,43 @@ pub fn leaves() -> Result<()> {
 
     let all_packages = cellar::list_installed()?;
 
+    // Deduplicate by package name - keep only the most recent version of each
+    let mut package_map: std::collections::HashMap<String, cellar::InstalledPackage> =
+        std::collections::HashMap::new();
+
+    for pkg in all_packages {
+        package_map
+            .entry(pkg.name.clone())
+            .and_modify(|existing| {
+                // Compare modification times - keep the more recent one
+                if let (Ok(existing_meta), Ok(pkg_meta)) = (
+                    std::fs::metadata(&existing.path),
+                    std::fs::metadata(&pkg.path),
+                ) {
+                    if let (Ok(existing_time), Ok(pkg_time)) =
+                        (existing_meta.modified(), pkg_meta.modified())
+                    {
+                        if pkg_time > existing_time {
+                            *existing = pkg.clone();
+                        }
+                    }
+                }
+            })
+            .or_insert(pkg);
+    }
+
+    let unique_packages: Vec<_> = package_map.into_values().collect();
+
     // Build a set of all packages that are dependencies of others
     let mut required_by_others = std::collections::HashSet::new();
-    for pkg in &all_packages {
+    for pkg in &unique_packages {
         for dep in pkg.runtime_dependencies() {
             required_by_others.insert(dep.full_name.clone());
         }
     }
 
     // Filter to packages that are NOT in the required set
-    let mut leaves: Vec<_> = all_packages
+    let mut leaves: Vec<_> = unique_packages
         .iter()
         .filter(|pkg| !required_by_others.contains(&pkg.name))
         .collect();
