@@ -1,10 +1,10 @@
 # Project Status
 
-Last updated: 2025-10-21
+Last updated: 2025-10-22
 
 ## Current State
 
-**Version**: 0.1.0 (Beta)
+**Version**: 0.1.1 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -50,11 +50,19 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 - Parity tests against brew to catch regressions
 - Property-based checks (deduplication, bottle revision stripping)
 
-### Recent Fixes (2025-10-21)
+### Recent Changes
+
+**v0.1.1** (2025-10-22):
 - Upgrade duplicates: Fixed deduplication by modification time
 - Bottle revision false positives: Strip _N revisions before comparison
 - Modern CLI output: Removed arrow symbols (→ ⬇ ⬆)
 - Added 2 regression tests to prevent these bugs returning
+- Documentation reorganization: agent-contexts patterns (ai/, docs/)
+
+**v0.1.0** (2025-10-21):
+- Initial beta release
+- Core commands functional
+- Bottle-based workflows production-ready
 
 ## What Didn't Work
 
