@@ -60,24 +60,39 @@ See [internal/status-report.md](internal/status-report.md) for detailed status.
 
 ## Installation
 
+### Via Install Script (Recommended)
+
 ```bash
-# Clone the repo
+curl -fsSL https://raw.githubusercontent.com/nijaru/kombrucha/main/install.sh | sh
+```
+
+### Via Cargo
+
+```bash
+cargo install kombrucha
+```
+
+This installs the `bru` binary to `~/.cargo/bin/`
+
+### From Source
+
+```bash
 git clone https://github.com/nijaru/kombrucha.git
 cd kombrucha
-
-# Build release binary
 cargo build --release
-
 # Binary is at: ./target/release/bru
+```
 
-# Optional: Set up shell completions
-# For bash:
+### Shell Completions (Optional)
+
+```bash
+# Bash
 bru completions bash > ~/.local/share/bash-completion/completions/bru
 
-# For zsh:
+# Zsh
 bru completions zsh > ~/.zfunc/_bru
 
-# For fish:
+# Fish
 bru completions fish > ~/.config/fish/completions/bru.fish
 ```
 
