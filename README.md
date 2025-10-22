@@ -21,18 +21,18 @@ bru install wget    # works exactly like brew
 | `upgrade --dry-run` (339 packages) | 3.56s | **0.65s** (5.5x faster) |
 | Startup time | ~100ms | **14ms** (7x faster) |
 | Parallel operations | Limited | **Fully parallelized** |
-| Memory usage | High (Ruby VM) | **Minimal** (compiled) |
+| Memory usage | Higher | **Lower** |
 | Compatibility | ✅ | ✅ **Bottle-based** |
 | Installation | Built-in macOS | Install once |
 
-**Bottom line:** Same formulae, same ecosystem, just way faster.
+**Bottom line:** Same formulae, same ecosystem, faster performance.
 
 ## Status: Beta (v0.1.4)
 
 - ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
 - ✅ **Bottle-Based**: Works with pre-built bottles (most common formulae)
 - ✅ **Well-Tested**: 27 automated tests, integration tests in CI
-- ✅ **Production-Ready**: Used in production, stable
+- ✅ **Mostly Implemented**: Usable for common workflows
 - ⏳ **Source Builds**: Not yet supported (less common formulae)
 
 ## Installation
@@ -81,7 +81,7 @@ bru outdated
 
 ## What's Different?
 
-### 🚀 Performance
+### Performance
 
 **Fully parallelized** - All API operations happen concurrently:
 - In-memory caching eliminates redundant API calls
@@ -90,7 +90,7 @@ bru outdated
 
 **Result:** Faster than Homebrew across common operations (see benchmarks below).
 
-### 🎨 Modern UX
+### Modern UX
 
 **Tree connectors** show clear operation hierarchy:
 ```
@@ -114,7 +114,7 @@ Installing sccache...
   Use --force to reinstall
 ```
 
-### ⚡ Optimizations
+### Optimizations
 
 Every sequential operation has been parallelized:
 1. ✅ Upgrade checks
@@ -257,13 +257,13 @@ cargo build --release
 ## FAQ
 
 ### Is bru stable?
-**Yes.** It's been tested with 339 packages, has 27 automated tests, and runs integration tests in CI on every commit.
+It's in beta. Tested with 339 packages, has 27 automated tests, and runs integration tests in CI on every commit. Works well for bottle-based workflows.
 
 ### Will it break my Homebrew setup?
 **No.** bru uses the same Cellar and infrastructure as Homebrew. You can use both interchangeably.
 
 ### Why not just improve Homebrew?
-Different tradeoffs. Homebrew prioritizes features and Ruby ecosystem. bru prioritizes speed and compiled efficiency. Both are valid approaches.
+Different tradeoffs. Homebrew prioritizes comprehensive features. bru prioritizes speed and simplicity. Both are valid approaches.
 
 ### What's the catch?
 Source builds aren't supported yet. For those less common cases, use `brew`.
@@ -281,4 +281,4 @@ MIT OR Apache-2.0
 
 ---
 
-**Made with ⚡ by [nijaru](https://github.com/nijaru)**
+**Made by [nijaru](https://github.com/nijaru)**
