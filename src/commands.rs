@@ -785,7 +785,7 @@ pub async fn install(
                 // Try to get the installed version
                 if let Ok(versions) = cellar::get_installed_versions(&f.name) {
                     if let Some(first) = versions.first() {
-                        return format!("{} {}", f.name, first.version.dimmed().to_string());
+                        return format!("{} {}", f.name, first.version.dimmed());
                     }
                 }
                 f.name.clone()
@@ -1066,15 +1066,13 @@ pub async fn upgrade(
         let results = futures::future::join_all(fetch_futures).await;
 
         let mut outdated = Vec::new();
-        for result in results {
-            if let Some((name, pkg_version, latest)) = result {
-                // Strip bottle revisions before comparison
-                let pkg_version_stripped = strip_bottle_revision(&pkg_version);
-                let latest_stripped = strip_bottle_revision(&latest);
+        for (name, pkg_version, latest) in results.into_iter().flatten() {
+            // Strip bottle revisions before comparison
+            let pkg_version_stripped = strip_bottle_revision(&pkg_version);
+            let latest_stripped = strip_bottle_revision(&latest);
 
-                if force || pkg_version_stripped != latest_stripped {
-                    outdated.push(name);
-                }
+            if force || pkg_version_stripped != latest_stripped {
+                outdated.push(name);
             }
         }
 
