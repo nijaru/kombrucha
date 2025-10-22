@@ -14,7 +14,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     if results.is_empty() {
         println!(
             "\n{} No formulae or casks found matching '{}'",
-            "❌".red(),
+            "✗".red(),
             query
         );
         return Ok(());
@@ -34,7 +34,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     if total_to_show == 0 {
         println!(
             "\n{} No results found with the specified filter",
-            "❌".red()
+            "✗".red()
         );
         return Ok(());
     }
@@ -190,7 +190,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                     } else {
                         println!(
                             "\n{} No formula or cask found for '{}'",
-                            "❌".red(),
+                            "✗".red(),
                             formula
                         );
                     }
@@ -674,7 +674,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
             Err(e) => {
                 println!(
                     "{} Failed to fetch formula {}: {}",
-                    "❌".red(),
+                    "✗".red(),
                     name.bold(),
                     e
                 );
@@ -706,7 +706,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
             }
         }
         Err(e) => {
-            println!("\n{} Download failed: {}", "❌".red(), e);
+            println!("\n{} Download failed: {}", "✗".red(), e);
             return Err(e.into());
         }
     }
@@ -750,7 +750,7 @@ pub async fn install(
     // If no valid formulae, report errors and fail
     if valid_formulae.is_empty() {
         for (name, err) in &errors {
-            println!("{} {}: {}", "❌".red(), name, err);
+            println!("{} {}: {}", "✗".red(), name, err);
         }
         return Err(crate::error::BruError::Other(anyhow::anyhow!(
             "All formulae failed to install"
@@ -814,7 +814,7 @@ pub async fn install(
     }
 
     // Step 2: Download all bottles in parallel
-    println!("\n{} Downloading bottles...", "⬇".bold());
+    println!("\nDownloading bottles...");
     let downloaded = download::download_bottles(api, &to_install).await?;
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
@@ -1014,15 +1014,46 @@ pub async fn upgrade(
     let to_upgrade = if formula_names.is_empty() {
         // Upgrade all outdated
         println!("Checking for outdated packages...");
-        let packages = cellar::list_installed()?;
+        let all_packages = cellar::list_installed()?;
+
+        // Deduplicate multiple versions - keep only the most recent for each formula
+        let mut package_map: std::collections::HashMap<String, cellar::InstalledPackage> =
+            std::collections::HashMap::new();
+
+        for pkg in all_packages {
+            package_map
+                .entry(pkg.name.clone())
+                .and_modify(|existing| {
+                    // Compare modification times - keep the more recent one
+                    if let (Ok(existing_meta), Ok(pkg_meta)) =
+                        (std::fs::metadata(&existing.path), std::fs::metadata(&pkg.path))
+                    {
+                        if let (Ok(existing_time), Ok(pkg_time)) =
+                            (existing_meta.modified(), pkg_meta.modified())
+                        {
+                            if pkg_time > existing_time {
+                                *existing = pkg.clone();
+                            }
+                        }
+                    }
+                })
+                .or_insert(pkg);
+        }
+
+        let packages: Vec<_> = package_map.into_values().collect();
         let mut outdated = Vec::new();
 
         for pkg in packages {
             if let Ok(formula) = api.fetch_formula(&pkg.name).await
                 && let Some(latest) = &formula.versions.stable
-                && (force || latest != &pkg.version)
             {
-                outdated.push(pkg.name.clone());
+                // Strip bottle revisions before comparison
+                let pkg_version_stripped = strip_bottle_revision(&pkg.version);
+                let latest_stripped = strip_bottle_revision(latest);
+
+                if force || pkg_version_stripped != latest_stripped {
+                    outdated.push(pkg.name.clone());
+                }
             }
         }
 
@@ -1032,8 +1063,7 @@ pub async fn upgrade(
         }
 
         println!(
-            "{} {} packages to upgrade: {}",
-            "→".bold(),
+            "  {} packages to upgrade: {}",
             outdated.len().to_string().bold(),
             outdated.join(", ").cyan()
         );
@@ -1051,11 +1081,7 @@ pub async fn upgrade(
         return Ok(());
     }
 
-    println!(
-        "\n{} Upgrading {} packages...",
-        "⬆".bold(),
-        to_upgrade.len()
-    );
+    println!("\nUpgrading {} packages...", to_upgrade.len());
 
     // Check for pinned formulae
     let pinned = read_pinned()?;
@@ -1100,7 +1126,11 @@ pub async fn upgrade(
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula_name))?;
 
-        if old_version == new_version {
+        // Strip bottle revisions for comparison
+        let old_version_stripped = strip_bottle_revision(old_version);
+        let new_version_stripped = strip_bottle_revision(new_version);
+
+        if old_version_stripped == new_version_stripped {
             println!(
                 "  {} {} already at latest version {}",
                 "✓".green(),
@@ -1111,8 +1141,7 @@ pub async fn upgrade(
         }
 
         println!(
-            "  {} Upgrading {} {} → {}",
-            "⬆".bold(),
+            "  Upgrading {} {} -> {}",
             formula_name.cyan(),
             old_version.dimmed(),
             new_version.cyan()
@@ -1182,7 +1211,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
     let formula_names = names;
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -1262,7 +1291,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
 pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -1604,7 +1633,7 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
 }
 
 pub fn update() -> Result<()> {
-    println!("{} Updating Homebrew...", "⬇".bold());
+    println!("Updating Homebrew...");
 
     let taps = crate::tap::list_taps()?;
 
@@ -1613,18 +1642,14 @@ pub fn update() -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "\n{} Updating {} taps...",
-        "→".bold(),
-        taps.len().to_string().bold()
-    );
+    println!("\nUpdating {} taps...", taps.len().to_string().bold());
 
     let mut updated = 0;
     let mut unchanged = 0;
     let mut errors = 0;
 
     for tap in &taps {
-        print!("  {} Updating {}... ", "⬇".bold(), tap.cyan());
+        print!("  Updating {}... ", tap.cyan());
 
         let tap_dir = crate::tap::tap_directory(tap)?;
 
@@ -2241,7 +2266,7 @@ fn write_pinned(pinned: &[String]) -> Result<()> {
 
 pub fn pin(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2272,7 +2297,7 @@ pub fn pin(formula_names: &[String]) -> Result<()> {
 
 pub fn unpin(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2296,7 +2321,7 @@ pub fn unpin(formula_names: &[String]) -> Result<()> {
 
 pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2323,7 +2348,7 @@ pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
 pub fn link(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2356,7 +2381,7 @@ pub fn link(formula_names: &[String]) -> Result<()> {
 
 pub fn unlink(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2559,7 +2584,7 @@ pub fn analytics(action: Option<&str>) -> Result<()> {
             }
         }
         Some(other) => {
-            println!("{} Invalid action: {}", "❌".red(), other);
+            println!("{} Invalid action: {}", "✗".red(), other);
             println!("Valid actions: on, off, state");
             return Ok(());
         }
@@ -2570,7 +2595,7 @@ pub fn analytics(action: Option<&str>) -> Result<()> {
 
 pub async fn cat(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -2599,7 +2624,7 @@ pub async fn cat(api: &BrewApi, formula_names: &[String]) -> Result<()> {
                     Err(_) => {
                         println!(
                             "{} No formula or cask found for '{}'",
-                            "❌".red(),
+                            "✗".red(),
                             formula_name
                         );
                     }
@@ -2687,7 +2712,7 @@ pub fn shellenv(shell: Option<&str>) -> Result<()> {
             );
         }
         other => {
-            println!("{} Unsupported shell: {}", "❌".red(), other);
+            println!("{} Unsupported shell: {}", "✗".red(), other);
             println!("Supported shells: bash, zsh, fish");
             return Ok(());
         }
@@ -2878,7 +2903,7 @@ pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
                     }
                 }
                 Err(_) => {
-                    println!("{} Formula '{}' not found", "❌".red(), formula_name);
+                    println!("{} Formula '{}' not found", "✗".red(), formula_name);
                 }
             }
         }
@@ -3075,7 +3100,7 @@ pub async fn options(api: &BrewApi, formula_name: &str) -> Result<()> {
             );
         }
         Err(_) => {
-            println!("\n{} Formula '{}' not found", "❌".red(), formula_name);
+            println!("\n{} Formula '{}' not found", "✗".red(), formula_name);
         }
     }
 
@@ -3127,7 +3152,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         println!("Reading {}...", brewfile_path.cyan());
 
         if !std::path::Path::new(brewfile_path).exists() {
-            println!("\n{} {} not found", "❌".red(), brewfile_path.bold());
+            println!("\n{} {} not found", "✗".red(), brewfile_path.bold());
             println!("Run {} to generate one", "bru bundle dump".cyan());
             return Ok(());
         }
@@ -3192,7 +3217,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
                     println!("  {} Tapping {}...", "→".bold(), tap_name.cyan());
                     match crate::tap::tap(tap_name) {
                         Ok(_) => println!("    {} Tapped {}", "✓".green(), tap_name.bold()),
-                        Err(e) => println!("    {} Failed: {}", "❌".red(), e),
+                        Err(e) => println!("    {} Failed: {}", "✗".red(), e),
                     }
                 }
             }
@@ -3317,7 +3342,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
                     println!("  {} Started {}", "✓".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to start: {}", "❌".red(), e);
+                    println!("  {} Failed to start: {}", "✗".red(), e);
                 }
             }
         }
@@ -3339,7 +3364,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
                     println!("  {} Stopped {}", "✓".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to stop: {}", "❌".red(), e);
+                    println!("  {} Failed to stop: {}", "✗".red(), e);
                 }
             }
         }
@@ -3361,12 +3386,12 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
                     println!("  {} Restarted {}", "✓".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to restart: {}", "❌".red(), e);
+                    println!("  {} Failed to restart: {}", "✗".red(), e);
                 }
             }
         }
         Some(other) => {
-            println!("{} Unknown action: {}", "❌".red(), other);
+            println!("{} Unknown action: {}", "✗".red(), other);
             println!();
             println!("Available actions:");
             println!("  {} - List all services", "list".cyan());
@@ -3390,7 +3415,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
     match api.fetch_formula(formula_name).await {
         Ok(_) => {}
         Err(_) => {
-            println!("\n{} Formula '{}' not found", "❌".red(), formula_name);
+            println!("\n{} Formula '{}' not found", "✗".red(), formula_name);
             return Ok(());
         }
     }
@@ -3477,7 +3502,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
             println!("\n{} Editor exited with error", "⚠".yellow());
         }
         Err(e) => {
-            println!("\n{} Failed to open editor: {}", "❌".red(), e);
+            println!("\n{} Failed to open editor: {}", "✗".red(), e);
             println!("Set EDITOR environment variable to your preferred editor");
         }
     }
@@ -3612,7 +3637,7 @@ pub async fn livecheck(api: &BrewApi, formula_name: &str) -> Result<()> {
 
 pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -3721,7 +3746,7 @@ pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
 pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "❌".red());
+        println!("{} No casks specified", "✗".red());
         return Ok(());
     }
 
@@ -3750,7 +3775,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         let cask = match api.fetch_cask(cask_name).await {
             Ok(c) => c,
             Err(e) => {
-                println!("  {} Failed to fetch cask: {}", "❌".red(), e);
+                println!("  {} Failed to fetch cask: {}", "✗".red(), e);
                 continue;
             }
         };
@@ -3781,7 +3806,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         let download_path = match crate::cask::download_cask(url, cask_name).await {
             Ok(p) => p,
             Err(e) => {
-                println!("  {} Failed to download: {}", "❌".red(), e);
+                println!("  {} Failed to download: {}", "✗".red(), e);
                 continue;
             }
         };
@@ -3805,7 +3830,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             let mount_point = match crate::cask::mount_dmg(&download_path) {
                 Ok(p) => p,
                 Err(e) => {
-                    println!("  {} Failed to mount: {}", "❌".red(), e);
+                    println!("  {} Failed to mount: {}", "✗".red(), e);
                     continue;
                 }
             };
@@ -3835,7 +3860,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                         );
                     }
                     Err(e) => {
-                        println!("    {} Failed to install: {}", "❌".red(), e);
+                        println!("    {} Failed to install: {}", "✗".red(), e);
                     }
                 }
             }
@@ -3853,7 +3878,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                     println!("    {} Installed successfully", "✓".green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to install: {}", "❌".red(), e);
+                    println!("  {} Failed to install: {}", "✗".red(), e);
                     continue;
                 }
             }
@@ -3870,7 +3895,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                     dir
                 }
                 Err(e) => {
-                    println!("  {} Failed to extract: {}", "❌".red(), e);
+                    println!("  {} Failed to extract: {}", "✗".red(), e);
                     continue;
                 }
             };
@@ -3894,7 +3919,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                         );
                     }
                     Err(e) => {
-                        println!("  {} Failed to install: {}", "❌".red(), e);
+                        println!("  {} Failed to install: {}", "✗".red(), e);
                         continue;
                     }
                 }
@@ -3932,7 +3957,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
 pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "❌".red());
+        println!("{} No casks specified", "✗".red());
         return Ok(());
     }
 
@@ -4139,7 +4164,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
 pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "❌".red());
+        println!("{} No casks specified", "✗".red());
         return Ok(());
     }
 
@@ -4197,7 +4222,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
                         println!("    {} Removed {}", "✓".green(), app_name.bold());
                     }
                     Err(e) => {
-                        println!("    {} Failed to remove: {}", "❌".red(), e);
+                        println!("    {} Failed to remove: {}", "✗".red(), e);
                         println!(
                             "    Try: {}",
                             format!("sudo rm -rf {}", app_path.display()).cyan()
@@ -4337,7 +4362,7 @@ pub fn formula(formula_name: &str) -> anyhow::Result<()> {
 
 pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -4514,7 +4539,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
     if !tap_name.contains('/') {
         println!(
             "{} Invalid tap name. Format: {}",
-            "❌".red(),
+            "✗".red(),
             "user/repo".cyan()
         );
         return Ok(());
@@ -4524,7 +4549,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
     if parts.len() != 2 {
         println!(
             "{} Invalid tap name. Format: {}",
-            "❌".red(),
+            "✗".red(),
             "user/repo".cyan()
         );
         return Ok(());
@@ -4596,7 +4621,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     // Check if formula is installed
     let versions = cellar::get_installed_versions(formula_name)?;
     if versions.is_empty() {
-        println!("{} Formula not installed: {}", "❌".red(), formula_name);
+        println!("{} Formula not installed: {}", "✗".red(), formula_name);
         return Ok(());
     }
 
@@ -4755,7 +4780,7 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
     };
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "❌".red(), tap);
+        println!("{} Tap not found: {}", "✗".red(), tap);
         return Ok(());
     }
 
@@ -4807,7 +4832,7 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
             valid,
             total
         );
-        println!("  {} {} formulae have issues", "❌".red(), total - valid);
+        println!("  {} {} formulae have issues", "✗".red(), total - valid);
     }
 
     Ok(())
@@ -4845,7 +4870,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
     }
 
     if formula_path.is_none() {
-        println!("{} Formula not found: {}", "❌".red(), formula_name);
+        println!("{} Formula not found: {}", "✗".red(), formula_name);
         return Ok(());
     }
 
@@ -4857,7 +4882,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
     // Validate target tap
     let target_tap_dir = crate::tap::tap_directory(target_tap)?;
     if !target_tap_dir.exists() {
-        println!("{} Target tap not found: {}", "❌".red(), target_tap);
+        println!("{} Target tap not found: {}", "✗".red(), target_tap);
         println!(
             "  Create it first with: {}",
             format!("bru tap-new {}", target_tap).cyan()
@@ -4988,7 +5013,7 @@ pub fn man() -> anyhow::Result<()> {
             Ok(())
         }
         Err(e) => {
-            println!("{} Failed to open man page: {}", "❌".red(), e);
+            println!("{} Failed to open man page: {}", "✗".red(), e);
             println!(
                 "\n  Documentation available at: {}",
                 "https://docs.brew.sh".cyan()
@@ -5010,7 +5035,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
     };
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "❌".red(), tap);
+        println!("{} Tap not found: {}", "✗".red(), tap);
         return Ok(());
     }
 
@@ -5028,7 +5053,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
         .status()?;
 
     if !fetch_status.success() {
-        println!("{} Failed to fetch", "❌".red());
+        println!("{} Failed to fetch", "✗".red());
         return Ok(());
     }
 
@@ -5046,7 +5071,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
             .status()?;
 
         if !reset_main_status.success() {
-            println!("{} Failed to reset", "❌".red());
+            println!("{} Failed to reset", "✗".red());
             return Ok(());
         }
     }
@@ -5062,7 +5087,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
 
 pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -5120,7 +5145,7 @@ pub fn test(formula_name: &str) -> anyhow::Result<()> {
 
 pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -5161,7 +5186,7 @@ pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "❌".red(), tap_name);
+        println!("{} Tap not found: {}", "✗".red(), tap_name);
         return Ok(());
     }
 
@@ -5288,7 +5313,7 @@ pub fn irb() -> anyhow::Result<()> {
 
 pub fn prof(args: &[String]) -> anyhow::Result<()> {
     if args.is_empty() {
-        println!("{} No command specified to profile", "❌".red());
+        println!("{} No command specified to profile", "✗".red());
         println!("\nUsage: {} <command> [args]", "bru prof".cyan());
         return Ok(());
     }
@@ -5313,7 +5338,7 @@ pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "❌".red(), tap_name);
+        println!("{} Tap not found: {}", "✗".red(), tap_name);
         return Ok(());
     }
 
@@ -5402,7 +5427,7 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
             }
         }
         Some(other) => {
-            println!("{} Unknown action: {}", "❌".red(), other);
+            println!("{} Unknown action: {}", "✗".red(), other);
             println!("\nUsage: {} [on|off|state]", "bru developer".cyan());
         }
     }
@@ -5447,7 +5472,7 @@ pub fn update_report() -> anyhow::Result<()> {
     let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
 
     if !repository_path.exists() {
-        println!("{} homebrew/core tap not found", "❌".red());
+        println!("{} homebrew/core tap not found", "✗".red());
         return Ok(());
     }
 
@@ -5514,7 +5539,7 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
 
 pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -5781,7 +5806,7 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
 
 pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -5884,7 +5909,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
             }
         }
     } else {
-        println!("{} homebrew/core tap not found", "❌".red());
+        println!("{} homebrew/core tap not found", "✗".red());
     }
 
     Ok(())
@@ -6071,7 +6096,7 @@ pub fn setup() -> anyhow::Result<()> {
 
 pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "❌".red());
+        println!("{} No formulae specified", "✗".red());
         return Ok(());
     }
 
@@ -6123,7 +6148,7 @@ pub fn generate_man_completions() -> anyhow::Result<()> {
 
 pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
     if bottle_files.is_empty() {
-        println!("{} No bottle files specified", "❌".red());
+        println!("{} No bottle files specified", "✗".red());
         return Ok(());
     }
 
@@ -6439,7 +6464,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
     let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
 
     if !repository_path.exists() {
-        println!("{} homebrew/core tap not found", "❌".red());
+        println!("{} homebrew/core tap not found", "✗".red());
         return Ok(());
     }
 
