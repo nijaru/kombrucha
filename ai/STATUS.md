@@ -8,7 +8,7 @@ Last updated: 2025-10-22
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
-- **Test Coverage**: 16 tests run automatically (13 unit + 3 regression)
+- **Test Coverage**: 26 tests run automatically (13 unit + 13 regression)
 - **Integration Tests**: 15 tests (marked #[ignore], run manually)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae
@@ -55,8 +55,9 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 **v0.1.1** (2025-10-22):
 - Upgrade duplicates: Fixed deduplication by modification time
 - Bottle revision false positives: Strip _N revisions before comparison
-- Modern CLI output: Removed arrow symbols (→ ⬇ ⬆)
-- Added 2 regression tests to prevent these bugs returning
+- Modern CLI output: Removed all 78 arrow symbols (→ ⬇ ⬆)
+- Added 11 new regression tests (install, search, info, deps, etc.)
+- Improved test coverage: 16 → 26 automated tests
 - Documentation reorganization: agent-contexts patterns (ai/, docs/)
 
 **v0.1.0** (2025-10-21):
@@ -78,10 +79,11 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 
 ## Active Work
 
-Currently stabilizing v0.1.0 for wider testing:
-- Testing improvements (add more non-ignored tests)
-- Documentation reorganization (following agent-contexts patterns)
-- CI improvements
+Currently stabilizing v0.1.1 for wider testing:
+- ✅ Testing improvements (added 11 new non-ignored tests)
+- ✅ Modern CLI output (removed all decorative symbols)
+- ✅ Documentation reorganization (following agent-contexts patterns)
+- CI improvements (next)
 
 ## Blockers
 

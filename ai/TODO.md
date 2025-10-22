@@ -2,14 +2,16 @@
 
 ## High Priority
 
-- [ ] Add more non-ignored regression tests
+- [x] Add more non-ignored regression tests
 - [ ] Improve CI test coverage
 
 ## Testing
 
-- [ ] Add test for install command (--dry-run based)
-- [ ] Add test for cask operations
-- [ ] Add test for dependency resolution edge cases
+- [x] Add test for install command (--dry-run based)
+- [x] Add tests for search, info, deps, list commands
+- [x] Add tests for autoremove and cleanup (--dry-run)
+- [x] Add test for fetch error handling
+- [x] Add test for help and version commands
 - [ ] Set up CI to run ignored tests in container
 
 ## Documentation

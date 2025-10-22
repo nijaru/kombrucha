@@ -395,3 +395,307 @@ fn test_parity_outdated_count() {
         brew_count, bru_count
     );
 }
+
+#[test]
+fn test_install_dry_run_validation() {
+    // TEST: Install --dry-run validates formulae without modification
+    // Ensures install command properly validates inputs in dry-run mode
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    // Test 1: Valid formula should succeed
+    let output = Command::new(bru_bin())
+        .args(["install", "--dry-run", "hello"])
+        .output()
+        .expect("Failed to run bru install --dry-run");
+
+    assert!(
+        output.status.success(),
+        "Install dry-run should succeed for valid formula"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("Dry run") && stdout.contains("hello"),
+        "Should indicate dry-run and show formula name"
+    );
+
+    // Test 2: Invalid formula should fail gracefully
+    let output = Command::new(bru_bin())
+        .args(["install", "--dry-run", "nonexistent-formula-xyz-123"])
+        .output()
+        .expect("Failed to run bru install --dry-run");
+
+    assert!(
+        !output.status.success(),
+        "Install dry-run should fail for invalid formula"
+    );
+
+    // Error might be in stdout or stderr
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{}{}", stdout, stderr);
+
+    assert!(
+        combined.contains("not found") || combined.contains("No formula"),
+        "Should show clear error for nonexistent formula. Got:\nstdout: {}\nstderr: {}",
+        stdout, stderr
+    );
+}
+
+#[test]
+fn test_search_basic_functionality() {
+    // TEST: Search command should work without Homebrew installation
+    // Search uses the API directly, no local state required
+
+    let output = Command::new(bru_bin())
+        .args(["search", "rust"])
+        .output()
+        .expect("Failed to run bru search");
+
+    assert!(
+        output.status.success(),
+        "Search should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should find common Rust-related formulae
+    assert!(
+        stdout.contains("rust") || stdout.contains("Rust"),
+        "Search for 'rust' should return results containing 'rust'"
+    );
+
+    // Should show result count
+    assert!(
+        stdout.contains("Found") || stdout.contains("results"),
+        "Should indicate number of results"
+    );
+}
+
+#[test]
+fn test_info_basic_functionality() {
+    // TEST: Info command should work for common formulae
+    // Info uses the API directly, no local state required
+
+    let output = Command::new(bru_bin())
+        .args(["info", "wget"])
+        .output()
+        .expect("Failed to run bru info");
+
+    assert!(
+        output.status.success(),
+        "Info should succeed for valid formula"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should show key information
+    assert!(
+        stdout.contains("wget"),
+        "Should show formula name"
+    );
+
+    assert!(
+        stdout.contains("Homepage:") || stdout.contains("Version:"),
+        "Should show formula metadata"
+    );
+}
+
+#[test]
+fn test_deps_basic_functionality() {
+    // TEST: Deps command should work for common formulae
+    // Deps uses the API directly, no local state required
+
+    let output = Command::new(bru_bin())
+        .args(["deps", "wget"])
+        .output()
+        .expect("Failed to run bru deps");
+
+    assert!(
+        output.status.success(),
+        "Deps should succeed for valid formula"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // wget has dependencies like openssl, so should show them
+    assert!(
+        stdout.contains("dependencies") || stdout.contains("openssl"),
+        "Should show dependencies"
+    );
+}
+
+#[test]
+fn test_list_no_crash() {
+    // TEST: List command should never crash
+    // Even if no packages installed, should return gracefully
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    let output = Command::new(bru_bin())
+        .args(["list"])
+        .output()
+        .expect("Failed to run bru list");
+
+    // Should always succeed (even if empty)
+    assert!(
+        output.status.success(),
+        "List should never crash"
+    );
+
+    // Should not panic
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("panic") && !stderr.contains("thread"),
+        "List should not panic"
+    );
+}
+
+#[test]
+fn test_autoremove_dry_run() {
+    // TEST: Autoremove --dry-run should detect unused deps without removing
+    // This tests the dependency analysis without system modification
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    let output = Command::new(bru_bin())
+        .args(["autoremove", "--dry-run"])
+        .output()
+        .expect("Failed to run bru autoremove --dry-run");
+
+    assert!(
+        output.status.success(),
+        "Autoremove dry-run should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should indicate dry-run mode
+    assert!(
+        stdout.contains("Dry run") || stdout.contains("Would remove"),
+        "Should indicate dry-run mode"
+    );
+
+    // If there are unused deps, should list them
+    // If none, should say "No unused dependencies"
+    assert!(
+        stdout.contains("unused") || stdout.contains("dependencies"),
+        "Should mention dependencies"
+    );
+}
+
+#[test]
+fn test_cleanup_dry_run() {
+    // TEST: Cleanup --dry-run should detect old versions without removing
+    // This tests old version detection without system modification
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    let output = Command::new(bru_bin())
+        .args(["cleanup", "--dry-run"])
+        .output()
+        .expect("Failed to run bru cleanup --dry-run");
+
+    assert!(
+        output.status.success(),
+        "Cleanup dry-run should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should indicate dry-run mode
+    assert!(
+        stdout.contains("Dry run") || stdout.contains("Would remove"),
+        "Should indicate dry-run mode"
+    );
+}
+
+#[test]
+fn test_fetch_validation() {
+    // TEST: Fetch should show errors for nonexistent formulae
+    // Tests error handling for nonexistent formulae
+
+    let output = Command::new(bru_bin())
+        .args(["fetch", "nonexistent-formula-xyz-123"])
+        .output()
+        .expect("Failed to run bru fetch");
+
+    // Fetch may succeed even if individual formulae fail (it continues processing)
+    // Check that error message is shown
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{}{}", stdout, stderr);
+
+    assert!(
+        combined.contains("not found") || combined.contains("Failed to fetch"),
+        "Should show error for nonexistent formula. Got:\nstdout: {}\nstderr: {}",
+        stdout, stderr
+    );
+}
+
+#[test]
+fn test_help_command() {
+    // TEST: Help should always work and show all commands
+    // Basic sanity check for help output
+
+    let output = Command::new(bru_bin())
+        .args(["help"])
+        .output()
+        .expect("Failed to run bru help");
+
+    assert!(
+        output.status.success(),
+        "Help should always succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should show common commands
+    assert!(
+        stdout.contains("install") && stdout.contains("search") && stdout.contains("upgrade"),
+        "Help should list core commands"
+    );
+
+    // Should show usage
+    assert!(
+        stdout.contains("Usage") || stdout.contains("USAGE"),
+        "Help should show usage information"
+    );
+}
+
+#[test]
+fn test_version_flag() {
+    // TEST: Version flag should always work
+    // Basic sanity check
+
+    let output = Command::new(bru_bin())
+        .args(["--version"])
+        .output()
+        .expect("Failed to run bru --version");
+
+    assert!(
+        output.status.success(),
+        "Version flag should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should show version number
+    assert!(
+        stdout.contains("0.1") || stdout.contains("kombrucha"),
+        "Should show version information"
+    );
+}

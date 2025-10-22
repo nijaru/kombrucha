@@ -648,8 +648,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
 
 pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     println!(
-        "{} Fetching {} formulae...",
-        "⬇".bold(),
+        "Fetching {} formulae...",
         formula_names.len().to_string().bold()
     );
 
@@ -787,14 +786,13 @@ pub async fn install(
     if to_install.is_empty() {
         println!("\n{} All formulae already installed", "✓".green());
         if force {
-            println!("  {} Use without --force to install anyway", "→".dimmed());
+            println!("  Use without --force to install anyway");
         }
         return Ok(());
     }
 
     println!(
-        "{} {} formulae to install: {}",
-        "→".bold(),
+        "{} formulae to install: {}",
         to_install.len().to_string().bold(),
         to_install
             .iter()
@@ -1438,8 +1436,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     to_remove.sort_by(|a, b| a.name.cmp(&b.name));
 
     println!(
-        "\n{} Found {} unused dependencies:\n",
-        "→".bold(),
+        "\nFound {} unused dependencies:\n",
         to_remove.len().to_string().bold()
     );
 
@@ -1769,8 +1766,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
 
             if dry_run {
                 println!(
-                    "  {} Would remove {} {} ({})",
-                    "→".dimmed(),
+                    "  Would remove {} {} ({})",
                     old.name.cyan(),
                     old.version.dimmed(),
                     format_size(size).dimmed()
@@ -2531,8 +2527,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
             );
             for dep in missing_deps {
                 println!(
-                    "  {} {} {}",
-                    "→".dimmed(),
+                    "  {} {}",
                     dep.full_name.cyan(),
                     dep.version.dimmed()
                 );
@@ -3214,7 +3209,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
                 if crate::tap::is_tapped(tap_name)? {
                     println!("  {} {} already tapped", "✓".green(), tap_name.dimmed());
                 } else {
-                    println!("  {} Tapping {}...", "→".bold(), tap_name.cyan());
+                    println!("  Tapping {}...", tap_name.cyan());
                     match crate::tap::tap(tap_name) {
                         Ok(_) => println!("    {} Tapped {}", "✓".green(), tap_name.bold()),
                         Err(e) => println!("    {} Failed: {}", "✗".red(), e),
@@ -3756,7 +3751,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     );
 
     for cask_name in cask_names {
-        println!("\n{} Installing cask: {}", "→".bold(), cask_name.cyan());
+        println!("\nInstalling cask: {}", cask_name.cyan());
 
         // Check if already installed
         if crate::cask::is_cask_installed(cask_name) {
@@ -3826,7 +3821,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
         if filename.ends_with(".dmg") {
             // Mount DMG
-            println!("  {} Mounting DMG...", "→".bold());
+            println!("  Mounting DMG...");
             let mount_point = match crate::cask::mount_dmg(&download_path) {
                 Ok(p) => p,
                 Err(e) => {
@@ -3850,7 +3845,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                     continue;
                 }
 
-                println!("  {} Installing {}...", "→".bold(), app_name.cyan());
+                println!("  Installing {}...", app_name.cyan());
                 match crate::cask::install_app(&app_path, app_name) {
                     Ok(_) => {
                         println!(
@@ -3866,13 +3861,13 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             }
 
             // Unmount DMG
-            println!("  {} Unmounting DMG...", "→".bold());
+            println!("  Unmounting DMG...");
             if let Err(e) = crate::cask::unmount_dmg(&mount_point) {
                 println!("    {} Failed to unmount: {}", "⚠".yellow(), e);
             }
         } else if filename.ends_with(".pkg") {
             // Install PKG
-            println!("  {} Installing PKG...", "→".bold());
+            println!("  Installing PKG...");
             match crate::cask::install_pkg(&download_path) {
                 Ok(_) => {
                     println!("    {} Installed successfully", "✓".green());
@@ -3884,7 +3879,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             }
         } else if filename.ends_with(".zip") {
             // Extract ZIP
-            println!("  {} Extracting ZIP...", "→".bold());
+            println!("  Extracting ZIP...");
             let extract_dir = match crate::cask::extract_zip(&download_path) {
                 Ok(dir) => {
                     println!(
@@ -3902,7 +3897,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
             // Install apps from extracted directory
             for app in &apps {
-                println!("  {} Installing {}...", "→".bold(), app.cyan());
+                println!("  Installing {}...", app.cyan());
                 let app_path = extract_dir.join(app);
 
                 if !app_path.exists() {
@@ -4058,8 +4053,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
 
             if dry_run {
                 println!(
-                    "  {} Would remove {} {} ({})",
-                    "→".dimmed(),
+                    "  Would remove {} {} ({})",
                     token.cyan(),
                     version_name.to_string_lossy().dimmed(),
                     format_size(size).dimmed()
@@ -4134,8 +4128,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         }
 
         println!(
-            "{} {} casks to upgrade: {}",
-            "→".bold(),
+            "{} casks to upgrade: {}",
             outdated.len().to_string().bold(),
             outdated.join(", ").cyan()
         );
@@ -4144,10 +4137,10 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         cask_names.to_vec()
     };
 
-    println!("\n{} Upgrading {} casks...", "⬆".bold(), to_upgrade.len());
+    println!("\nUpgrading {} casks...", to_upgrade.len());
 
     for cask_name in &to_upgrade {
-        println!("  {} Upgrading {}...", "→".bold(), cask_name.cyan());
+        println!("  Upgrading {}...", cask_name.cyan());
 
         // First uninstall the old version
         uninstall_cask(std::slice::from_ref(cask_name))?;
@@ -4174,7 +4167,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
     );
 
     for cask_name in cask_names {
-        println!("\n{} Uninstalling cask: {}", "→".bold(), cask_name.cyan());
+        println!("\nUninstalling cask: {}", cask_name.cyan());
 
         // Check if installed
         if !crate::cask::is_cask_installed(cask_name) {
@@ -4373,7 +4366,7 @@ pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
     println!();
 
     for formula_name in formula_names {
-        println!("{} {}", "→".bold(), formula_name.cyan());
+        println!("{}", formula_name.cyan());
 
         // Check if installed
         let versions = cellar::get_installed_versions(formula_name)?;
@@ -4640,8 +4633,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     let tap = new_tap.unwrap();
 
     println!(
-        "  {} Migrating {} to tap: {}",
-        "→".bold(),
+        "  Migrating {} to tap: {}",
         formula_name,
         tap.cyan()
     );
@@ -4679,7 +4671,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
     }
 
     for formula_name in &formulae_to_check {
-        println!("\n{} {}", "→".bold(), formula_name.cyan());
+        println!("\n{}", formula_name.cyan());
 
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
@@ -5045,7 +5037,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("  {} Fetching latest changes...", "→".bold());
+    println!("  Fetching latest changes...");
 
     let fetch_status = std::process::Command::new("git")
         .current_dir(&tap_dir)
@@ -5057,7 +5049,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("  {} Resetting to origin/master...", "→".bold());
+    println!("  Resetting to origin/master...");
 
     let reset_status = std::process::Command::new("git")
         .current_dir(&tap_dir)
@@ -5108,7 +5100,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
     println!("  - Ruby best practices");
 
     for formula in formula_names {
-        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("\n  {}", formula.cyan());
         println!("    {} Would check formula style", "ℹ".dimmed());
     }
 
@@ -5134,8 +5126,7 @@ pub fn test(formula_name: &str) -> anyhow::Result<()> {
     println!("  - Basic functionality works");
 
     println!(
-        "\n  {} Would run: {} test {}",
-        "→".dimmed(),
+        "\n  Would run: {} test {}",
         "brew".cyan(),
         formula_name.cyan()
     );
@@ -5168,7 +5159,7 @@ pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
     println!("  Would build from source and create bottles:");
 
     for formula in formula_names {
-        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("\n  {}", formula.cyan());
         println!("    {} Build from source", "1.".dimmed());
         println!("    {} Package into bottle tarball", "2.".dimmed());
         println!("    {} Calculate SHA256 checksum", "3.".dimmed());
@@ -5281,7 +5272,7 @@ pub fn ruby(args: &[String]) -> anyhow::Result<()> {
     println!("  Would run Ruby code with Homebrew's environment loaded");
 
     if !args.is_empty() {
-        println!("\n  {} Arguments: {}", "→".dimmed(), args.join(" ").cyan());
+        println!("\n  Arguments: {}", args.join(" ").cyan());
     }
 
     println!("\n  When implemented:");
@@ -5327,7 +5318,7 @@ pub fn prof(args: &[String]) -> anyhow::Result<()> {
     println!("  - API calls");
     println!("  - Bottlenecks");
 
-    println!("\n  {} Command: {}", "→".dimmed(), args.join(" ").cyan());
+    println!("\n  Command: {}", args.join(" ").cyan());
 
     Ok(())
 }
@@ -5454,7 +5445,7 @@ pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
     println!("  - Type safety violations");
 
     if !files.is_empty() {
-        println!("\n  {} Files to check:", "→".dimmed());
+        println!("\n  Files to check:");
         for file in files {
             println!("    {}", file.cyan());
         }
@@ -5500,8 +5491,7 @@ pub fn update_report() -> anyhow::Result<()> {
             }
             if lines.len() > 10 {
                 println!(
-                    "  {} ... and {} more",
-                    "→".dimmed(),
+                    "  ... and {} more",
                     (lines.len() - 10).to_string().dimmed()
                 );
             }
@@ -5529,9 +5519,9 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
     println!("  - Calculate SHA256 checksums");
 
     if print_only {
-        println!("\n  {} Would print updated resource blocks", "→".dimmed());
+        println!("\n  Would print updated resource blocks");
     } else {
-        println!("\n  {} Would update formula file", "→".dimmed());
+        println!("\n  Would update formula file");
     }
 
     Ok(())
@@ -5555,7 +5545,7 @@ pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
     println!("  - CI/CD test runner configuration");
 
     for formula in formula_names {
-        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("\n  {}", formula.cyan());
         println!("    {} Would detect test framework", "ℹ".dimmed());
     }
 
@@ -5670,13 +5660,13 @@ pub async fn generate_formula_api(formula_names: &[String]) -> anyhow::Result<()
     println!("  - Homebrew website");
     println!("  - Third-party tools");
 
-    println!("\n  {} Would generate:", "→".dimmed());
+    println!("\n  Would generate:");
     println!("    - formula.json (formula metadata)");
     println!("    - analytics.json (install counts)");
     println!("    - cask_analytics.json");
 
     if !formula_names.is_empty() {
-        println!("\n  {} Generating for specific formulae:", "→".dimmed());
+        println!("\n  Generating for specific formulae:");
         for formula in formula_names {
             println!("    {}", formula.cyan());
         }
@@ -5699,12 +5689,12 @@ pub async fn generate_cask_api(cask_names: &[String]) -> anyhow::Result<()> {
     println!("  Generates JSON API data for casks");
     println!("  Used by formulae.brew.sh and Homebrew website");
 
-    println!("\n  {} Would generate:", "→".dimmed());
+    println!("\n  Would generate:");
     println!("    - cask.json (cask metadata)");
     println!("    - cask_analytics.json (install counts)");
 
     if !cask_names.is_empty() {
-        println!("\n  {} Generating for specific casks:", "→".dimmed());
+        println!("\n  Generating for specific casks:");
         for cask in cask_names {
             println!("    {}", cask.cyan());
         }
@@ -5726,7 +5716,7 @@ pub fn pr_pull(pr_ref: &str) -> anyhow::Result<()> {
     println!("  Downloads and applies a pull request locally");
     println!("  Useful for testing PRs before merge");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     println!("    1. Fetch PR #{} from GitHub", pr_number.cyan());
     println!("    2. Create local branch");
     println!("    3. Apply PR commits");
@@ -5754,7 +5744,7 @@ pub fn pr_upload(use_bintray: bool) -> anyhow::Result<()> {
     println!("\n{} Bottle upload (CI/CD workflow)", "ℹ".blue());
     println!("  This is typically run by CI after building bottles");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     println!("    1. Find bottle tarballs in current directory");
     println!("    2. Calculate SHA256 checksums");
     println!("    3. Upload to {}", target.cyan());
@@ -5790,7 +5780,7 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
     println!("  6. Check for conflicts");
 
     if !formula_names.is_empty() {
-        println!("\n  {} Testing:", "→".dimmed());
+        println!("\n  Testing:");
         for formula in formula_names {
             println!("    {}", formula.cyan());
         }
@@ -5825,7 +5815,7 @@ pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow:
     println!("  (e.g., build fixes, dependency updates)");
 
     for formula in formula_names {
-        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("\n  {}", formula.cyan());
         println!("    {} Would increment revision field", "ℹ".dimmed());
     }
 
@@ -5847,8 +5837,7 @@ pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
     println!("  - Meets style guidelines");
 
     println!(
-        "\n  {} Would scan open PRs and merge eligible ones",
-        "→".dimmed()
+        "\n  Would scan open PRs and merge eligible ones"
     );
     println!("  {} Requires maintainer permissions", "⚠".yellow());
 
@@ -5901,8 +5890,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
                 }
                 if lines.len() > 10 {
                     println!(
-                        "  {} ... and {} more",
-                        "→".dimmed(),
+                        "  ... and {} more",
                         (lines.len() - 10).to_string().dimmed()
                     );
                 }
@@ -5922,7 +5910,7 @@ pub fn update_license_data() -> anyhow::Result<()> {
     println!("  Downloads and updates SPDX license list");
     println!("  Used for validating license fields in formulae");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     println!("    1. Fetch latest SPDX license list");
     println!("    2. Parse license data");
     println!("    3. Update Homebrew's license database");
@@ -5944,7 +5932,7 @@ pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<(
         println!("{}", desc.dimmed());
     }
 
-    println!("\n{} Version:", "→".dimmed());
+    println!("\nVersion:");
     if let Some(version) = &formula.versions.stable {
         println!("  Stable: {}", version.cyan());
     }
@@ -5953,14 +5941,13 @@ pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<(
     }
 
     if let Some(homepage) = &formula.homepage {
-        println!("\n{} Homepage:", "→".dimmed());
+        println!("\nHomepage:");
         println!("  {}", homepage.dimmed());
     }
 
     if !formula.dependencies.is_empty() {
         println!(
-            "\n{} Dependencies ({}):",
-            "→".dimmed(),
+            "\nDependencies ({}):",
             formula.dependencies.len()
         );
         for dep in formula.dependencies.iter().take(5) {
@@ -5968,8 +5955,7 @@ pub async fn formula_info(api: &BrewApi, formula_name: &str) -> anyhow::Result<(
         }
         if formula.dependencies.len() > 5 {
             println!(
-                "  {} ... and {} more",
-                "→".dimmed(),
+                "  ... and {} more",
                 (formula.dependencies.len() - 5).to_string().dimmed()
             );
         }
@@ -6000,8 +5986,7 @@ pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result
     if cmd_dir.exists() {
         println!("\n  {} Tap has cmd/ directory", "✓".green());
         println!(
-            "  {} Would execute: {}/{}",
-            "→".dimmed(),
+            "  Would execute: {}/{}",
             tap_name,
             command.cyan()
         );
@@ -6019,7 +6004,7 @@ pub fn install_formula_api() -> anyhow::Result<()> {
     println!("  Downloads and caches formula JSON API");
     println!("  Used for fast offline formula lookups");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     println!("    1. Download formula.json from formulae.brew.sh");
     println!("    2. Download cask.json");
     println!("    3. Cache locally in Homebrew directory");
@@ -6060,11 +6045,11 @@ pub async fn abv_cask(api: &BrewApi, cask_name: &str) -> anyhow::Result<()> {
     }
 
     if let Some(version) = &cask.version {
-        println!("\n{} Version: {}", "→".dimmed(), version.cyan());
+        println!("\nVersion: {}", version.cyan());
     }
 
     if let Some(homepage) = &cask.homepage {
-        println!("{} Homepage: {}", "→".dimmed(), homepage.dimmed());
+        println!("Homepage: {}", homepage.dimmed());
     }
 
     if let Some(desc) = &cask.desc {
@@ -6080,7 +6065,7 @@ pub fn setup() -> anyhow::Result<()> {
     println!("\n{} Development setup", "ℹ".blue());
     println!("  Configures environment for Homebrew development:");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     println!("    1. Clone Homebrew repository");
     println!("    2. Install development dependencies");
     println!("    3. Configure git hooks");
@@ -6089,7 +6074,7 @@ pub fn setup() -> anyhow::Result<()> {
     println!("    6. Configure shell environment");
 
     println!("\n  {} For contributors and maintainers", "ℹ".dimmed());
-    println!("  {} See: https://docs.brew.sh/Development", "→".dimmed());
+    println!("  See: https://docs.brew.sh/Development");
 
     Ok(())
 }
@@ -6111,11 +6096,10 @@ pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
     println!("  Homebrew periodically changes platform identifiers");
 
     for formula in formula_names {
-        println!("\n  {} {}", "→".dimmed(), formula.cyan());
+        println!("\n  {}", formula.cyan());
         println!("    {} Would update bottle tags in formula", "ℹ".dimmed());
         println!(
-            "    {} Example: monterey -> ventura -> sonoma",
-            "→".dimmed()
+            "    Example: monterey -> ventura -> sonoma"
         );
     }
 
@@ -6128,12 +6112,12 @@ pub fn generate_man_completions() -> anyhow::Result<()> {
     println!("\n{} Documentation generation", "ℹ".blue());
     println!("  Generates Homebrew documentation:");
 
-    println!("\n  {} Would generate:", "→".dimmed());
+    println!("\n  Would generate:");
     println!("    - Man pages for brew command");
     println!("    - Shell completions (bash, zsh, fish)");
     println!("    - API documentation");
 
-    println!("\n  {} Output locations:", "→".dimmed());
+    println!("\n  Output locations:");
     println!("    - {}", "manpages/man1/brew.1".cyan());
     println!("    - {}", "completions/bash/brew".cyan());
     println!("    - {}", "completions/zsh/_brew".cyan());
@@ -6161,12 +6145,12 @@ pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
     println!("  Merges bottle metadata from multiple builds");
     println!("  Used in Homebrew's CI when building for multiple platforms");
 
-    println!("\n  {} Would merge:", "→".dimmed());
+    println!("\n  Would merge:");
     for bottle in bottle_files {
         println!("    - {}", bottle.cyan());
     }
 
-    println!("\n  {} Output:", "→".dimmed());
+    println!("\n  Output:");
     println!("    - Combined bottle DSL block");
     println!("    - All platform SHAs merged");
     println!("    - Ready for PR upload");
@@ -6186,10 +6170,10 @@ pub fn install_bundler() -> anyhow::Result<()> {
     let prefix = cellar::detect_prefix();
     let vendor_dir = prefix.join("Library/Homebrew/vendor");
 
-    println!("\n  {} Target:", "→".dimmed());
+    println!("\n  Target:");
     println!("    {}", vendor_dir.display().to_string().cyan());
 
-    println!("\n  {} Would install:", "→".dimmed());
+    println!("\n  Would install:");
     println!("    - bundler gem");
     println!("    - Dependencies for formula development");
 
@@ -6207,20 +6191,20 @@ pub fn bump(formula: &str, no_audit: bool) -> anyhow::Result<()> {
     );
 
     if no_audit {
-        println!("  {} Skipping audit", "→".dimmed());
+        println!("  Skipping audit");
     }
 
     println!("\n{} Version bump workflow", "ℹ".blue());
     println!("  Automated PR creation for formula updates");
 
-    println!("\n  {} Would do:", "→".dimmed());
+    println!("\n  Would do:");
     println!("    1. Detect latest upstream version");
     println!("    2. Update formula file");
     println!("    3. Compute new SHA256");
     println!("    4. Run audit (unless --no-audit)");
     println!("    5. Create GitHub PR");
 
-    println!("\n  {} Formula:", "→".dimmed());
+    println!("\n  Formula:");
     println!("    {}", formula.cyan());
 
     println!("\n{} This is a maintainer command", "ℹ".blue());
@@ -6243,7 +6227,7 @@ pub fn analytics_state() -> anyhow::Result<()> {
     } else {
         println!("  Status: {}", "enabled".green());
         println!("\n  {} Analytics are currently enabled", "ℹ".blue());
-        println!("  {} Anonymous usage data is collected", "→".dimmed());
+        println!("  Anonymous usage data is collected");
     }
 
     println!(
@@ -6266,10 +6250,10 @@ pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
     println!("  Support open source development");
 
     if let Some(name) = target {
-        println!("\n  {} Would open:", "→".dimmed());
+        println!("\n  Would open:");
         println!("    https://github.com/sponsors/{}", name);
     } else {
-        println!("\n  {} Homebrew's sponsors:", "→".dimmed());
+        println!("\n  Homebrew's sponsors:");
         println!("    https://github.com/sponsors/Homebrew");
         println!("\n  Thank you to all our sponsors!");
     }
@@ -6281,13 +6265,13 @@ pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
     println!("Running Homebrew sub-command: {}", subcommand.cyan());
 
     if !args.is_empty() {
-        println!("  {} Arguments: {}", "→".dimmed(), args.join(" ").dimmed());
+        println!("  Arguments: {}", args.join(" ").dimmed());
     }
 
     println!("\n{} Sub-command execution", "ℹ".blue());
     println!("  Runs external Homebrew commands or scripts");
 
-    println!("\n  {} Would execute:", "→".dimmed());
+    println!("\n  Would execute:");
     if args.is_empty() {
         println!("    brew-{}", subcommand);
     } else {
@@ -6317,7 +6301,7 @@ pub fn nodenv_sync() -> anyhow::Result<()> {
         println!("    Install with: {}", "bru install nodenv".cyan());
     }
 
-    println!("\n  {} Would sync:", "→".dimmed());
+    println!("\n  Would sync:");
     println!("    - Node version shims");
     println!("    - npm/npx executables");
     println!("    - PATH integration");
@@ -6342,7 +6326,7 @@ pub fn pyenv_sync() -> anyhow::Result<()> {
         println!("    Install with: {}", "bru install pyenv".cyan());
     }
 
-    println!("\n  {} Would sync:", "→".dimmed());
+    println!("\n  Would sync:");
     println!("    - Python version shims");
     println!("    - pip/python executables");
     println!("    - Virtual environment integration");
@@ -6367,7 +6351,7 @@ pub fn rbenv_sync() -> anyhow::Result<()> {
         println!("    Install with: {}", "bru install rbenv".cyan());
     }
 
-    println!("\n  {} Would sync:", "→".dimmed());
+    println!("\n  Would sync:");
     println!("    - Ruby version shims");
     println!("    - gem/bundle executables");
     println!("    - Gemfile integration");
@@ -6384,7 +6368,7 @@ pub fn setup_ruby() -> anyhow::Result<()> {
     let prefix = cellar::detect_prefix();
     let homebrew_ruby = prefix.join("Library/Homebrew/vendor/portable-ruby");
 
-    println!("\n  {} Ruby installation:", "→".dimmed());
+    println!("\n  Ruby installation:");
     if homebrew_ruby.exists() {
         println!("    {}", "Portable Ruby installed".green());
         println!("    {}", homebrew_ruby.display().to_string().dimmed());
@@ -6392,7 +6376,7 @@ pub fn setup_ruby() -> anyhow::Result<()> {
         println!("    {}", "Portable Ruby not found".dimmed());
     }
 
-    println!("\n  {} Would setup:", "→".dimmed());
+    println!("\n  Would setup:");
     println!("    - Ruby interpreter");
     println!("    - RubyGems configuration");
     println!("    - Bundler dependencies");
@@ -6412,7 +6396,7 @@ pub async fn tab(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
     println!("\n{} Tab format", "ℹ".blue());
     println!("  Generates machine-readable formula information");
 
-    println!("\n  {} Output format:", "→".dimmed());
+    println!("\n  Output format:");
     println!("    name\\tversion\\thomepage\\tdescription");
 
     println!("\n{}", "─".repeat(60).dimmed());
@@ -6493,8 +6477,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
 
     if needs_update {
         println!(
-            "\n  {} Update needed (>24 hours since last update)",
-            "→".dimmed()
+            "\n  Update needed (>24 hours since last update)"
         );
         println!("    Running: {}", "bru update".cyan());
 
