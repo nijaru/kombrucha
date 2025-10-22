@@ -112,6 +112,7 @@ enum Commands {
     },
 
     /// Install formulae from bottles
+    #[command(alias = "i")]
     Install {
         /// Formula/cask names
         formulae: Vec<String>,
@@ -134,6 +135,7 @@ enum Commands {
     },
 
     /// Upgrade installed formulae
+    #[command(alias = "up")]
     Upgrade {
         /// Formula names (or all if empty)
         formulae: Vec<String>,
@@ -152,6 +154,7 @@ enum Commands {
     },
 
     /// Reinstall formulae
+    #[command(alias = "re")]
     Reinstall {
         /// Formula names
         formulae: Vec<String>,
@@ -162,6 +165,7 @@ enum Commands {
     },
 
     /// Uninstall formulae
+    #[command(aliases = ["rm", "remove"])]
     Uninstall {
         /// Formula/cask names
         formulae: Vec<String>,
