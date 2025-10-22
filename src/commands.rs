@@ -855,7 +855,7 @@ pub async fn install(
         // Create symlinks
         let linked = symlink::link_formula(&formula.name, version)?;
         println!(
-            "    {} Linked {} files",
+            "    ├ {} Linked {} files",
             "✓".green(),
             linked.len().to_string().dimmed()
         );
@@ -867,7 +867,7 @@ pub async fn install(
         receipt_data.write(&extracted_path)?;
 
         println!(
-            "    {} Installed {} {}",
+            "    └ {} Installed {} {}",
             "✓".green(),
             formula.name.bold().green(),
             version.dimmed()
@@ -1262,12 +1262,12 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         receipt_data.write(&extracted_path)?;
 
         println!(
-            "    {} Linked {} files",
+            "    ├ {} Linked {} files",
             "✓".green(),
             linked.len().to_string().dimmed()
         );
         println!(
-            "    {} Reinstalled {} {}",
+            "    └ {} Reinstalled {} {}",
             "✓".green(),
             formula_name.bold().green(),
             version.dimmed()
@@ -3888,13 +3888,13 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 match crate::cask::install_app(&app_path, app_name) {
                     Ok(_) => {
                         println!(
-                            "    {} Installed to /Applications/{}",
+                            "    └ {} Installed to /Applications/{}",
                             "✓".green(),
                             app_name.bold()
                         );
                     }
                     Err(e) => {
-                        println!("    {} Failed to install: {}", "✗".red(), e);
+                        println!("    └ {} Failed to install: {}", "✗".red(), e);
                     }
                 }
             }
@@ -3909,7 +3909,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             println!("  Installing PKG...");
             match crate::cask::install_pkg(&download_path) {
                 Ok(_) => {
-                    println!("    {} Installed successfully", "✓".green());
+                    println!("    └ {} Installed successfully", "✓".green());
                 }
                 Err(e) => {
                     println!("  {} Failed to install: {}", "✗".red(), e);
@@ -3922,7 +3922,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             let extract_dir = match crate::cask::extract_zip(&download_path) {
                 Ok(dir) => {
                     println!(
-                        "    {} Extracted to {}",
+                        "    └ {} Extracted to {}",
                         "✓".green(),
                         dir.display().to_string().dimmed()
                     );
@@ -3940,14 +3940,14 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 let app_path = extract_dir.join(app);
 
                 if !app_path.exists() {
-                    println!("    {} App not found in ZIP: {}", "⚠".yellow(), app);
+                    println!("    └ {} App not found in ZIP: {}", "⚠".yellow(), app);
                     continue;
                 }
 
                 match crate::cask::install_app(&app_path, app) {
                     Ok(target) => {
                         println!(
-                            "    {} Installed to {}",
+                            "    └ {} Installed to {}",
                             "✓".green(),
                             target.display().to_string().bold()
                         );
