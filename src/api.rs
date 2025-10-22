@@ -93,10 +93,12 @@ pub struct Cask {
     pub artifacts: Vec<serde_json::Value>,
 }
 
-/// Homebrew API client
+/// Homebrew API client with in-memory caching
 #[derive(Clone)]
 pub struct BrewApi {
     client: reqwest::Client,
+    formula_cache: moka::future::Cache<String, Formula>,
+    cask_cache: moka::future::Cache<String, Cask>,
 }
 
 impl BrewApi {
@@ -106,7 +108,16 @@ impl BrewApi {
             .user_agent(format!("bru/{}", env!("CARGO_PKG_VERSION")))
             .build()?;
 
-        Ok(Self { client })
+        // In-memory cache for formula/cask lookups (lasts for command duration)
+        // Cache up to 1000 formulae and 500 casks to avoid redundant API calls
+        let formula_cache = moka::future::Cache::new(1000);
+        let cask_cache = moka::future::Cache::new(500);
+
+        Ok(Self {
+            client,
+            formula_cache,
+            cask_cache,
+        })
     }
 
     /// Fetch all formulae (cached locally for 24 hours)
@@ -143,8 +154,14 @@ impl BrewApi {
         Ok(casks)
     }
 
-    /// Fetch specific formula by name
+    /// Fetch specific formula by name (with in-memory caching)
     pub async fn fetch_formula(&self, name: &str) -> Result<Formula> {
+        // Check cache first
+        if let Some(cached) = self.formula_cache.get(name).await {
+            return Ok(cached);
+        }
+
+        // Fetch from API
         let url = format!("{}/formula/{}.json", HOMEBREW_API_BASE, name);
         let response = self.client.get(&url).send().await?;
 
@@ -152,12 +169,22 @@ impl BrewApi {
             return Err(crate::error::BruError::FormulaNotFound(name.to_string()));
         }
 
-        let formula = response.json().await?;
+        let formula: Formula = response.json().await?;
+
+        // Store in cache for subsequent calls
+        self.formula_cache.insert(name.to_string(), formula.clone()).await;
+
         Ok(formula)
     }
 
-    /// Fetch specific cask by token
+    /// Fetch specific cask by token (with in-memory caching)
     pub async fn fetch_cask(&self, token: &str) -> Result<Cask> {
+        // Check cache first
+        if let Some(cached) = self.cask_cache.get(token).await {
+            return Ok(cached);
+        }
+
+        // Fetch from API
         let url = format!("{}/cask/{}.json", HOMEBREW_API_BASE, token);
         let response = self.client.get(&url).send().await?;
 
@@ -165,7 +192,11 @@ impl BrewApi {
             return Err(crate::error::BruError::CaskNotFound(token.to_string()));
         }
 
-        let cask = response.json().await?;
+        let cask: Cask = response.json().await?;
+
+        // Store in cache for subsequent calls
+        self.cask_cache.insert(token.to_string(), cask.clone()).await;
+
         Ok(cask)
     }
 
