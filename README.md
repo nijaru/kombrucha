@@ -202,25 +202,24 @@ See [scripts/README.md](scripts/README.md) for detailed testing documentation.
 
 ## Documentation
 
+**For AI Agents** - Start with [AGENTS.md](AGENTS.md) for project overview and structure
+
 **Current Status**:
-- [internal/status-report.md](internal/status-report.md) - **START HERE** - Complete status overview
-- [internal/test-report.md](internal/test-report.md) - Comprehensive testing results
-- [internal/feature-parity-audit.md](internal/feature-parity-audit.md) - Command-by-command tracking
+- [ai/STATUS.md](ai/STATUS.md) - **START HERE** - Current project state
+- [ai/TODO.md](ai/TODO.md) - Active tasks and priorities
+- [ai/DECISIONS.md](ai/DECISIONS.md) - Architectural decisions log
 
-**Development**:
-- [CLAUDE.md](CLAUDE.md) - Development guide for AI agents
-- [internal/README.md](internal/README.md) - Index of all internal documentation
-- [internal/SPEC.md](internal/SPEC.md) - Technical architecture specification
-- [internal/implementation-roadmap.md](internal/implementation-roadmap.md) - Phased implementation plan
+**Architecture**:
+- [docs/architecture/SPEC.md](docs/architecture/SPEC.md) - Technical architecture
+- [docs/architecture/feature-parity-audit.md](docs/architecture/feature-parity-audit.md) - Command coverage
+- [docs/architecture/implementation-roadmap.md](docs/architecture/implementation-roadmap.md) - Development phases
+- [docs/architecture/testing-strategy.md](docs/architecture/testing-strategy.md) - Testing approach
 
-**Research & Performance**:
-- [internal/research-conclusions.md](internal/research-conclusions.md) - Research findings
-- [internal/performance-analysis.md](internal/performance-analysis.md) - Performance breakdown
+**Research**:
+- [ai/RESEARCH.md](ai/RESEARCH.md) - Research index
+- [ai/research/performance-analysis.md](ai/research/performance-analysis.md) - Performance breakdown
+- [ai/research/homebrew-compatibility.md](ai/research/homebrew-compatibility.md) - Compatibility analysis
 - [benchmarks/](benchmarks/) - Performance testing and results
-
-**Testing**:
-- [scripts/README.md](scripts/README.md) - Testing infrastructure documentation
-- [internal/testing-strategy.md](internal/testing-strategy.md) - Testing approach
 
 ## License
 
