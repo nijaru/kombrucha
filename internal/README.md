@@ -51,7 +51,7 @@ This directory contains internal documentation, research, and AI agent instructi
 
 **`feature-parity-audit.md`**
 - Command-by-command tracking vs Homebrew
-- Status: 100% parity achieved (116/116 commands)
+- Status: Core commands functional, dev tools are stubs
 - Implementation priorities and categories
 - Version milestone planning
 
@@ -189,20 +189,20 @@ This directory contains internal documentation, research, and AI agent instructi
 - [x] Cleanup and autoremove
 - [x] Pin/unpin functionality
 
-**Phase 4: Complete Command Coverage** ✅
-- [x] 100% command parity achieved (116/116 commands)
-- [x] All user-facing commands implemented and tested
-- [x] Development tools (create, audit, livecheck, etc.)
+**Phase 4: Core Command Implementation** ✅
+- [x] Core package management fully functional
 - [x] Repository management (tap, update, extract, etc.)
 - [x] System utilities and diagnostics
-- [x] CI/internal commands (as documented stubs)
+- [ ] Development tools (create, audit, livecheck, etc.) - stubs only
+- [ ] CI/internal commands - not implemented
 
 ### Current Metrics 📊
 
-- **Command Coverage**: 100% (116/116 commands)
-- **Testing Coverage**: 77% (89/116 commands tested)
-- **Production Readiness**: 85% (bottle-based workflows fully functional)
-- **Status**: **BETA READY** ✅
+- **Core Commands**: Fully functional (install, uninstall, upgrade, search, info, etc.)
+- **Testing Coverage**: 32 automated tests (unit + integration)
+- **Bottle-Based Workflows**: Production ready (95% of formulae)
+- **Source Builds**: Not yet supported
+- **Status**: **BETA** ✅
 
 See `internal/status-report.md` for detailed status breakdown.
 
