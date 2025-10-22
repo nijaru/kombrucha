@@ -228,6 +228,120 @@ fn test_regression_api_404_error_messages() {
 }
 
 #[test]
+fn test_regression_upgrade_duplicates() {
+    // BUG: upgrade showed duplicate packages when multiple versions installed
+    // DATE: 2025-10-21
+    // DESCRIPTION: When running `bru upgrade` without arguments, packages appeared
+    //              multiple times in the "packages to upgrade" list
+    // CAUSE: list_installed() returns all installed versions, no deduplication
+    // FIX: Added deduplication using modification time in upgrade command
+    //
+    // REPRODUCTION:
+    // 1. Have multiple versions of packages installed (common after upgrades)
+    // 2. Run: bru upgrade (without formula names)
+    // 3. Old code: "74 packages to upgrade: mosh, mosh, gh, gh, mise, mise, ..."
+    // 4. Fixed code: "2 packages to upgrade: mosh, gh"
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    let output = Command::new(bru_bin())
+        .args(["upgrade", "--dry-run"])
+        .output()
+        .expect("Failed to run bru upgrade");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Parse the upgrade list - look for "N packages to upgrade: ..."
+    if let Some(line) = stdout.lines().find(|l| l.contains("packages to upgrade:")) {
+        // Extract the list of packages after the colon
+        if let Some(packages_str) = line.split(':').nth(1) {
+            let packages: Vec<&str> = packages_str
+                .split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            // Count occurrences of each package
+            let mut package_counts = std::collections::HashMap::new();
+            for pkg in &packages {
+                *package_counts.entry(*pkg).or_insert(0) += 1;
+            }
+
+            // Check for duplicates
+            for (pkg, count) in package_counts {
+                assert_eq!(
+                    count, 1,
+                    "Package '{}' appears {} times in upgrade list (should be 1). \
+                     Deduplication bug may have returned. Full line: {}",
+                    pkg, count, line
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_regression_upgrade_bottle_revision() {
+    // BUG: upgrade attempted to "upgrade" packages differing only in bottle revision
+    // DATE: 2025-10-21
+    // DESCRIPTION: upgrade showed "mosh 1.4.0_31 → 1.4.0" and attempted upgrade
+    // CAUSE: Version comparison in upgrade didn't strip bottle revisions
+    // FIX: Added strip_bottle_revision() call before version comparison in upgrade
+    //
+    // REPRODUCTION:
+    // 1. Have package with bottle revision (e.g., mosh 1.4.0_31)
+    // 2. API reports 1.4.0 (no revision)
+    // 3. Old code: Tried to upgrade 1.4.0_31 → 1.4.0 (failed extraction)
+    // 4. Fixed code: Recognizes same version, skips upgrade
+
+    // Skip if brew not available
+    if Command::new("brew").arg("--version").output().is_err() {
+        return;
+    }
+
+    let output = Command::new(bru_bin())
+        .args(["upgrade", "--dry-run"])
+        .output()
+        .expect("Failed to run bru upgrade");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Look for bottle revision "upgrades" like "1.4.0_32 → 1.4.0"
+    // Check each line for version_N → version pattern (same version, different revision)
+    for line in stdout.lines() {
+        // Match pattern: "something X.Y.Z_N → X.Y.Z"
+        if line.contains(" → ") {
+            let parts: Vec<&str> = line.split(" → ").collect();
+            if parts.len() == 2 {
+                // Extract version from first part (after last space)
+                if let Some(old_ver) = parts[0].split_whitespace().last() {
+                    let new_ver = parts[1].trim();
+
+                    // Check if old version has _N and matches new version when stripped
+                    if let Some(pos) = old_ver.rfind('_') {
+                        let base_ver = &old_ver[..pos];
+                        let suffix = &old_ver[pos + 1..];
+
+                        // If suffix is all digits and base matches new version
+                        if suffix.chars().all(|c| c.is_ascii_digit()) && base_ver == new_ver {
+                            panic!(
+                                "Found bottle revision false positive: {}\n\
+                                 Trying to upgrade {} → {} (only bottle revision differs)\n\
+                                 This suggests the bottle revision bug has returned.",
+                                line, old_ver, new_ver
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn test_parity_outdated_count() {
     // PARITY TEST: Verify bru and brew report same outdated count
     // This test ensures our outdated detection matches Homebrew's exactly
