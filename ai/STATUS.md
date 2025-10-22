@@ -4,12 +4,12 @@ Last updated: 2025-10-22
 
 ## Current State
 
-**Version**: 0.1.3 (Beta)
+**Version**: 0.1.4 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
 - **Test Coverage**: 27 tests run automatically (13 unit + 14 regression)
-- **Integration Tests**: 15 tests (marked #[ignore], run manually)
+- **Integration Tests**: 15 tests (run in CI on every push)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae
 - **Source Build Support**: Not implemented (Phase 3)
@@ -22,7 +22,7 @@ Last updated: 2025-10-22
 - System utilities: doctor, config, env, shellenv
 - Services: launchd integration
 - Bundle: Brewfile install and dump
-- Modern CLI output: Clean, no decorative symbols
+- Modern CLI output: Tree connectors, clean formatting, command aliases
 
 ### What Doesn't Work ❌
 - Source builds: Formulae without bottles (~1-5%)
@@ -30,12 +30,11 @@ Last updated: 2025-10-22
 - CI/internal commands: Not implemented
 
 ### Performance
-Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
-- search: 20.6x faster than brew
-- info: 12.0x faster
-- deps: 8.4x faster
-- install (dry-run): 4.8x faster
-- Average speedup: 8x
+Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
+- upgrade --dry-run: **5.5x faster than brew** (0.65s vs 3.56s)
+- upgrade optimization: **53x faster** than v0.1.2 (0.74s vs 39.5s)
+- All API operations: Fully parallelized with in-memory caching
+- Startup time: 0.014s
 
 ## What Worked
 
@@ -51,6 +50,17 @@ Verified benchmarks (M3 Max, macOS 15.1, 500 Mbps):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**v0.1.4** (2025-10-22):
+- Performance: Parallelized ALL sequential API patterns (8 total)
+  - fetch command: Parallel metadata fetching
+  - install validation: Instant multi-package validation
+  - dependency resolution: Breadth-first with parallel levels
+  - cask operations: Parallel metadata for install/upgrade
+- Performance: In-memory caching (moka) - eliminates redundant API calls
+  - Caches 1000 formulae + 500 casks per command execution
+  - Benefits complex dependency trees with shared dependencies
+- Result: 5.5x faster than brew for upgrade checks (0.65s vs 3.56s)
 
 **v0.1.3** (2025-10-22):
 - Performance: 53x faster upgrade checks (39.5s → 0.74s) via parallelization
