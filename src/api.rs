@@ -172,7 +172,9 @@ impl BrewApi {
         let formula: Formula = response.json().await?;
 
         // Store in cache for subsequent calls
-        self.formula_cache.insert(name.to_string(), formula.clone()).await;
+        self.formula_cache
+            .insert(name.to_string(), formula.clone())
+            .await;
 
         Ok(formula)
     }
@@ -195,7 +197,9 @@ impl BrewApi {
         let cask: Cask = response.json().await?;
 
         // Store in cache for subsequent calls
-        self.cask_cache.insert(token.to_string(), cask.clone()).await;
+        self.cask_cache
+            .insert(token.to_string(), cask.clone())
+            .await;
 
         Ok(cask)
     }

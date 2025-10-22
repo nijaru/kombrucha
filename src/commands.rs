@@ -941,9 +941,7 @@ async fn resolve_dependencies(
         // Fetch all formulae at this level in parallel
         let fetch_futures: Vec<_> = current_level
             .iter()
-            .map(|name| async move {
-                api.fetch_formula(name).await.ok()
-            })
+            .map(|name| async move { api.fetch_formula(name).await.ok() })
             .collect();
 
         let results = futures::future::join_all(fetch_futures).await;
