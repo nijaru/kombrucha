@@ -188,16 +188,22 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
 }
 
 pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool) -> Result<()> {
-    if tree {
-        println!("Dependency tree for: {}", formula.cyan());
-    } else {
-        println!("Dependencies for: {}", formula.cyan());
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    if is_tty {
+        if tree {
+            println!("Dependency tree for: {}", formula.cyan());
+        } else {
+            println!("Dependencies for: {}", formula.cyan());
+        }
     }
 
     let formula_data = api.fetch_formula(formula).await?;
 
     if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
-        println!("\n {} No dependencies", "✓".green());
+        if is_tty {
+            println!("\n {} No dependencies", "✓".green());
+        }
         return Ok(());
     }
 
@@ -219,15 +225,21 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
         }
 
         if !deps.is_empty() {
-            println!("\n {}", "Runtime dependencies:".bold().green());
+            if is_tty {
+                println!("\n {}", "Runtime dependencies:".bold().green());
+            }
             for dep in deps {
-                if tree {
-                    println!("  └─ {}", dep.cyan());
+                if is_tty {
+                    if tree {
+                        println!("  └─ {}", dep.cyan());
+                    } else {
+                        println!("  {}", dep.cyan());
+                    }
                 } else {
-                    println!("  {}", dep.cyan());
+                    println!("{}", dep);
                 }
             }
-        } else if installed_only {
+        } else if installed_only && is_tty {
             println!("\n {} No runtime dependencies installed", "ℹ".blue());
         }
     }
@@ -240,15 +252,21 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
         }
 
         if !build_deps.is_empty() {
-            println!("\n {}", "Build dependencies:".bold().yellow());
+            if is_tty {
+                println!("\n {}", "Build dependencies:".bold().yellow());
+            }
             for dep in build_deps {
-                if tree {
-                    println!("  └─ {}", dep.cyan());
+                if is_tty {
+                    if tree {
+                        println!("  └─ {}", dep.cyan());
+                    } else {
+                        println!("  {}", dep.cyan());
+                    }
                 } else {
-                    println!("  {}", dep.cyan());
+                    println!("{}", dep);
                 }
             }
-        } else if installed_only && !formula_data.build_dependencies.is_empty() {
+        } else if installed_only && !formula_data.build_dependencies.is_empty() && is_tty {
             println!("\n {} No build dependencies installed", "ℹ".blue());
         }
     }
@@ -257,7 +275,11 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 }
 
 pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
-    println!("Finding formulae that depend on: {}", formula.cyan());
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    if is_tty {
+        println!("Finding formulae that depend on: {}", formula.cyan());
+    }
 
     // Fetch all formulae
     let all_formulae = api.fetch_all_formulae().await?;
@@ -272,25 +294,33 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
         .collect();
 
     if dependent_formulae.is_empty() {
-        println!("\n {} No formulae depend on '{}'", "✓".green(), formula);
+        if is_tty {
+            println!("\n {} No formulae depend on '{}'", "✓".green(), formula);
+        }
         return Ok(());
     }
 
-    println!(
-        "\n{} Found {} formulae that depend on {}:\n",
-        "✓".green(),
-        dependent_formulae.len().to_string().bold(),
-        formula.cyan()
-    );
+    if is_tty {
+        println!(
+            "\n{} Found {} formulae that depend on {}:\n",
+            "✓".green(),
+            dependent_formulae.len().to_string().bold(),
+            formula.cyan()
+        );
+    }
 
     for f in dependent_formulae {
-        print!("{}", f.name.bold());
-        if let Some(desc) = &f.desc
-            && !desc.is_empty()
-        {
-            print!(" {}", format!("({})", desc).dimmed());
+        if is_tty {
+            print!("{}", f.name.bold());
+            if let Some(desc) = &f.desc
+                && !desc.is_empty()
+            {
+                print!(" {}", format!("({})", desc).dimmed());
+            }
+            println!();
+        } else {
+            println!("{}", f.name);
         }
-        println!();
     }
 
     Ok(())
