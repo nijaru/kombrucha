@@ -4,7 +4,7 @@ Last updated: 2025-10-23
 
 ## Current State
 
-**Version**: 0.1.7 (Beta, with unreleased fixes)
+**Version**: 0.1.8 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -52,12 +52,13 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 
 ### Recent Changes
 
-**Unreleased** (post-v0.1.7):
+**v0.1.8** (2025-10-23):
 - **Critical Bug Fixes**: Symlink cleanup in multiple commands
   - upgrade command: Properly unlinks symlinks before removal
   - cleanup command: Properly unlinks symlinks before removal
   - uninstall command: Proper cleanup of all symlinks
   - Prevents "Directory not empty" errors during package operations
+- **Documentation**: Updated STATUS.md and cleaned up dated summary files
 
 **v0.1.7** (2025-10-23):
 - **UX Enhancement**: Better tree visualization and command summaries
