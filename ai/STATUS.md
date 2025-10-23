@@ -4,7 +4,7 @@ Last updated: 2025-10-22
 
 ## Current State
 
-**Version**: 0.1.4 (Beta)
+**Version**: 0.1.5 (Beta)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -51,6 +51,19 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**v0.1.5** (2025-10-22):
+- **Critical Bug Fix**: File descriptor leak during upgrade
+  - Removed canonicalize() calls from symlink creation/removal
+  - Fixed "Too many open files" error with large packages (1000+ files)
+  - Tested with yt-dlp (1722 files), gh (215 files), multiple packages
+- UX: Icon spacing fix - icons no longer sit at terminal edge
+  - Space added inside colored strings for proper alignment
+  - Applied to all status icons (ℹ, ✓, ✗, ⚠)
+- Documentation: Comprehensive code review for resource leaks
+  - Verified all file handles properly scoped
+  - Verified no unbounded memory growth
+  - Identified testing gaps (need large package tests)
 
 **v0.1.4** (2025-10-22):
 - Performance: Parallelized ALL sequential API patterns (8 total)
