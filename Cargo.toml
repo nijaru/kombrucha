@@ -1,6 +1,6 @@
 [package]
 name = "kombrucha"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2024"
 authors = ["Nick <nijaru@users.noreply.github.com>"]
 description = "Fast, parallel package manager compatible with Homebrew formulae"

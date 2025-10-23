@@ -56,7 +56,7 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ### Recent Changes
 
-**Unreleased** (post-v0.1.9):
+**v0.1.10** (2025-10-23):
 - **CRITICAL DATA LOSS BUG FIXED**: cleanup command was deleting NEWEST versions!
   - **Discovered**: User testing revealed cleanup kept v1.7.0 and deleted v1.8.1
   - **Root cause**: Assumed versions[0] was newest, but fs::read_dir() returns random order
