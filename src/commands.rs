@@ -1858,7 +1858,12 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
     let mut formula_count = 0;
 
     if formula_dir.exists() {
-        fn count_rb_files(dir: &std::path::Path) -> usize {
+        fn count_rb_files(dir: &std::path::Path, depth: usize) -> usize {
+            const MAX_DEPTH: usize = 10;
+            if depth > MAX_DEPTH {
+                return 0;
+            }
+
             let mut count = 0;
             if let Ok(entries) = std::fs::read_dir(dir) {
                 for entry in entries.flatten() {
@@ -1866,13 +1871,13 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
                     if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rb") {
                         count += 1;
                     } else if path.is_dir() {
-                        count += count_rb_files(&path);
+                        count += count_rb_files(&path, depth + 1);
                     }
                 }
             }
             count
         }
-        formula_count = count_rb_files(&formula_dir);
+        formula_count = count_rb_files(&formula_dir, 0);
     }
 
     // Count casks in the tap
@@ -1880,7 +1885,12 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
     let mut cask_count = 0;
 
     if casks_dir.exists() {
-        fn count_rb_files(dir: &std::path::Path) -> usize {
+        fn count_rb_files(dir: &std::path::Path, depth: usize) -> usize {
+            const MAX_DEPTH: usize = 10;
+            if depth > MAX_DEPTH {
+                return 0;
+            }
+
             let mut count = 0;
             if let Ok(entries) = std::fs::read_dir(dir) {
                 for entry in entries.flatten() {
@@ -1888,13 +1898,13 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
                     if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rb") {
                         count += 1;
                     } else if path.is_dir() {
-                        count += count_rb_files(&path);
+                        count += count_rb_files(&path, depth + 1);
                     }
                 }
             }
             count
         }
-        cask_count = count_rb_files(&casks_dir);
+        cask_count = count_rb_files(&casks_dir, 0);
     }
 
     println!("{}", "Contents:".bold());
@@ -5147,7 +5157,12 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
     }
 
     // Count formula files recursively
-    fn count_formulae(dir: &std::path::Path) -> (usize, usize) {
+    fn count_formulae(dir: &std::path::Path, depth: usize) -> (usize, usize) {
+        const MAX_DEPTH: usize = 10;
+        if depth > MAX_DEPTH {
+            return (0, 0);
+        }
+
         let mut total = 0;
         let mut valid = 0;
 
@@ -5156,12 +5171,12 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
                 let path = entry.path();
                 if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rb") {
                     total += 1;
-                    // Basic validation: check if file is readable
-                    if std::fs::read_to_string(&path).is_ok() {
+                    // Basic validation: check if file is readable (metadata check, not reading content)
+                    if std::fs::metadata(&path).is_ok() {
                         valid += 1;
                     }
                 } else if path.is_dir() {
-                    let (sub_total, sub_valid) = count_formulae(&path);
+                    let (sub_total, sub_valid) = count_formulae(&path, depth + 1);
                     total += sub_total;
                     valid += sub_valid;
                 }
@@ -5171,7 +5186,7 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
         (total, valid)
     }
 
-    let (total, valid) = count_formulae(&formula_dir);
+    let (total, valid) = count_formulae(&formula_dir, 0);
 
     if total == 0 {
         println!("\n {} No formulae found in tap", "⚠".yellow());

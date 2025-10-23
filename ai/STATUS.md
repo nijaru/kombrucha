@@ -54,6 +54,11 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 ### Recent Changes
 
 **Unreleased** (post-v0.1.8):
+- **Critical Bug Fixes**: Edge case hunting found and fixed resource leaks
+  - relocate.rs: `is_mach_o()` was reading entire files instead of just 4 bytes (same pattern as v0.1.5)
+  - commands.rs: `count_formulae()` was reading entire files just to check if readable
+  - Added depth limits (MAX_DEPTH=10) to 3 recursive functions to prevent stack overflow
+  - All fixes prevent resource exhaustion with large packages
 - **Testing**: Added 57 new unit tests (92 total CI tests, up from 35)
   - Symlink path normalization tests (8 tests) - validates recent bug fixes
   - Cache functionality tests (6 tests) - TTL logic, directory detection

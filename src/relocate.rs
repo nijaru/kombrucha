@@ -62,14 +62,21 @@ fn find_mach_o_files(dir: &Path) -> Result<Vec<PathBuf>> {
 
 /// Check if a file is a Mach-O binary
 fn is_mach_o(path: &Path) -> Result<bool> {
-    // Read first 4 bytes to check magic number
-    let bytes = match fs::read(path) {
-        Ok(b) if b.len() >= 4 => b,
-        _ => return Ok(false),
+    use std::io::Read;
+
+    // Read only first 4 bytes to check magic number (not entire file)
+    let mut file = match fs::File::open(path) {
+        Ok(f) => f,
+        Err(_) => return Ok(false),
     };
 
+    let mut bytes = [0u8; 4];
+    if file.read_exact(&mut bytes).is_err() {
+        return Ok(false);
+    }
+
     // Mach-O magic numbers
-    let magic = u32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+    let magic = u32::from_ne_bytes(bytes);
     Ok(matches!(
         magic,
         0xfeedface | 0xfeedfacf | 0xcefaedfe | 0xcffaedfe
