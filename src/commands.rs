@@ -7,16 +7,19 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
-    println!("Searching for: {}", query.cyan());
+    // Detect if stdout is a TTY (for brew-compatible behavior)
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
     let results = api.search(query).await?;
 
     if results.is_empty() {
-        println!(
-            "\n{} No formulae or casks found matching '{}'",
-            "✗".red(),
-            query
-        );
+        if is_tty {
+            println!(
+                "{} No formulae or casks found matching '{}'",
+                "✗".red(),
+                query
+            );
+        }
         return Ok(());
     }
 
@@ -32,67 +35,49 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     }) + (if show_casks { results.casks.len() } else { 0 });
 
     if total_to_show == 0 {
-        println!(
-            "\n {} No results found with the specified filter",
-            "✗".red()
-        );
+        if is_tty {
+            println!(
+                "{} No results found with the specified filter",
+                "✗".red()
+            );
+        }
         return Ok(());
     }
 
-    println!(
-        "\n{} Found {} results\n",
-        "✓".green(),
-        total_to_show.to_string().bold()
-    );
-
     // Display formulae
     if show_formulae && !results.formulae.is_empty() {
-        println!("{}", "==> Formulae".bold().green());
-        for formula in results.formulae.iter().take(20) {
-            print!("{}", formula.name.bold());
-            if let Some(desc) = &formula.desc
-                && !desc.is_empty()
-            {
-                print!(" {}", format!("({})", desc).dimmed());
-            }
-            println!();
+        if is_tty {
+            println!("{}", "==> Formulae".bold().green());
         }
 
-        if results.formulae.len() > 20 {
-            println!(
-                "{}",
-                format!("... and {} more", results.formulae.len() - 20).dimmed()
-            );
+        for formula in &results.formulae {
+            if is_tty {
+                println!("{}", formula.name.bold().green());
+            } else {
+                // Piped: just names (brew behavior)
+                println!("{}", formula.name);
+            }
         }
-        println!();
+
+        if is_tty && !results.casks.is_empty() {
+            // Add blank line between sections in TTY
+            println!();
+        }
     }
 
     // Display casks
     if show_casks && !results.casks.is_empty() {
-        println!("{}", "==> Casks".bold().cyan());
-        for cask in results.casks.iter().take(20) {
-            let display_name = if !cask.name.is_empty() {
-                cask.name.join(", ")
-            } else {
-                cask.token.clone()
-            };
-            print!("{}", cask.token.bold());
-            if cask.token != display_name {
-                print!(" {}", format!("({})", display_name).dimmed());
-            }
-            if let Some(desc) = &cask.desc
-                && !desc.is_empty()
-            {
-                print!(" {}", format!("- {}", desc).dimmed());
-            }
-            println!();
+        if is_tty {
+            println!("{}", "==> Casks".bold().cyan());
         }
 
-        if results.casks.len() > 20 {
-            println!(
-                "{}",
-                format!("... and {} more", results.casks.len() - 20).dimmed()
-            );
+        for cask in &results.casks {
+            if is_tty {
+                println!("{}", cask.token.bold().cyan());
+            } else {
+                // Piped: just tokens (brew behavior)
+                println!("{}", cask.token);
+            }
         }
     }
 

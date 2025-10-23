@@ -481,10 +481,11 @@ fn test_search_basic_functionality() {
         "Search for 'rust' should return results containing 'rust'"
     );
 
-    // Should show result count
+    // When piped (which is the case here), should just return names with no headers
+    // This matches brew behavior
     assert!(
-        stdout.contains("Found") || stdout.contains("results"),
-        "Should indicate number of results"
+        !stdout.contains("Found") && !stdout.contains("Searching"),
+        "Piped output should not contain headers (brew-compatible)"
     );
 }
 
