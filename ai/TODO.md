@@ -4,6 +4,8 @@
 
 - [x] Add more non-ignored regression tests
 - [x] Improve CI test coverage
+- [x] Add symlink module tests (path normalization)
+- [x] Add cache module tests (directory detection, TTL logic)
 
 ## Testing
 
@@ -31,7 +33,19 @@
 
 ## Future (Backlog)
 
-- [ ] Phase 3: Ruby interop for source builds
+### Phase 3: Ruby Interop
+- [ ] Design Ruby interop approach for source builds
+- [ ] Implement source build support (~5% remaining formulae)
+- [ ] Test source build integration
+
+### Testing Improvements (Lower Priority)
+- [ ] Large package stress tests (1000+ files like yt-dlp)
+- [ ] Resource limit monitoring tests
+- [ ] File descriptor leak detection tests
+- [ ] Download module tests (parallel downloads, checksum verification)
+- [ ] Commands module tests (127 functions currently untested)
+
+### Future Enhancements
 - [ ] Performance optimizations for large dependency graphs
 - [ ] Better error messages for common failure modes
 - [ ] Lock file support for reproducibility
