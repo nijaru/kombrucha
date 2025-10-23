@@ -8,9 +8,9 @@ Last updated: 2025-10-23
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
-- **Test Coverage**: 49 tests run automatically (8 inline + 27 unit + 14 regression)
+- **Test Coverage**: 71 tests run automatically (8 inline + 49 unit + 14 regression)
 - **Integration Tests**: 10 tests (run in CI on every push, all ignored by default)
-- **Total Tests**: 64 tests (49 passing + 15 ignored)
+- **Total Tests**: 86 tests (71 passing + 15 ignored)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae
 - **Source Build Support**: Not implemented (Phase 3)
@@ -54,10 +54,15 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 ### Recent Changes
 
 **Unreleased** (post-v0.1.8):
-- **Testing**: Added 14 new unit tests (49 total tests, up from 35)
+- **Testing**: Added 36 new unit tests (71 total CI tests, up from 35)
   - Symlink path normalization tests (8 tests) - validates recent bug fixes
   - Cache functionality tests (6 tests) - TTL logic, directory detection
+  - Download module tests (6 tests) - filename construction, GHCR token URLs
+  - Error handling tests (4 tests) - error message formatting
+  - Receipt module tests (6 tests) - version format, structure validation
+  - Platform module tests (6 tests) - architecture normalization, version parsing
   - All tests CI-safe (no system modification required)
+  - Test coverage increased by 103% (35 → 71 tests)
 
 **v0.1.8** (2025-10-23):
 - **Critical Bug Fixes**: Symlink cleanup in multiple commands

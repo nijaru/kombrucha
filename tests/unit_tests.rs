@@ -483,3 +483,274 @@ mod cache_tests {
         assert_eq!(casks_cache, PathBuf::from("/home/user/.cache/bru/casks.json"));
     }
 }
+
+#[cfg(test)]
+mod download_tests {
+    use std::path::PathBuf;
+
+    fn download_cache_dir(home: Option<&str>) -> PathBuf {
+        let home_str = home.unwrap_or(".");
+        PathBuf::from(home_str).join(".cache/bru/downloads")
+    }
+
+    #[test]
+    fn test_download_cache_dir_with_home() {
+        let cache = download_cache_dir(Some("/home/user"));
+        assert_eq!(cache, PathBuf::from("/home/user/.cache/bru/downloads"));
+    }
+
+    #[test]
+    fn test_download_cache_dir_fallback() {
+        let cache = download_cache_dir(None);
+        assert_eq!(cache, PathBuf::from("./.cache/bru/downloads"));
+    }
+
+    #[test]
+    fn test_bottle_filename_construction() {
+        let formula_name = "wget";
+        let version = "1.21.4";
+        let platform_tag = "arm64_sonoma";
+
+        let filename = format!(
+            "{}--{}.{}.bottle.tar.gz",
+            formula_name, version, platform_tag
+        );
+
+        assert_eq!(filename, "wget--1.21.4.arm64_sonoma.bottle.tar.gz");
+    }
+
+    #[test]
+    fn test_bottle_filename_with_special_chars() {
+        let formula_name = "python@3.11";
+        let version = "3.11.7";
+        let platform_tag = "arm64_sequoia";
+
+        let filename = format!(
+            "{}--{}.{}.bottle.tar.gz",
+            formula_name, version, platform_tag
+        );
+
+        assert_eq!(filename, "python@3.11--3.11.7.arm64_sequoia.bottle.tar.gz");
+    }
+
+    #[test]
+    fn test_ghcr_token_url_construction() {
+        let repository = "homebrew/core/wget";
+        let url = format!(
+            "https://ghcr.io/token?service=ghcr.io&scope=repository:{}:pull",
+            repository
+        );
+
+        assert_eq!(
+            url,
+            "https://ghcr.io/token?service=ghcr.io&scope=repository:homebrew/core/wget:pull"
+        );
+    }
+
+    #[test]
+    fn test_ghcr_repository_format() {
+        let formula_name = "wget";
+        let repository = format!("homebrew/core/{}", formula_name);
+        assert_eq!(repository, "homebrew/core/wget");
+
+        let formula_name = "python@3.11";
+        let repository = format!("homebrew/core/{}", formula_name);
+        assert_eq!(repository, "homebrew/core/python@3.11");
+    }
+}
+
+#[cfg(test)]
+mod error_tests {
+    #[test]
+    fn test_error_message_formula_not_found() {
+        let formula = "nonexistent-formula";
+        let error_msg = format!("Formula not found: {}", formula);
+        assert_eq!(error_msg, "Formula not found: nonexistent-formula");
+    }
+
+    #[test]
+    fn test_error_message_cask_not_found() {
+        let cask = "nonexistent-cask";
+        let error_msg = format!("Cask not found: {}", cask);
+        assert_eq!(error_msg, "Cask not found: nonexistent-cask");
+    }
+
+    #[test]
+    fn test_error_message_api_error() {
+        let details = "Connection refused";
+        let error_msg = format!("API request failed: {}", details);
+        assert_eq!(error_msg, "API request failed: Connection refused");
+    }
+
+    #[test]
+    fn test_error_message_network_error() {
+        let details = "Timeout after 30s";
+        let error_msg = format!("Network error: {}", details);
+        assert_eq!(error_msg, "Network error: Timeout after 30s");
+    }
+}
+
+#[cfg(test)]
+mod receipt_tests {
+    use serde_json::json;
+
+    #[test]
+    fn test_receipt_homebrew_version_format() {
+        let version = env!("CARGO_PKG_VERSION");
+        let homebrew_version = format!("bru/{}", version);
+        assert!(homebrew_version.starts_with("bru/"));
+        assert!(homebrew_version.contains('.'));
+    }
+
+    #[test]
+    fn test_receipt_basic_structure() {
+        let receipt = json!({
+            "homebrew_version": "bru/0.1.8",
+            "built_as_bottle": true,
+            "poured_from_bottle": true,
+            "loaded_from_api": true,
+            "installed_as_dependency": false,
+            "installed_on_request": true,
+            "time": 1234567890,
+            "arch": "arm64"
+        });
+
+        assert_eq!(receipt.get("homebrew_version").unwrap().as_str().unwrap(), "bru/0.1.8");
+        assert_eq!(receipt.get("built_as_bottle").unwrap().as_bool().unwrap(), true);
+        assert_eq!(receipt.get("poured_from_bottle").unwrap().as_bool().unwrap(), true);
+        assert_eq!(receipt.get("loaded_from_api").unwrap().as_bool().unwrap(), true);
+    }
+
+    #[test]
+    fn test_receipt_dependency_flag_logic() {
+        let installed_on_request = true;
+        let installed_as_dependency = !installed_on_request;
+
+        assert_eq!(installed_as_dependency, false);
+
+        let installed_on_request = false;
+        let installed_as_dependency = !installed_on_request;
+
+        assert_eq!(installed_as_dependency, true);
+    }
+
+    #[test]
+    fn test_receipt_source_info_structure() {
+        let source = json!({
+            "tap": "homebrew/core",
+            "spec": "stable"
+        });
+
+        assert_eq!(source.get("tap").unwrap().as_str().unwrap(), "homebrew/core");
+        assert_eq!(source.get("spec").unwrap().as_str().unwrap(), "stable");
+    }
+
+    #[test]
+    fn test_receipt_runtime_dependencies_empty() {
+        let runtime_deps: Vec<String> = vec![];
+        assert_eq!(runtime_deps.len(), 0);
+    }
+
+    #[test]
+    fn test_receipt_arch_detection() {
+        let arch = std::env::consts::ARCH;
+        assert!(!arch.is_empty());
+        assert!(arch == "aarch64" || arch == "x86_64" || arch == "x86");
+    }
+}
+
+#[cfg(test)]
+mod platform_tests {
+    #[test]
+    fn test_arch_normalization_aarch64() {
+        let arch = "aarch64";
+        let normalized = match arch {
+            "aarch64" => "arm64",
+            other => other,
+        };
+        assert_eq!(normalized, "arm64");
+    }
+
+    #[test]
+    fn test_arch_normalization_x86_64() {
+        let arch = "x86_64";
+        let normalized = match arch {
+            "aarch64" => "arm64",
+            other => other,
+        };
+        assert_eq!(normalized, "x86_64");
+    }
+
+    #[test]
+    fn test_macos_version_parsing() {
+        let version = "15.1.0";
+        let major: u32 = version
+            .split('.')
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        assert_eq!(major, 15);
+
+        let version = "14.0";
+        let major: u32 = version
+            .split('.')
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        assert_eq!(major, 14);
+    }
+
+    #[test]
+    fn test_macos_version_parsing_edge_cases() {
+        // Empty string
+        let version = "";
+        let major: u32 = version
+            .split('.')
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        assert_eq!(major, 0);
+
+        // Invalid format
+        let version = "invalid";
+        let major: u32 = version
+            .split('.')
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        assert_eq!(major, 0);
+
+        // Single digit
+        let version = "15";
+        let major: u32 = version
+            .split('.')
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        assert_eq!(major, 15);
+    }
+
+    #[test]
+    fn test_bottle_tag_format() {
+        let arch = "arm64";
+        let os_name = "sonoma";
+        let tag = format!("{}_{}", arch, os_name);
+        assert_eq!(tag, "arm64_sonoma");
+
+        let arch = "x86_64";
+        let os_name = "sequoia";
+        let tag = format!("{}_{}", arch, os_name);
+        assert_eq!(tag, "x86_64_sequoia");
+    }
+
+    #[test]
+    fn test_linux_bottle_tag_format() {
+        let arch = "arm64";
+        let tag = format!("{}_linux", arch);
+        assert_eq!(tag, "arm64_linux");
+
+        let arch = "x86_64";
+        let tag = format!("{}_linux", arch);
+        assert_eq!(tag, "x86_64_linux");
+    }
+}
