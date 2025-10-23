@@ -37,27 +37,31 @@ pub fn relocate_bottle(cellar_path: &Path, prefix: &Path) -> Result<()> {
 
 /// Find all Mach-O binaries and libraries in a directory
 fn find_mach_o_files(dir: &Path) -> Result<Vec<PathBuf>> {
-    let mut files = Vec::new();
+    // Collect all file paths first without checking if they're Mach-O
+    // WalkDir keeps directory handles open, so we process in batches
+    let mut all_files = Vec::new();
 
     for entry in WalkDir::new(dir)
         .follow_links(false)
+        .max_open(64) // Limit concurrent open directory handles
         .into_iter()
         .filter_map(|e| e.ok())
     {
         let path = entry.path();
-
-        // Skip non-files
-        if !path.is_file() {
-            continue;
-        }
-
-        // Check if it's a Mach-O file
-        if is_mach_o(path)? {
-            files.push(path.to_path_buf());
+        if path.is_file() {
+            all_files.push(path.to_path_buf());
         }
     }
 
-    Ok(files)
+    // Now check which ones are Mach-O files (file handles closed between checks)
+    let mut mach_o_files = Vec::new();
+    for path in all_files {
+        if is_mach_o(&path)? {
+            mach_o_files.push(path);
+        }
+    }
+
+    Ok(mach_o_files)
 }
 
 /// Check if a file is a Mach-O binary
@@ -71,16 +75,20 @@ fn is_mach_o(path: &Path) -> Result<bool> {
     };
 
     let mut bytes = [0u8; 4];
-    if file.read_exact(&mut bytes).is_err() {
-        return Ok(false);
-    }
+    let result = if file.read_exact(&mut bytes).is_err() {
+        false
+    } else {
+        // Mach-O magic numbers
+        let magic = u32::from_ne_bytes(bytes);
+        matches!(
+            magic,
+            0xfeedface | 0xfeedfacf | 0xcefaedfe | 0xcffaedfe
+        )
+    };
 
-    // Mach-O magic numbers
-    let magic = u32::from_ne_bytes(bytes);
-    Ok(matches!(
-        magic,
-        0xfeedface | 0xfeedfacf | 0xcefaedfe | 0xcffaedfe
-    ))
+    // Explicitly drop file handle before returning
+    drop(file);
+    Ok(result)
 }
 
 /// Relocate a single Mach-O file

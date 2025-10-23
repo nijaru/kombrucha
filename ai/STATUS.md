@@ -56,6 +56,15 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ### Recent Changes
 
+**v0.1.9** (2025-10-23):
+- **Critical Bug Fix**: "Too many open files" error during large package upgrades
+  - **Root cause**: WalkDir keeps directory handles open during traversal - llvm alone has 9,283 files
+  - **Fix**: Added `.max_open(64)` to limit concurrent directory handles in relocate.rs
+  - **Impact**: Can now upgrade packages with thousands of files (llvm, numpy, etc.) without resource exhaustion
+  - User-reported: `cargo install kombrucha` → `bru upgrade` with 19 packages failed on librsvg
+  - Verified fix: Successfully processed llvm reinstall (9,283 files) without errors
+- **Testing**: All 92 tests passing (70 unit + 14 regression + 8 basic)
+
 **Unreleased** (post-v0.1.8):
 - **Performance Benchmarking**: Verified and corrected claimed performance metrics
   - Original claim: "5.5x faster than brew" was based on outdated brew baseline
