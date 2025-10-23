@@ -2210,7 +2210,10 @@ fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
         return Ok(0);
     }
 
-    for entry in walkdir::WalkDir::new(path) {
+    for entry in walkdir::WalkDir::new(path)
+        .follow_links(false)
+        .max_open(64)
+    {
         let entry = entry.map_err(|e| anyhow::anyhow!("Failed to read directory: {}", e))?;
         if entry.file_type().is_file() {
             total += entry

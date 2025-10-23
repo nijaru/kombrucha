@@ -176,14 +176,25 @@ pub async fn download_bottles(
     _api: &BrewApi,
     formulae: &[Formula],
 ) -> Result<Vec<(String, PathBuf)>> {
+    use std::sync::Arc;
+    use tokio::sync::Semaphore;
+
     let mp = MultiProgress::new();
     let mut tasks = Vec::new();
+
+    // Limit concurrent downloads to prevent resource exhaustion
+    // Each download holds: 1 TCP connection, 1 file descriptor, memory buffers
+    const MAX_CONCURRENT_DOWNLOADS: usize = 16;
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_DOWNLOADS));
 
     for formula in formulae {
         let formula_clone = formula.clone();
         let mp_clone = mp.clone();
+        let sem = semaphore.clone();
 
         let task = tokio::spawn(async move {
+            // Acquire semaphore permit before downloading
+            let _permit = sem.acquire().await.unwrap();
             let result = download_bottle(&formula_clone, Some(&mp_clone)).await;
             (formula_clone.name.clone(), result)
         });
