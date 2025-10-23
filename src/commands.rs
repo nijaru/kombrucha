@@ -36,10 +36,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
 
     if total_to_show == 0 {
         if is_tty {
-            println!(
-                "{} No results found with the specified filter",
-                "✗".red()
-            );
+            println!("{} No results found with the specified filter", "✗".red());
         }
         return Ok(());
     }
@@ -642,15 +639,9 @@ pub async fn list(
 
                 if show_versions {
                     // Show all versions on one line (brew behavior)
-                    let version_str: Vec<String> = versions
-                        .iter()
-                        .map(|pkg| pkg.version.clone())
-                        .collect();
-                    println!(
-                        "{} {}",
-                        name.bold().green(),
-                        version_str.join(" ").dimmed()
-                    );
+                    let version_str: Vec<String> =
+                        versions.iter().map(|pkg| pkg.version.clone()).collect();
+                    println!("{} {}", name.bold().green(), version_str.join(" ").dimmed());
                 } else {
                     // No versions requested: names only
                     println!("{}", name.bold().green());
