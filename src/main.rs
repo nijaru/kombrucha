@@ -1016,18 +1016,48 @@ async fn run() -> anyhow::Result<()> {
             commands::leaves()?;
         }
         Some(Commands::Pin { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru pin [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::pin(&formulae)?;
         }
         Some(Commands::Unpin { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru unpin [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::unpin(&formulae)?;
         }
         Some(Commands::Desc { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru desc [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::desc(&api, &formulae).await?;
         }
         Some(Commands::Link { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru link [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::link(&formulae)?;
         }
         Some(Commands::Unlink { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru unlink [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::unlink(&formulae)?;
         }
         Some(Commands::Commands) => {
