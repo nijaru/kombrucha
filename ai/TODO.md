@@ -25,6 +25,9 @@
 - [x] Rename CLAUDE.md → AGENTS.md
 - [x] Update AGENTS.md to follow new template
 - [x] Update README.md with new structure
+- [x] Update STATUS.md with v0.1.6 and v0.1.7 changes
+- [x] Remove dated summary files (CODE_REVIEW_2025_10_22.md)
+- [x] Clean up release notes from root directory
 
 ## Future (Backlog)
 
