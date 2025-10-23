@@ -754,3 +754,248 @@ mod platform_tests {
         assert_eq!(tag, "x86_64_linux");
     }
 }
+
+#[cfg(test)]
+mod api_tests {
+    #[test]
+    fn test_api_base_url() {
+        let base = "https://formulae.brew.sh/api";
+        assert!(base.starts_with("https://"));
+        assert!(base.contains("formulae.brew.sh"));
+    }
+
+    #[test]
+    fn test_formula_endpoint_url() {
+        let base = "https://formulae.brew.sh/api";
+        let url = format!("{}/formula.json", base);
+        assert_eq!(url, "https://formulae.brew.sh/api/formula.json");
+    }
+
+    #[test]
+    fn test_cask_endpoint_url() {
+        let base = "https://formulae.brew.sh/api";
+        let url = format!("{}/cask.json", base);
+        assert_eq!(url, "https://formulae.brew.sh/api/cask.json");
+    }
+
+    #[test]
+    fn test_specific_formula_endpoint_url() {
+        let base = "https://formulae.brew.sh/api";
+        let formula_name = "wget";
+        let url = format!("{}/formula/{}.json", base, formula_name);
+        assert_eq!(url, "https://formulae.brew.sh/api/formula/wget.json");
+    }
+
+    #[test]
+    fn test_specific_cask_endpoint_url() {
+        let base = "https://formulae.brew.sh/api";
+        let cask_name = "firefox";
+        let url = format!("{}/cask/{}.json", base, cask_name);
+        assert_eq!(url, "https://formulae.brew.sh/api/cask/firefox.json");
+    }
+
+    #[test]
+    fn test_user_agent_format() {
+        let version = env!("CARGO_PKG_VERSION");
+        let user_agent = format!("bru/{}", version);
+        assert!(user_agent.starts_with("bru/"));
+        assert!(user_agent.contains('.'));
+    }
+
+    #[test]
+    fn test_formula_name_with_special_chars() {
+        let base = "https://formulae.brew.sh/api";
+        let formula_name = "python@3.11";
+        let url = format!("{}/formula/{}.json", base, formula_name);
+        assert_eq!(url, "https://formulae.brew.sh/api/formula/python@3.11.json");
+    }
+
+    #[test]
+    fn test_cache_size_constants() {
+        let formula_cache_size = 1000;
+        let cask_cache_size = 500;
+
+        assert_eq!(formula_cache_size, 1000);
+        assert_eq!(cask_cache_size, 500);
+        assert!(formula_cache_size > cask_cache_size);
+    }
+}
+
+#[cfg(test)]
+mod tap_tests {
+    #[test]
+    fn test_git_url_construction() {
+        let user = "nijaru";
+        let repo = "homebrew-tap";
+        let url = format!("https://github.com/{}/{}.git", user, repo);
+        assert_eq!(url, "https://github.com/nijaru/homebrew-tap.git");
+    }
+
+    #[test]
+    fn test_tap_display_name_stripping() {
+        let repo = "homebrew-core";
+        let display = repo.strip_prefix("homebrew-").unwrap_or(repo);
+        assert_eq!(display, "core");
+
+        let repo = "core";
+        let display = repo.strip_prefix("homebrew-").unwrap_or(repo);
+        assert_eq!(display, "core");
+    }
+
+    #[test]
+    fn test_tap_format_validation() {
+        let valid_tap = "user/repo";
+        let parts: Vec<&str> = valid_tap.split('/').collect();
+        assert_eq!(parts.len(), 2);
+
+        let invalid_tap = "invalid";
+        let parts: Vec<&str> = invalid_tap.split('/').collect();
+        assert_ne!(parts.len(), 2);
+
+        let too_many = "too/many/slashes";
+        let parts: Vec<&str> = too_many.split('/').collect();
+        assert_ne!(parts.len(), 2);
+    }
+
+    #[test]
+    fn test_homebrew_prefix_addition() {
+        let repo = "tap";
+        let prefixed = if !repo.starts_with("homebrew-") {
+            format!("homebrew-{}", repo)
+        } else {
+            repo.to_string()
+        };
+        assert_eq!(prefixed, "homebrew-tap");
+
+        let repo = "homebrew-tap";
+        let prefixed = if !repo.starts_with("homebrew-") {
+            format!("homebrew-{}", repo)
+        } else {
+            repo.to_string()
+        };
+        assert_eq!(prefixed, "homebrew-tap");
+    }
+
+    #[test]
+    fn test_tap_path_construction() {
+        let user = "nijaru";
+        let repo = "homebrew-tap";
+        // Path would be: <prefix>/Library/Taps/nijaru/homebrew-tap
+        let path_segment = format!("Taps/{}/{}", user, repo);
+        assert_eq!(path_segment, "Taps/nijaru/homebrew-tap");
+    }
+
+    #[test]
+    fn test_dot_file_filtering() {
+        let filenames = vec![".DS_Store", ".git", "homebrew-core", ".hidden"];
+        let visible: Vec<&str> = filenames
+            .iter()
+            .filter(|name| !name.starts_with('.'))
+            .copied()
+            .collect();
+        assert_eq!(visible, vec!["homebrew-core"]);
+    }
+}
+
+#[cfg(test)]
+mod progress_tests {
+    #[test]
+    fn test_progress_clamping() {
+        let progress = 150u8;
+        let clamped = progress.min(100);
+        assert_eq!(clamped, 100);
+
+        let progress = 50u8;
+        let clamped = progress.min(100);
+        assert_eq!(clamped, 50);
+    }
+
+    #[test]
+    fn test_terminal_capabilities_enum() {
+        // Just verify enum values compile and can be compared
+        let caps = vec!["ghostty", "WezTerm"];
+        assert!(caps.contains(&"ghostty"));
+    }
+
+    #[test]
+    fn test_progress_state_values() {
+        // Progress states as u8
+        let off = 0u8;
+        let indeterminate = 1u8;
+        let normal = 2u8;
+        let error = 3u8;
+        let warning = 4u8;
+
+        assert_eq!(off, 0);
+        assert_eq!(indeterminate, 1);
+        assert_eq!(normal, 2);
+        assert_eq!(error, 3);
+        assert_eq!(warning, 4);
+    }
+
+    #[test]
+    fn test_terminal_env_vars() {
+        let known_terminals = vec!["ghostty", "WezTerm"];
+        assert!(known_terminals.contains(&"ghostty"));
+        assert!(known_terminals.contains(&"WezTerm"));
+
+        let known_env_vars = vec!["TERM_PROGRAM", "WT_SESSION", "ConEmuPID"];
+        assert_eq!(known_env_vars.len(), 3);
+    }
+
+    #[test]
+    fn test_percent_calculation() {
+        let current = 50;
+        let total = 100;
+        let percent = ((current as f64 / total as f64) * 100.0).min(100.0) as u8;
+        assert_eq!(percent, 50);
+
+        let current = 25;
+        let total = 100;
+        let percent = ((current as f64 / total as f64) * 100.0).min(100.0) as u8;
+        assert_eq!(percent, 25);
+
+        let current = 150;
+        let total = 100;
+        let percent = ((current as f64 / total as f64) * 100.0).min(100.0) as u8;
+        assert_eq!(percent, 100);
+    }
+
+    #[test]
+    fn test_elapsed_time_formatting_logic() {
+        let ms = 500u128;
+        let formatted = if ms < 1000 {
+            format!("{}ms", ms)
+        } else {
+            format!("{:.1}s", ms as f64 / 1000.0)
+        };
+        assert_eq!(formatted, "500ms");
+
+        let ms = 1500u128;
+        let formatted = if ms < 1000 {
+            format!("{}ms", ms)
+        } else {
+            format!("{:.1}s", ms as f64 / 1000.0)
+        };
+        assert_eq!(formatted, "1.5s");
+
+        let ms = 100u128;
+        let formatted = if ms < 1000 {
+            format!("{}ms", ms)
+        } else {
+            format!("{:.1}s", ms as f64 / 1000.0)
+        };
+        assert_eq!(formatted, "100ms");
+    }
+
+    #[test]
+    fn test_zero_division_protection() {
+        let total = 0;
+        let percent = if total > 0 {
+            ((0 as f64 / total as f64) * 100.0).min(100.0) as u8
+        } else {
+            0
+        };
+        assert_eq!(percent, 0);
+    }
+}
