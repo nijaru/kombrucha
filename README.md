@@ -27,7 +27,7 @@ bru install wget    # works exactly like brew
 
 **Bottom line:** Same formulae, same ecosystem, faster performance.
 
-## Status: Beta (v0.1.6)
+## Status: Beta (v0.1.7)
 
 - ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
 - ✅ **Bottle-Based**: Works with pre-built bottles (most common formulae)
@@ -166,7 +166,7 @@ For most daily package management, bru works well.
 
 ## Performance Benchmarks
 
-**Latest (v0.1.6)** - M3 Max, macOS 15.1, 339 packages:
+**Latest (v0.1.7)** - M3 Max, macOS 15.1, 339 packages:
 
 | Operation | brew | bru | Speedup |
 |-----------|------|-----|---------|
@@ -182,7 +182,7 @@ For most daily package management, bru works well.
 - In-memory caching (no redundant requests)
 - Efficient data structures
 
-See [v0.1.6 release notes](https://github.com/nijaru/kombrucha/releases/tag/v0.1.6) for the latest changes.
+See [v0.1.7 release notes](https://github.com/nijaru/kombrucha/releases/tag/v0.1.7) for the latest changes.
 
 ## Compatibility
 
