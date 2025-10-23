@@ -1,10 +1,10 @@
 # Project Status
 
-Last updated: 2025-10-22
+Last updated: 2025-10-23
 
 ## Current State
 
-**Version**: 0.1.5 (Beta)
+**Version**: 0.1.7 (Beta, with unreleased fixes)
 **Status**: Production-ready for bottle-based workflows
 
 ### Metrics
@@ -51,6 +51,29 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**Unreleased** (post-v0.1.7):
+- **Critical Bug Fixes**: Symlink cleanup in multiple commands
+  - upgrade command: Properly unlinks symlinks before removal
+  - cleanup command: Properly unlinks symlinks before removal
+  - uninstall command: Proper cleanup of all symlinks
+  - Prevents "Directory not empty" errors during package operations
+
+**v0.1.7** (2025-10-23):
+- **UX Enhancement**: Better tree visualization and command summaries
+- **UX Enhancement**: Simplified help output to match brew style
+- **Bug Fix**: Show usage message for desc/pin/unpin/link/unlink with no args
+- **Bug Fix**: Show helpful error when commands called with no formulae
+
+**v0.1.6** (2025-10-22):
+- **Compatibility**: Full brew-compatibility for multiple commands
+  - info: No fetch message when piped (matches brew behavior)
+  - deps/uses: Output format matches brew exactly
+  - search: Output format matches brew exactly
+  - leaves: Output format matches brew exactly
+  - outdated: Output format matches brew exactly
+  - list: Full brew compatibility with column mode
+- **UX Enhancement**: Improved list command spacing and column mode
 
 **v0.1.5** (2025-10-22):
 - **Critical Bug Fix**: File descriptor leak during upgrade
