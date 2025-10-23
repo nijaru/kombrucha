@@ -32,7 +32,10 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     }) + (if show_casks { results.casks.len() } else { 0 });
 
     if total_to_show == 0 {
-        println!("\n {} No results found with the specified filter", "✗".red());
+        println!(
+            "\n {} No results found with the specified filter",
+            "✗".red()
+        );
         return Ok(());
     }
 
@@ -185,7 +188,11 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                             formula
                         );
                     } else {
-                        println!("\n {} No formula or cask found for '{}'", "✗".red(), formula);
+                        println!(
+                            "\n {} No formula or cask found for '{}'",
+                            "✗".red(),
+                            formula
+                        );
                     }
                 }
             }
@@ -1046,7 +1053,10 @@ pub async fn upgrade(
     }
 
     if dry_run {
-        println!("{} Dry run mode - no packages will be upgraded", " ℹ".blue());
+        println!(
+            "{} Dry run mode - no packages will be upgraded",
+            " ℹ".blue()
+        );
     }
 
     let formula_names = names;
@@ -3588,7 +3598,11 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("\n {} Finished editing {}", "✓".green(), formula_name.bold());
+            println!(
+                "\n {} Finished editing {}",
+                "✓".green(),
+                formula_name.bold()
+            );
         }
         Ok(_) => {
             println!("\n {} Editor exited with error", "⚠".yellow());
@@ -5215,7 +5229,10 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
         println!("  {} Auto-fix enabled", "ℹ".blue());
     }
 
-    println!("\n {} Style checking requires RuboCop (Phase 3)", "ℹ".blue());
+    println!(
+        "\n {} Style checking requires RuboCop (Phase 3)",
+        "ℹ".blue()
+    );
     println!("  Formula style would be validated against Homebrew standards:");
     println!("  - Naming conventions");
     println!("  - Method ordering");
@@ -5342,7 +5359,11 @@ pub fn tap_unpin(tap_name: &str) -> anyhow::Result<()> {
 
     std::fs::remove_file(&pin_file)?;
 
-    println!("\n {} Tap unpinned: {}", "✓".green().bold(), tap_name.bold());
+    println!(
+        "\n {} Tap unpinned: {}",
+        "✓".green().bold(),
+        tap_name.bold()
+    );
     println!(
         "  This tap will now be updated by {} and {}",
         "bru update".cyan(),
