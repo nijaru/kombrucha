@@ -227,10 +227,12 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
             if is_tty {
                 println!("\n {}", "Runtime dependencies:".bold().green());
             }
-            for dep in deps {
+            let len = deps.len();
+            for (i, dep) in deps.iter().enumerate() {
                 if is_tty {
                     if tree {
-                        println!("  └─ {}", dep.cyan());
+                        let prefix = if i == len - 1 { "└─" } else { "├─" };
+                        println!("  {} {}", prefix, dep.cyan());
                     } else {
                         println!("  {}", dep.cyan());
                     }
@@ -254,10 +256,12 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
             if is_tty {
                 println!("\n {}", "Build dependencies:".bold().yellow());
             }
-            for dep in build_deps {
+            let len = build_deps.len();
+            for (i, dep) in build_deps.iter().enumerate() {
                 if is_tty {
                     if tree {
-                        println!("  └─ {}", dep.cyan());
+                        let prefix = if i == len - 1 { "└─" } else { "├─" };
+                        println!("  {} {}", prefix, dep.cyan());
                     } else {
                         println!("  {}", dep.cyan());
                     }
@@ -719,7 +723,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
             return Ok(());
         }
 
-        for (token, installed, latest) in outdated_casks {
+        for (token, installed, latest) in &outdated_casks {
             if show_versions {
                 // TTY mode: show versions in brew format
                 println!(
@@ -732,6 +736,17 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 // Piped/quiet mode: just names (brew behavior)
                 println!("{}", token);
             }
+        }
+
+        // Show summary in TTY mode
+        if show_versions {
+            let count = outdated_casks.len();
+            println!(
+                "\n{} {} outdated {} found",
+                "→".cyan(),
+                count.to_string().bold(),
+                if count == 1 { "cask" } else { "casks" }
+            );
         }
     } else {
         // Check outdated formulae
@@ -797,7 +812,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
             return Ok(());
         }
 
-        for (pkg, latest) in outdated_packages {
+        for (pkg, latest) in &outdated_packages {
             if show_versions {
                 // TTY mode: show versions in brew format
                 println!(
@@ -810,6 +825,17 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 // Piped/quiet mode: just names (brew behavior)
                 println!("{}", pkg.name);
             }
+        }
+
+        // Show summary in TTY mode
+        if show_versions {
+            let count = outdated_packages.len();
+            println!(
+                "\n{} {} outdated {} found",
+                "→".cyan(),
+                count.to_string().bold(),
+                if count == 1 { "package" } else { "packages" }
+            );
         }
     }
 
