@@ -667,18 +667,18 @@ fn strip_bottle_revision(version: &str) -> &str {
 }
 
 pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
+    // Detect if stdout is a TTY (for brew-compatible behavior)
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    // Show version info in TTY, suppress when piped (brew behavior)
+    // --quiet forces names-only even in TTY
+    let show_versions = is_tty && !quiet;
+
     if cask {
         // Check outdated casks
-        if !quiet {
-            println!("Checking for outdated casks...");
-        }
-
         let installed_casks = crate::cask::list_installed_casks()?;
 
         if installed_casks.is_empty() {
-            if !quiet {
-                println!("\n {} No casks installed", "ℹ".blue());
-            }
             return Ok(());
         }
 
@@ -708,44 +708,28 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         let outdated_casks: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated_casks.is_empty() {
-            if !quiet {
-                println!("\n {} All casks are up to date", "✓".green());
-            }
             return Ok(());
         }
 
-        if !quiet {
-            println!(
-                "\n{} Found {} outdated casks:\n",
-                "⚠".yellow(),
-                outdated_casks.len().to_string().bold()
-            );
-        }
-
         for (token, installed, latest) in outdated_casks {
-            if quiet {
-                println!("{}", token);
-            } else {
+            if show_versions {
+                // TTY mode: show versions in brew format
                 println!(
-                    "{} {} {}",
-                    token.bold().yellow(),
+                    "{} ({}) < {}",
+                    token.bold().green(),
                     installed.dimmed(),
-                    format!("→ {}", latest).cyan()
+                    latest.cyan()
                 );
+            } else {
+                // Piped/quiet mode: just names (brew behavior)
+                println!("{}", token);
             }
         }
     } else {
         // Check outdated formulae
-        if !quiet {
-            println!("Checking for outdated packages...");
-        }
-
         let all_packages = cellar::list_installed()?;
 
         if all_packages.is_empty() {
-            if !quiet {
-                println!("\n {} No packages installed", "ℹ".blue());
-            }
             return Ok(());
         }
 
@@ -802,30 +786,21 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated_packages.is_empty() {
-            if !quiet {
-                println!("\n {} All packages are up to date", "✓".green());
-            }
             return Ok(());
         }
 
-        if !quiet {
-            println!(
-                "\n{} Found {} outdated packages:\n",
-                "⚠".yellow(),
-                outdated_packages.len().to_string().bold()
-            );
-        }
-
         for (pkg, latest) in outdated_packages {
-            if quiet {
-                println!("{}", pkg.name);
-            } else {
+            if show_versions {
+                // TTY mode: show versions in brew format
                 println!(
-                    "{} {} {}",
-                    pkg.name.bold().yellow(),
+                    "{} ({}) < {}",
+                    pkg.name.bold().green(),
                     pkg.version.dimmed(),
-                    format!("→ {}", latest).cyan()
+                    latest.cyan()
                 );
+            } else {
+                // Piped/quiet mode: just names (brew behavior)
+                println!("{}", pkg.name);
             }
         }
     }
