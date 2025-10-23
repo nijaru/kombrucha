@@ -352,21 +352,30 @@ mod symlink_tests {
     fn test_normalize_path_simple() {
         let path = std::path::Path::new("/usr/local/Cellar/wget/1.21.4/bin/wget");
         let normalized = normalize_path(path);
-        assert_eq!(normalized, PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget"));
+        assert_eq!(
+            normalized,
+            PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget")
+        );
     }
 
     #[test]
     fn test_normalize_path_with_parent_dir() {
         let path = std::path::Path::new("/usr/local/bin/../Cellar/wget/1.21.4/bin/wget");
         let normalized = normalize_path(path);
-        assert_eq!(normalized, PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget"));
+        assert_eq!(
+            normalized,
+            PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget")
+        );
     }
 
     #[test]
     fn test_normalize_path_with_current_dir() {
         let path = std::path::Path::new("/usr/local/./Cellar/./wget/./1.21.4/bin/wget");
         let normalized = normalize_path(path);
-        assert_eq!(normalized, PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget"));
+        assert_eq!(
+            normalized,
+            PathBuf::from("/usr/local/Cellar/wget/1.21.4/bin/wget")
+        );
     }
 
     #[test]
@@ -407,8 +416,8 @@ mod symlink_tests {
 
 #[cfg(test)]
 mod cache_tests {
-    use std::path::PathBuf;
     use std::fs;
+    use std::path::PathBuf;
     use std::time::SystemTime;
 
     fn cache_dir_with_env(xdg_cache: Option<&str>, home: Option<&str>) -> PathBuf {
@@ -479,8 +488,14 @@ mod cache_tests {
         let formulae_cache = base.join("formulae.json");
         let casks_cache = base.join("casks.json");
 
-        assert_eq!(formulae_cache, PathBuf::from("/home/user/.cache/bru/formulae.json"));
-        assert_eq!(casks_cache, PathBuf::from("/home/user/.cache/bru/casks.json"));
+        assert_eq!(
+            formulae_cache,
+            PathBuf::from("/home/user/.cache/bru/formulae.json")
+        );
+        assert_eq!(
+            casks_cache,
+            PathBuf::from("/home/user/.cache/bru/casks.json")
+        );
     }
 }
 
@@ -615,10 +630,26 @@ mod receipt_tests {
             "arch": "arm64"
         });
 
-        assert_eq!(receipt.get("homebrew_version").unwrap().as_str().unwrap(), "bru/0.1.8");
-        assert_eq!(receipt.get("built_as_bottle").unwrap().as_bool().unwrap(), true);
-        assert_eq!(receipt.get("poured_from_bottle").unwrap().as_bool().unwrap(), true);
-        assert_eq!(receipt.get("loaded_from_api").unwrap().as_bool().unwrap(), true);
+        assert_eq!(
+            receipt.get("homebrew_version").unwrap().as_str().unwrap(),
+            "bru/0.1.8"
+        );
+        assert_eq!(
+            receipt.get("built_as_bottle").unwrap().as_bool().unwrap(),
+            true
+        );
+        assert_eq!(
+            receipt
+                .get("poured_from_bottle")
+                .unwrap()
+                .as_bool()
+                .unwrap(),
+            true
+        );
+        assert_eq!(
+            receipt.get("loaded_from_api").unwrap().as_bool().unwrap(),
+            true
+        );
     }
 
     #[test]
@@ -641,7 +672,10 @@ mod receipt_tests {
             "spec": "stable"
         });
 
-        assert_eq!(source.get("tap").unwrap().as_str().unwrap(), "homebrew/core");
+        assert_eq!(
+            source.get("tap").unwrap().as_str().unwrap(),
+            "homebrew/core"
+        );
         assert_eq!(source.get("spec").unwrap().as_str().unwrap(), "stable");
     }
 

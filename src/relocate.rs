@@ -80,10 +80,7 @@ fn is_mach_o(path: &Path) -> Result<bool> {
     } else {
         // Mach-O magic numbers
         let magic = u32::from_ne_bytes(bytes);
-        matches!(
-            magic,
-            0xfeedface | 0xfeedfacf | 0xcefaedfe | 0xcffaedfe
-        )
+        matches!(magic, 0xfeedface | 0xfeedfacf | 0xcefaedfe | 0xcffaedfe)
     };
 
     // Explicitly drop file handle before returning
