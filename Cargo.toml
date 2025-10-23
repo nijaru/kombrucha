@@ -29,6 +29,7 @@ clap = { version = "4", features = ["derive", "cargo"] }
 clap_complete = "4"
 indicatif = "0.17"
 colored = "2"
+term_size = "0.3"
 
 # Async & HTTP
 tokio = { version = "1", features = ["full"] }

@@ -311,17 +311,62 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
     Ok(())
 }
 
+/// Format names in columns for display
+fn format_columns(names: &[String]) -> String {
+    use std::io::IsTerminal;
+
+    if names.is_empty() {
+        return String::new();
+    }
+
+    // Get terminal width (default to 80 if not TTY)
+    let term_width = if std::io::stdout().is_terminal() {
+        term_size::dimensions().map(|(w, _)| w).unwrap_or(80)
+    } else {
+        80
+    };
+
+    // Find longest name
+    let max_len = names.iter().map(|s| s.len()).max().unwrap_or(0);
+    let col_width = max_len + 2; // Add 2 for spacing
+
+    // Calculate number of columns
+    let num_cols = (term_width / col_width).max(1);
+
+    // Format in columns
+    let mut result = String::new();
+    for (i, name) in names.iter().enumerate() {
+        result.push_str(name);
+
+        if (i + 1) % num_cols == 0 {
+            result.push('\n');
+        } else if i < names.len() - 1 {
+            // Add spacing to align columns
+            let padding = col_width - name.len();
+            result.push_str(&" ".repeat(padding));
+        }
+    }
+
+    // Add final newline if needed
+    if !result.ends_with('\n') {
+        result.push('\n');
+    }
+
+    result
+}
+
 pub async fn list(
     _api: &BrewApi,
     show_versions: bool,
     json: bool,
     cask: bool,
     quiet: bool,
+    columns: bool,
 ) -> Result<()> {
     // Detect if stdout is a TTY (for pipe-aware behavior)
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
-    // Use quiet mode if explicitly requested OR if output is piped (and not json)
-    let use_quiet = quiet || (!is_tty && !json);
+    // Use quiet mode if explicitly requested OR if output is piped (and not json and not columns)
+    let use_quiet = quiet || (!is_tty && !json && !columns);
 
     if cask {
         // List installed casks
@@ -351,6 +396,24 @@ pub async fn list(
             for (token, _version) in &casks {
                 println!("{}", token);
             }
+        } else if columns && is_tty {
+            // Column mode: names only in columns
+            println!("Installed casks:");
+
+            if casks.is_empty() {
+                println!("\n {} No casks installed", "ℹ".blue());
+                return Ok(());
+            }
+
+            let names: Vec<String> = casks.iter().map(|(token, _)| token.clone()).collect();
+            println!();
+            print!("{}", format_columns(&names));
+
+            println!(
+                "{} {} casks installed",
+                "✓".green(),
+                casks.len().to_string().bold()
+            );
         } else {
             // Normal mode: headers, colors, versions
             println!("Installed casks:");
@@ -362,8 +425,7 @@ pub async fn list(
 
             println!();
             for (token, version) in &casks {
-                print!("{}", token.bold().green());
-                println!("{}", version.dimmed());
+                println!("{} {}", token.bold().green(), version.dimmed());
             }
 
             println!(
@@ -421,6 +483,32 @@ pub async fn list(
             for name in sorted_names {
                 println!("{}", name);
             }
+        } else if columns && is_tty {
+            // Column mode: names only in columns
+            println!("Installed packages:");
+
+            if packages.is_empty() {
+                println!("\n {} No packages installed", "ℹ".blue());
+                return Ok(());
+            }
+
+            // Group by formula name to get unique names
+            let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
+            for pkg in packages {
+                names.insert(pkg.name.clone());
+            }
+
+            let mut sorted_names: Vec<_> = names.into_iter().collect();
+            sorted_names.sort();
+
+            println!();
+            print!("{}", format_columns(&sorted_names));
+
+            println!(
+                "{} {} packages installed",
+                "✓".green(),
+                sorted_names.len().to_string().bold()
+            );
         } else {
             // Normal mode: headers, colors, versions
             println!("Installed packages:");
@@ -452,8 +540,7 @@ pub async fn list(
                 } else {
                     // Just show the first version (usually only one)
                     let pkg = &versions[0];
-                    print!("{}", name.bold().green());
-                    println!("{}", pkg.version.dimmed());
+                    println!("{} {}", name.bold().green(), pkg.version.dimmed());
                 }
             }
 

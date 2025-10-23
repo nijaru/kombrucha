@@ -92,6 +92,10 @@ enum Commands {
         /// Show only names (one per line, no versions or headers)
         #[arg(short = '1', long)]
         quiet: bool,
+
+        /// Display packages in columns (names only, no versions)
+        #[arg(short = 'C', long)]
+        columns: bool,
     },
 
     /// Show outdated installed packages
@@ -882,8 +886,9 @@ async fn run() -> anyhow::Result<()> {
             json,
             cask,
             quiet,
+            columns,
         }) => {
-            commands::list(&api, versions, json, cask, quiet).await?;
+            commands::list(&api, versions, json, cask, quiet, columns).await?;
         }
         Some(Commands::Outdated { cask, quiet }) => {
             commands::outdated(&api, cask, quiet).await?;
