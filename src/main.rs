@@ -914,6 +914,12 @@ async fn run() -> anyhow::Result<()> {
             commands::outdated(&api, cask, quiet).await?;
         }
         Some(Commands::Fetch { formulae }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru fetch [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::fetch(&api, &formulae).await?;
         }
         Some(Commands::Install {
@@ -923,6 +929,12 @@ async fn run() -> anyhow::Result<()> {
             dry_run,
             force,
         }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru install [OPTIONS] [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             if cask {
                 commands::install_cask(&api, &formulae).await?;
             } else {
@@ -938,6 +950,12 @@ async fn run() -> anyhow::Result<()> {
             commands::upgrade(&api, &formulae, cask, dry_run, force).await?;
         }
         Some(Commands::Reinstall { formulae, cask }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru reinstall [OPTIONS] [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             commands::reinstall(&api, &formulae, cask).await?;
         }
         Some(Commands::Uninstall {
@@ -945,6 +963,12 @@ async fn run() -> anyhow::Result<()> {
             force,
             cask,
         }) => {
+            if formulae.is_empty() {
+                eprintln!("Error: No formulae specified\n");
+                eprintln!("Usage: bru uninstall [OPTIONS] [FORMULAE]...\n");
+                eprintln!("For more information, try '--help'");
+                std::process::exit(1);
+            }
             if cask {
                 commands::uninstall_cask(&formulae)?;
             } else {

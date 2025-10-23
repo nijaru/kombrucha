@@ -1528,11 +1528,6 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 }
 
 pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) -> Result<()> {
-    if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
-        return Ok(());
-    }
-
     println!(
         "Uninstalling {} formulae...",
         formula_names.len().to_string().bold()
