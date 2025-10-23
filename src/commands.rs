@@ -1435,6 +1435,17 @@ pub async fn upgrade(
         // Remove old version
         let old_path = cellar::cellar_path().join(formula_name).join(old_version);
         if old_path.exists() {
+            // Unlink symlinks first
+            let unlinked = symlink::unlink_formula(formula_name, old_version)?;
+            if !unlinked.is_empty() {
+                println!(
+                    "    ├ {} Unlinked {} symlinks",
+                    "✓".green(),
+                    unlinked.len().to_string().dimmed()
+                );
+            }
+
+            // Remove the old version directory
             std::fs::remove_dir_all(&old_path)?;
             println!(
                 "    ├ {} Removed old version {}",
