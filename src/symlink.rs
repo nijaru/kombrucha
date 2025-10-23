@@ -182,10 +182,7 @@ fn unlink_symlinks_in_directory(
                 if let Ok(link_target) = fs::read_link(&target_path) {
                     // Resolve path without canonicalizing (avoids opening files)
                     let resolved = if link_target.is_relative() {
-                        target_path
-                            .parent()
-                            .unwrap_or(target)
-                            .join(&link_target)
+                        target_path.parent().unwrap_or(target).join(&link_target)
                     } else {
                         link_target.clone()
                     };
