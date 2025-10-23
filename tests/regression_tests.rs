@@ -668,9 +668,9 @@ fn test_help_command() {
         "Help should list core commands"
     );
 
-    // Should show usage
+    // Should show usage information (brew-style help)
     assert!(
-        stdout.contains("Usage") || stdout.contains("USAGE"),
+        stdout.contains("usage") || stdout.contains("Usage") || stdout.contains("USAGE"),
         "Help should show usage information"
     );
 }

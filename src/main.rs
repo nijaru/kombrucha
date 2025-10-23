@@ -20,6 +20,26 @@ use colored::Colorize;
 #[derive(Parser)]
 #[command(name = "bru")]
 #[command(author, version, about = "A fast Homebrew-compatible package manager", long_about = None)]
+#[command(help_template = "\
+Example usage:
+  bru search TEXT
+  bru info [FORMULA|CASK...]
+  bru install FORMULA|CASK...
+  bru update
+  bru upgrade [FORMULA|CASK...]
+  bru uninstall FORMULA|CASK...
+  bru list [FORMULA|CASK...]
+
+Troubleshooting:
+  bru config
+  bru doctor
+  bru install --verbose FORMULA|CASK
+
+Further help:
+  bru commands
+  bru help [COMMAND]
+  bru --version
+")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
