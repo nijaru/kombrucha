@@ -211,7 +211,7 @@ fn unlink_symlinks_in_directory(
 }
 
 /// Normalize a path by resolving . and .. components
-fn normalize_path(path: &Path) -> PathBuf {
+pub fn normalize_path(path: &Path) -> PathBuf {
     let mut components = Vec::new();
     for component in path.components() {
         match component {

@@ -17,7 +17,7 @@ pub fn cache_dir() -> PathBuf {
 }
 
 /// Check if a cached file is still fresh (less than TTL old)
-fn is_cache_fresh(path: &PathBuf) -> bool {
+pub fn is_cache_fresh(path: &PathBuf) -> bool {
     if !path.exists() {
         return false;
     }
