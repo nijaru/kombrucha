@@ -1497,35 +1497,40 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             continue;
         }
 
-        let version = &installed_versions[0].version;
+        let old_version = &installed_versions[0].version;
         println!(
             "  Reinstalling {} {}",
             formula_name.cyan(),
-            version.dimmed()
+            old_version.dimmed()
         );
 
         // Unlink
-        symlink::unlink_formula(formula_name, version)?;
+        symlink::unlink_formula(formula_name, old_version)?;
 
         // Remove from Cellar
-        let cellar_path = cellar::cellar_path().join(formula_name).join(version);
+        let cellar_path = cellar::cellar_path().join(formula_name).join(old_version);
         if cellar_path.exists() {
             std::fs::remove_dir_all(&cellar_path)?;
         }
 
-        // Fetch formula metadata
+        // Fetch formula metadata to get NEW version
         let formula = api.fetch_formula(formula_name).await?;
+        let new_version = formula
+            .versions
+            .stable
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula.name))?;
 
         // Download bottle
         let bottle_path = download::download_bottle(&formula, None).await?;
 
-        // Install
-        let extracted_path = extract::extract_bottle(&bottle_path, formula_name, version)?;
+        // Install with NEW version
+        let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
 
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        let linked = symlink::link_formula(formula_name, version)?;
+        let linked = symlink::link_formula(formula_name, new_version)?;
 
         // Generate receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &{
@@ -1545,7 +1550,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             "    └ {} Reinstalled {} {}",
             "✓".green(),
             formula_name.bold().green(),
-            version.dimmed()
+            new_version.dimmed()
         );
         actually_reinstalled += 1;
     }
@@ -3884,14 +3889,14 @@ pub fn create(url: &str, name: Option<&str>) -> Result<()> {
 
     println!("  {}: {}", "Name".bold(), formula_name.cyan());
 
-    // Generate basic formula template
-    let class_name = formula_name
-        .chars()
-        .next()
-        .unwrap()
-        .to_uppercase()
-        .to_string()
-        + &formula_name[1..];
+    // Generate basic formula template (capitalize first letter)
+    let class_name = if formula_name.len() > 1 {
+        let mut chars = formula_name.chars();
+        let first = chars.next().unwrap().to_uppercase().to_string();
+        first + chars.as_str()
+    } else {
+        formula_name.to_uppercase()
+    };
     let homepage_base =
         url.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.' || c == '-' || c == '/');
 
@@ -4570,14 +4575,15 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
                 Vec::new()
             }
         } else {
-            // Fallback: guess app name from cask name
-            if let Some(first_char) = cask_name.chars().next() {
-                vec![format!(
-                    "{}.app",
-                    first_char.to_uppercase().to_string() + &cask_name[1..]
-                )]
-            } else {
+            // Fallback: guess app name from cask name (capitalize first letter)
+            if cask_name.is_empty() {
                 vec![]
+            } else if cask_name.len() == 1 {
+                vec![format!("{}.app", cask_name.to_uppercase())]
+            } else {
+                let mut chars = cask_name.chars();
+                let first = chars.next().unwrap().to_uppercase().to_string();
+                vec![format!("{}.app", first + chars.as_str())]
             }
         };
 
