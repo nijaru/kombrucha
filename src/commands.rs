@@ -2054,9 +2054,49 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
             continue;
         }
 
-        // Sort by version (keep the first one, which is typically the latest)
-        let latest = versions[0];
-        let old_versions = &versions[1..];
+        // Sort by version string - lexicographic comparison works for most cases
+        // (e.g., "1.9.0" > "1.10.0" lexically is wrong, but "1.8.1" > "1.7.0" works)
+        // For proper semantic versioning, we'd need a dedicated parser
+        let mut sorted_versions = versions.to_vec();
+        sorted_versions.sort_by(|a, b| {
+            // Try to parse as semantic version numbers
+            let a_parts: Vec<u32> = a
+                .version
+                .split('.')
+                .filter_map(|s| s.parse::<u32>().ok())
+                .collect();
+            let b_parts: Vec<u32> = b
+                .version
+                .split('.')
+                .filter_map(|s| s.parse::<u32>().ok())
+                .collect();
+
+            // Compare version parts numerically
+            for i in 0..a_parts.len().max(b_parts.len()) {
+                let a_part = a_parts.get(i).unwrap_or(&0);
+                let b_part = b_parts.get(i).unwrap_or(&0);
+                match a_part.cmp(b_part) {
+                    std::cmp::Ordering::Equal => continue,
+                    other => return other,
+                }
+            }
+
+            // If numeric comparison fails, fall back to lexicographic
+            a.version.cmp(&b.version)
+        });
+        sorted_versions.reverse(); // Highest version first
+
+        let latest = sorted_versions[0];
+        let old_versions = &sorted_versions[1..];
+
+        // Show which version we're keeping (only once before removing old versions)
+        if dry_run {
+            println!(
+                "  Keeping {} {}",
+                latest.name.cyan().bold(),
+                latest.version.green()
+            );
+        }
 
         for old in old_versions {
             let version_path = cellar::cellar_path().join(&old.name).join(&old.version);
@@ -2098,13 +2138,6 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
 
             total_removed += 1;
         }
-
-        println!(
-            "    {} Keeping {} {}",
-            "✓".green(),
-            latest.name.bold(),
-            latest.version.dimmed()
-        );
     }
 
     if total_removed == 0 {
