@@ -2054,6 +2054,16 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
                     format_size(size).dimmed()
                 );
 
+                // Unlink symlinks first
+                let unlinked = symlink::unlink_formula(&old.name, &old.version)?;
+                if !unlinked.is_empty() {
+                    println!(
+                        "    {} Unlinked {} symlinks",
+                        "✓".green(),
+                        unlinked.len().to_string().dimmed()
+                    );
+                }
+
                 // Remove the old version directory
                 if version_path.exists() {
                     std::fs::remove_dir_all(&version_path)?;
