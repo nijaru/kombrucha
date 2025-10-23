@@ -170,7 +170,7 @@ pub fn list_installed() -> Result<Vec<InstalledPackage>> {
     Ok(packages)
 }
 
-/// Get all versions of a specific formula
+/// Get all versions of a specific formula, sorted by version (newest first)
 pub fn get_installed_versions(formula: &str) -> Result<Vec<InstalledPackage>> {
     let formula_path = cellar_path().join(formula);
 
@@ -192,7 +192,32 @@ pub fn get_installed_versions(formula: &str) -> Result<Vec<InstalledPackage>> {
         packages.push(pkg);
     }
 
+    // Sort by version - newest first
+    // This ensures [0] is always the newest version
+    packages.sort_by(|a, b| compare_versions(&a.version, &b.version));
+    packages.reverse();
+
     Ok(packages)
+}
+
+/// Compare two version strings semantically
+fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
+    // Parse as semantic version numbers
+    let a_parts: Vec<u32> = a.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
+    let b_parts: Vec<u32> = b.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
+
+    // Compare version parts numerically
+    for i in 0..a_parts.len().max(b_parts.len()) {
+        let a_part = a_parts.get(i).unwrap_or(&0);
+        let b_part = b_parts.get(i).unwrap_or(&0);
+        match a_part.cmp(b_part) {
+            std::cmp::Ordering::Equal => continue,
+            other => return other,
+        }
+    }
+
+    // Fall back to lexicographic
+    a.cmp(b)
 }
 
 #[cfg(test)]
