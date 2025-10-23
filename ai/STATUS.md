@@ -56,6 +56,23 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ### Recent Changes
 
+**Unreleased** (post-v0.1.9):
+- **CRITICAL DATA LOSS BUG FIXED**: cleanup command was deleting NEWEST versions!
+  - **Discovered**: User testing revealed cleanup kept v1.7.0 and deleted v1.8.1
+  - **Root cause**: Assumed versions[0] was newest, but fs::read_dir() returns random order
+  - **Impact**: Users running cleanup could lose their newest package versions
+  - **Fix 1**: Added semantic version comparison to cleanup command
+  - **Fix 2**: Added version sorting to get_installed_versions() (systemic fix)
+  - Commands affected: cleanup (critical), upgrade (minor), list (cosmetic)
+- **Resource Exhaustion Fixes**: Found 2 more potential "Too many open files" bugs
+  - calculate_dir_size(): Added .max_open(64) to WalkDir (used by `bru cache`)
+  - download_bottles(): Added semaphore limiting to 16 concurrent downloads
+- **Testing Quality Issues**: Post-mortem analysis of why tests missed cleanup bug
+  - Added 6 comprehensive cleanup tests with behavior verification
+  - Created TESTING_ISSUES.md documenting test quality problems
+  - 98 tests total, but most are shallow (test execution, not correctness)
+  - Action plan: Add behavior tests for all critical commands
+
 **v0.1.9** (2025-10-23):
 - **Critical Bug Fix**: "Too many open files" error during large package upgrades
   - **Root cause**: WalkDir keeps directory handles open during traversal - llvm alone has 9,283 files
