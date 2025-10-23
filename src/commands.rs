@@ -2441,9 +2441,14 @@ pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
 }
 
 pub fn leaves() -> Result<()> {
-    println!("{}", "==> Leaf Packages".bold().green());
-    println!("(Packages not required by other packages)");
-    println!();
+    // Detect if stdout is a TTY (for brew-compatible behavior)
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    if is_tty {
+        println!("{}", "==> Leaf Packages".bold().green());
+        println!("(Packages not required by other packages)");
+        println!();
+    }
 
     let all_packages = cellar::list_installed()?;
 
@@ -2491,17 +2496,27 @@ pub fn leaves() -> Result<()> {
     leaves.sort_by(|a, b| a.name.cmp(&b.name));
 
     if leaves.is_empty() {
-        println!("{} No leaf packages found", "ℹ".blue());
+        if is_tty {
+            println!("{} No leaf packages found", "ℹ".blue());
+        }
     } else {
         for pkg in &leaves {
-            println!("{}", pkg.name.cyan());
+            if is_tty {
+                println!("{}", pkg.name.cyan());
+            } else {
+                // Piped: just names, no colors (brew behavior)
+                println!("{}", pkg.name);
+            }
         }
-        println!();
-        println!(
-            "{} {} leaf packages",
-            "ℹ".blue(),
-            leaves.len().to_string().bold()
-        );
+
+        if is_tty {
+            println!();
+            println!(
+                "{} {} leaf packages",
+                "ℹ".blue(),
+                leaves.len().to_string().bold()
+            );
+        }
     }
 
     Ok(())
