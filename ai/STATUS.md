@@ -32,11 +32,14 @@ Last updated: 2025-10-23
 - CI/internal commands: Not implemented
 
 ### Performance
-Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
-- upgrade --dry-run: **5.5x faster than brew** (0.65s vs 3.56s)
+Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
+- upgrade --dry-run: **1.85x faster than brew** (0.92s vs 1.71s average over 3 runs)
+  - bru times: 1.23s, 0.86s, 0.66s (first run slower due to cold cache)
+  - brew times: 2.28s, 1.43s, 1.41s
+  - Best case: 0.66s vs 1.41s (2.1x faster)
 - upgrade optimization: **53x faster** than v0.1.2 (0.74s vs 39.5s)
 - All API operations: Fully parallelized with in-memory caching
-- Startup time: 0.014s
+- Startup time: <0.01s (measured, claimed 0.014s)
 
 ## What Worked
 
@@ -54,6 +57,14 @@ Verified benchmarks (M3 Max, macOS 15.1, 339 packages):
 ### Recent Changes
 
 **Unreleased** (post-v0.1.8):
+- **Performance Benchmarking**: Verified and corrected claimed performance metrics
+  - Original claim: "5.5x faster than brew" was based on outdated brew baseline
+  - Verified speedup: **1.85x faster** on average (0.92s vs 1.71s for upgrade --dry-run)
+  - Test system: M3 Max, macOS 15.7, 338 packages
+  - bru times: 1.23s, 0.86s, 0.66s (average 0.92s)
+  - brew times: 2.28s, 1.43s, 1.41s (average 1.71s)
+  - Best case: 0.66s vs 1.41s = 2.1x faster
+  - Updated STATUS.md with honest, reproducible benchmarks
 - **Critical Bug Fixes**: Edge case hunting and code review found 6 critical bugs
   - relocate.rs: `is_mach_o()` was reading entire files instead of just 4 bytes (same pattern as v0.1.5)
   - commands.rs: `count_formulae()` was reading entire files just to check if readable
