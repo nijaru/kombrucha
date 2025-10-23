@@ -82,7 +82,9 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
 }
 
 pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
-    if !json {
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    if !json && is_tty {
         println!("Fetching info for: {}", formula.cyan());
     }
 
