@@ -509,7 +509,28 @@ brew pr-upload --upload-only
 # Or manually upload *.bottle.tar.gz to GitHub Releases
 ```
 
-### Phase 3: Proper Test Suite (P2 - Medium)
+### Phase 3: Comprehensive Test Suite (NOT RECOMMENDED)
+
+**⚠️ This phase is NOT RECOMMENDED and should be skipped.**
+
+**Rationale:**
+- **brew test-bot on CI is sufficient** - It's what Homebrew itself uses
+- **CI already tests 3 platforms** - macOS 13, macOS 14, Ubuntu (from Phase 2)
+- **Formula test block tests functionality** - Search, info, deps commands (from Phase 2)
+- **Diminishing returns** - Docker tests would duplicate what brew test-bot does
+- **Added complexity** - Requires maintaining Docker test infrastructure
+- **brew test-bot is authoritative** - If it passes, the formula works
+
+**When to reconsider:**
+- If you need rapid local iteration on dangerous operations (install/uninstall)
+- If you want to test specific broken package states that CI can't reproduce
+- If brew test-bot CI is too slow for your development cycle
+
+For most use cases, **Phase 1 + Phase 2 provide adequate testing coverage**.
+
+---
+
+**Original Phase 3 Plan (for reference, but not recommended):**
 
 #### 3.1 Test Organization
 

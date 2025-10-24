@@ -223,10 +223,12 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Updated formula test block to test actual functionality (not just --version)
   - Documented brew test-bot --local workflow in tap README
   - Automated bottle building for macOS 13, macOS 14, Ubuntu
-- 🚧 **Phase 3 Next (P2 - Medium)**: Comprehensive test suite
-  - Docker-based integration tests using testcontainers-rs
-  - Proper test organization by functional domain
-  - CI verification of system integrity
+- ❌ **Phase 3 Not Recommended**: Docker-based integration tests
+  - brew test-bot on CI is sufficient (what Homebrew uses)
+  - CI already tests 3 platforms (macOS 13, 14, Ubuntu)
+  - Docker tests would duplicate brew test-bot functionality
+  - Added complexity with diminishing returns
+  - See ai/TESTING_REMEDIATION.md for full rationale
 
 ## Blockers
 
@@ -234,9 +236,6 @@ None currently. Critical testing infrastructure issues resolved (Phase 1 & 2 com
 
 ## Next Priorities
 
-1. **Testing Phase 3 (P2 - Optional)**: Comprehensive isolated test suite
-   - Docker-based integration tests using testcontainers-rs
-   - Proper test organization by functional domain (like Homebrew's 120+ RSpec files)
-   - Example: tests/integration/install_tests.rs with Docker containers
-2. **Real-world stability testing**: Use bru in production to find edge cases
-3. **Phase 3 planning**: Ruby interop for source builds (~5% remaining formulae)
+1. **Real-world stability testing**: Use bru in production to find edge cases
+2. **Ruby interop (Phase 3)**: Source builds for ~5% of formulae without bottles
+3. **Performance optimization**: Identify bottlenecks in real-world usage
