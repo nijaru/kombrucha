@@ -212,18 +212,18 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Researched Homebrew's testing best practices (testpath, brew test-bot, GitHub Actions)
   - Identified violations: Tests modify real system, no isolation, bad formula test
   - SOTA solution: testcontainers-rs + brew test-bot --local + GitHub Actions
-- ✅ **Phase 1 Complete (P0 - Critical)**: Safe testing infrastructure
+- ✅ **Phase 1 Complete (P0 - Critical)**: Safe testing infrastructure [01e7c75]
   - Deleted dangerous tests/integration_tests.rs
   - Added testcontainers-rs and tempfile for isolated testing
   - Created tests/test_helpers.rs with TestEnvironment
   - Updated CI to verify Homebrew integrity after tests
   - Deprecated docs/architecture/testing-strategy.md
-- ✅ **Phase 2 Complete (P1 - High)**: Proper tap management
+- ✅ **Phase 2 Complete (P1 - High)**: Proper tap management [808aadd in homebrew-tap]
   - Added GitHub Actions workflows to homebrew-tap (tests.yml, publish.yml)
   - Updated formula test block to test actual functionality (not just --version)
   - Documented brew test-bot --local workflow in tap README
   - Automated bottle building for macOS 13, macOS 14, Ubuntu
-- ❌ **Phase 3 Not Recommended**: Docker-based integration tests
+- ❌ **Phase 3 Not Recommended**: Docker-based integration tests [311e4d6]
   - brew test-bot on CI is sufficient (what Homebrew uses)
   - CI already tests 3 platforms (macOS 13, 14, Ubuntu)
   - Docker tests would duplicate brew test-bot functionality
