@@ -60,6 +60,11 @@ chrono = "0.4"
 # In-memory caching
 moka = { version = "0.12", features = ["future"] }
 
+[dev-dependencies]
+# Testing
+tempfile = "3"
+testcontainers = "0.23"
+
 [profile.release]
 opt-level = 3
 lto = true

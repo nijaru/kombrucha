@@ -66,12 +66,24 @@ See `docs/architecture/SPEC.md` for detailed design.
 
 ## Current Focus
 
-See `ai/TODO.md` for active tasks and `ai/STATUS.md` for project state.
+**CRITICAL: Testing Infrastructure Overhaul** (2025-10-24)
 
-**Recent work** (2025-10-21):
-- Fixed upgrade bugs (duplicates, bottle revision false positives)
-- Improved testing (16 tests run automatically)
-- Modernized CLI output (removed decorative symbols)
+Our integration tests caused **system corruption** by directly modifying `/opt/homebrew/Cellar/` without isolation. This corrupted the node binary, mise shims, and Claude Code on Oct 23, 2025.
+
+**Status**: Comprehensive remediation plan completed in `ai/TESTING_REMEDIATION.md`
+
+**What We're Doing Wrong**:
+- Tests modify real system directories (violates Homebrew best practices)
+- No isolation via testcontainers or brew test-bot
+- Formula test block is trivial (`--version` check - Homebrew considers this a "bad test")
+- Missing GitHub Actions workflows for automated bottle building
+
+**Remediation Plan** (State-of-the-Art):
+- Phase 1 (P0): Delete dangerous tests, implement testcontainers-rs for Docker isolation
+- Phase 2 (P1): Add brew test-bot --local workflow, GitHub Actions for bottles
+- Phase 3 (P2): Comprehensive test suite with proper functional domain organization
+
+See `ai/STATUS.md` for detailed status and `ai/TESTING_REMEDIATION.md` for complete plan.
 
 ## Performance
 

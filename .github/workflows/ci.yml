@@ -43,6 +43,19 @@ jobs:
       - name: Run tests
         run: cargo test --release
 
+      - name: Verify system integrity (Homebrew not corrupted)
+        run: |
+          # Ensure tests didn't modify system Homebrew installation
+          if [ -d "/opt/homebrew" ]; then
+            echo "Checking Homebrew integrity..."
+            brew doctor || {
+              echo "❌ ERROR: Tests corrupted Homebrew installation!"
+              echo "This should never happen with proper test isolation."
+              exit 1
+            }
+            echo "✓ Homebrew integrity verified"
+          fi
+
   lint:
     name: Lint
     runs-on: macos-latest
@@ -60,38 +73,11 @@ jobs:
       - name: Run clippy
         run: cargo clippy -- -D warnings -A clippy::collapsible_if -A clippy::single_match -A clippy::useless_format -A clippy::clone_on_copy -A clippy::manual_is_multiple_of -A clippy::double_ended_iterator_last -A clippy::type_complexity
 
-  integration:
-    name: Integration Tests
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-integration-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-git-integration-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache target directory
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-target-integration-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build release binary
-        run: cargo build --release
-
-      - name: Run integration tests
-        run: cargo test --test integration_tests --release -- --ignored --test-threads=1
+  # Integration tests removed - they were causing system corruption
+  # See ai/TESTING_REMEDIATION.md for the new testing strategy using:
+  # - testcontainers-rs for Docker-based integration tests
+  # - brew test-bot --local for formula testing
+  # - Proper test isolation that never touches system directories
 
   build-linux:
     name: Build (Linux)

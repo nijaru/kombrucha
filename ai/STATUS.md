@@ -202,17 +202,40 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ## Active Work
 
-Post-v0.1.4 release:
-- ✅ README polish: User-focused documentation with clear value proposition
-- ✅ Homebrew tap: Created nijaru/homebrew-tap for `brew install nijaru/tap/bru`
-- Real-world stability testing (current)
+**CRITICAL: Testing Infrastructure Overhaul** (2025-10-24):
+- ❌ **System Corruption Incident**: Integration tests corrupted macOS system
+  - Node binary: Kernel code signing failure → SIGKILL on all node/npm commands
+  - mise shims: Replaced with binary garbage instead of shell scripts
+  - Claude Code: Unable to run (SIGKILL)
+  - Root cause: Tests directly modified `/opt/homebrew/Cellar/` without isolation
+- 📋 **Comprehensive Review Complete**: Created ai/TESTING_REMEDIATION.md
+  - Researched Homebrew's testing best practices (testpath, brew test-bot, GitHub Actions)
+  - Identified violations: Tests modify real system, no isolation, bad formula test
+  - SOTA solution: testcontainers-rs + brew test-bot --local + GitHub Actions
+- 🚧 **Remediation Plan**:
+  - Phase 1 (P0): Delete dangerous tests, add testcontainers-rs, Docker isolation
+  - Phase 2 (P1): Proper tap setup with GitHub Actions, brew test-bot --local
+  - Phase 3 (P2): Comprehensive test suite with proper organization
+  - Ready to implement
 
 ## Blockers
 
-None currently. Ready for beta testing.
+**CRITICAL (P0):** Dangerous integration tests must be removed before any further releases
+- `tests/integration_tests.rs` directly modifies system directories
+- Tests have caused system corruption (Oct 23, 2025 incident)
+- Cannot safely run tests until isolation is implemented
 
 ## Next Priorities
 
-1. **Documentation cleanup**: Reorganize internal/ → ai/ and docs/
-2. **More automated tests**: Add tests that run in CI without system modification
-3. **Phase 3 planning**: Ruby interop for source builds (~5% remaining formulae)
+1. **Testing remediation (P0 - CRITICAL)**: Implement Phase 1 from TESTING_REMEDIATION.md
+   - Delete tests/integration_tests.rs immediately
+   - Add testcontainers-rs for isolated integration testing
+   - Add test helpers with proper temp directory isolation
+2. **Tap infrastructure (P1)**: Add GitHub Actions workflows
+   - brew test-bot for automated formula testing
+   - Bottle building and distribution via GitHub Releases
+   - Meaningful formula test block (not just --version)
+3. **Test suite rewrite (P2)**: Comprehensive isolated tests
+   - Docker-based integration tests
+   - Proper test organization by functional domain
+   - CI verification of system integrity
