@@ -1,22 +1,23 @@
 # Project Status
 
-Last updated: 2025-10-23
+Last updated: 2025-10-26
 
 ## Current State
 
-**Version**: 0.1.8 (Beta)
-**Status**: Production-ready for bottle-based workflows
+**Version**: 0.1.11 (Unreleased)
+**Status**: Production-ready with brew fallback for source builds
 
 ### Metrics
 - **Test Coverage**: 92 tests run automatically (8 inline + 70 unit + 14 regression)
 - **Integration Tests**: 10 tests (run in CI on every push, all ignored by default)
 - **Total Tests**: 102 tests (92 passing + 10 ignored)
 - **Command Coverage**: Core user-facing commands fully functional
-- **Bottle-Based Support**: 95% of Homebrew formulae
-- **Source Build Support**: Not implemented (Phase 3)
+- **Bottle-Based Support**: 95% of Homebrew formulae (native)
+- **Source Build Support**: 100% via automatic brew fallback
 
 ### What Works ✅
 - Core package management: install, uninstall, upgrade, reinstall
+- **Source builds**: Automatic brew fallback for formulae without bottles
 - Cask support: macOS application management (DMG, ZIP, PKG)
 - Discovery commands: search, info, deps, uses, list, outdated
 - Repository management: tap, untap, update
@@ -27,7 +28,6 @@ Last updated: 2025-10-23
 - Distribution: Homebrew tap (brew install nijaru/tap/bru)
 
 ### What Doesn't Work ❌
-- Source builds: Formulae without bottles (~1-5%)
 - Development tools: create, audit, livecheck, test (stubs only)
 - CI/internal commands: Not implemented
 
@@ -55,6 +55,16 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 - Property-based checks (deduplication, bottle revision stripping)
 
 ### Recent Changes
+
+**Unreleased** (post-v0.1.10):
+- **Brew Fallback for Source Builds**: Automatic fallback to brew for formulae without bottles [476cedc]
+  - **Feature**: install, upgrade, reinstall now automatically delegate to brew when no bottle available
+  - **User Experience**: Clear messaging: "requires building from source (no bottle available)"
+  - **Implementation**: Added check_brew_available() and fallback_to_brew() helpers
+  - **Rationale**: Long-term solution (same Cellar, compatible receipts, zero maintenance)
+  - **Coverage**: 100% of Homebrew formulae (95% native bottles + 5% brew fallback)
+  - **Design**: Full analysis in ai/FALLBACK_DESIGN.md
+  - Commands updated: install (line ~1115), upgrade (line ~1469), reinstall (line ~1606)
 
 **v0.1.10** (2025-10-23):
 - **CRITICAL DATA LOSS BUG FIXED**: cleanup command was deleting NEWEST versions!
