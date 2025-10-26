@@ -5,6 +5,51 @@ use crate::{download, extract, receipt, symlink};
 use colored::Colorize;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
+use std::process::Command;
+
+/// Check if brew is available for fallback to source builds
+fn check_brew_available() -> bool {
+    Command::new("brew")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Fallback to brew for packages that require source builds
+fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
+    println!(
+        "\n  {} {} requires building from source (no bottle available)",
+        "ℹ".blue(),
+        formula_name.bold()
+    );
+
+    if !check_brew_available() {
+        println!(
+            "  {} brew is not installed - cannot build from source",
+            "✗".red()
+        );
+        println!(
+            "  {} Install Homebrew or use a formula with bottles",
+            "ℹ".blue()
+        );
+        return Err(anyhow::anyhow!("brew not available for source build").into());
+    }
+
+    println!("  {} Falling back to {}...", "→".dimmed(), format!("brew {}", command).cyan());
+
+    let status = Command::new("brew")
+        .arg(command)
+        .arg(formula_name)
+        .status()?;
+
+    if status.success() {
+        println!("  {} Installed {} via brew", "✓".green(), formula_name.bold());
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("brew {} failed for {}", command, formula_name).into())
+    }
+}
 
 pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
     // Detect if stdout is a TTY (for brew-compatible behavior)
@@ -1066,12 +1111,22 @@ pub async fn install(
         let bottle_path = match download_map.get(&formula.name) {
             Some(path) => path,
             None => {
-                println!(
-                    "  {} Skipping {} (no bottle)",
-                    "⚠".yellow(),
-                    formula.name.bold()
-                );
-                continue;
+                // No bottle available - fall back to brew for source build
+                match fallback_to_brew("install", &formula.name) {
+                    Ok(_) => {
+                        // Successfully installed via brew, continue to next package
+                        continue;
+                    }
+                    Err(e) => {
+                        println!(
+                            "  {} Failed to install {}: {}",
+                            "✗".red(),
+                            formula.name.bold(),
+                            e
+                        );
+                        continue;
+                    }
+                }
             }
         };
 
@@ -1407,7 +1462,29 @@ pub async fn upgrade(
         symlink::unlink_formula(formula_name, old_version)?;
 
         // Download new version
-        let bottle_path = download::download_bottle(&formula, None).await?;
+        let bottle_path = match download::download_bottle(&formula, None).await {
+            Ok(path) => path,
+            Err(_) => {
+                // No bottle available - fall back to brew for source build
+                match fallback_to_brew("upgrade", formula_name) {
+                    Ok(_) => {
+                        // Successfully upgraded via brew, continue to next package
+                        continue;
+                    }
+                    Err(e) => {
+                        println!(
+                            "  {} Failed to upgrade {}: {}",
+                            "✗".red(),
+                            formula_name.bold(),
+                            e
+                        );
+                        // Re-link old version since we unlinked it
+                        let _ = symlink::link_formula(formula_name, old_version);
+                        continue;
+                    }
+                }
+            }
+        };
 
         // Install new version
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
@@ -1522,7 +1599,28 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula.name))?;
 
         // Download bottle
-        let bottle_path = download::download_bottle(&formula, None).await?;
+        let bottle_path = match download::download_bottle(&formula, None).await {
+            Ok(path) => path,
+            Err(_) => {
+                // No bottle available - fall back to brew for source build
+                match fallback_to_brew("reinstall", formula_name) {
+                    Ok(_) => {
+                        // Successfully reinstalled via brew, continue to next package
+                        actually_reinstalled += 1;
+                        continue;
+                    }
+                    Err(e) => {
+                        println!(
+                            "  {} Failed to reinstall {}: {}",
+                            "✗".red(),
+                            formula_name.bold(),
+                            e
+                        );
+                        continue;
+                    }
+                }
+            }
+        };
 
         // Install with NEW version
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
