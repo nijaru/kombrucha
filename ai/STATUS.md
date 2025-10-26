@@ -202,7 +202,14 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ## Active Work
 
-**Testing Infrastructure Overhaul** (2025-10-24):
+**Real-World Validation** (2025-10-24):
+- 📋 Created comprehensive testing checklist (ai/REAL_WORLD_TESTING.md)
+- 🎯 Goal: Use bru daily for 1-2 weeks to validate core functionality
+- 📝 Document: bugs, performance issues, edge cases
+- ⏸️ **Source builds deferred** - Validate 95% bottle-based functionality first
+- ✅ Testing infrastructure now safe and follows Homebrew best practices
+
+**Testing Infrastructure Overhaul** (2025-10-24 - COMPLETE):
 - ❌ **System Corruption Incident**: Integration tests corrupted macOS system (Oct 23)
   - Node binary: Kernel code signing failure → SIGKILL on all node/npm commands
   - mise shims: Replaced with binary garbage instead of shell scripts
@@ -236,6 +243,10 @@ None currently. Critical testing infrastructure issues resolved (Phase 1 & 2 com
 
 ## Next Priorities
 
-1. **Real-world stability testing**: Use bru in production to find edge cases
-2. **Ruby interop (Phase 3)**: Source builds for ~5% of formulae without bottles
-3. **Performance optimization**: Identify bottlenecks in real-world usage
+1. **Real-world testing (CURRENT)**: Use bru daily for 1-2 weeks (see ai/REAL_WORLD_TESTING.md)
+   - Test all core operations (install, upgrade, cleanup)
+   - Document bugs, performance issues, edge cases
+   - Validate edge case handling (bottle revisions, keg-only, etc.)
+2. **Bug fixes**: Address issues found during real-world testing
+3. **Performance optimization**: Profile and fix any bottlenecks discovered
+4. **Source builds (DEFERRED)**: Only after 95% bottle-based functionality is validated
