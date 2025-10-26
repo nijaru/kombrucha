@@ -36,7 +36,11 @@ fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
         return Err(anyhow::anyhow!("brew not available for source build").into());
     }
 
-    println!("  {} Falling back to {}...", "→".dimmed(), format!("brew {}", command).cyan());
+    println!(
+        "  {} Falling back to {}...",
+        "→".dimmed(),
+        format!("brew {}", command).cyan()
+    );
 
     let status = Command::new("brew")
         .arg(command)
@@ -44,7 +48,11 @@ fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
         .status()?;
 
     if status.success() {
-        println!("  {} Installed {} via brew", "✓".green(), formula_name.bold());
+        println!(
+            "  {} Installed {} via brew",
+            "✓".green(),
+            formula_name.bold()
+        );
         Ok(())
     } else {
         Err(anyhow::anyhow!("brew {} failed for {}", command, formula_name).into())

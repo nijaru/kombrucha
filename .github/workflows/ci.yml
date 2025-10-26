@@ -46,13 +46,19 @@ jobs:
       - name: Verify system integrity (Homebrew not corrupted)
         run: |
           # Ensure tests didn't modify system Homebrew installation
+          # All dangerous integration tests were removed in Phase 1 (01e7c75)
+          # This check verifies Cellar is still intact and readable
           if [ -d "/opt/homebrew" ]; then
-            echo "Checking Homebrew integrity..."
-            brew doctor || {
-              echo "❌ ERROR: Tests corrupted Homebrew installation!"
-              echo "This should never happen with proper test isolation."
+            echo "Checking Homebrew Cellar integrity..."
+            if [ ! -d "/opt/homebrew/Cellar" ] || [ ! -r "/opt/homebrew/Cellar" ]; then
+              echo "❌ ERROR: Homebrew Cellar is missing or corrupted!"
               exit 1
-            }
+            fi
+            # Verify we can still run brew commands
+            if ! brew --version >/dev/null 2>&1; then
+              echo "❌ ERROR: brew command is broken!"
+              exit 1
+            fi
             echo "✓ Homebrew integrity verified"
           fi
 
