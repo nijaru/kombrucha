@@ -2597,7 +2597,9 @@ pub fn doctor() -> Result<()> {
                 };
 
                 if !resolved.exists() {
-                    broken_links.push(path.file_name().unwrap().to_string_lossy().to_string());
+                    if let Some(name) = path.file_name() {
+                        broken_links.push(name.to_string_lossy().to_string());
+                    }
                 }
             }
         }
@@ -3514,15 +3516,17 @@ pub fn log(formula_name: &str) -> Result<()> {
                     };
 
                     if resolved_target.starts_with(&install_path) {
-                        println!(
-                            "  {} {}",
-                            path.file_name().unwrap().to_string_lossy().cyan(),
-                            format!("-> {}", target.display()).dimmed()
-                        );
-                        file_count += 1;
-                        if file_count >= 10 {
-                            println!("  {} (showing first 10)", "...".dimmed());
-                            break;
+                        if let Some(name) = path.file_name() {
+                            println!(
+                                "  {} {}",
+                                name.to_string_lossy().cyan(),
+                                format!("-> {}", target.display()).dimmed()
+                            );
+                            file_count += 1;
+                            if file_count >= 10 {
+                                println!("  {} (showing first 10)", "...".dimmed());
+                                break;
+                            }
                         }
                     }
                 }
@@ -4064,12 +4068,13 @@ pub fn create(url: &str, name: Option<&str>) -> Result<()> {
     println!("  {}: {}", "Name".bold(), formula_name.cyan());
 
     // Generate basic formula template (capitalize first letter)
-    let class_name = if formula_name.len() > 1 {
+    let class_name = {
         let mut chars = formula_name.chars();
-        let first = chars.next().unwrap().to_uppercase().to_string();
-        first + chars.as_str()
-    } else {
-        formula_name.to_uppercase()
+        if let Some(first_char) = chars.next() {
+            first_char.to_uppercase().to_string() + chars.as_str()
+        } else {
+            formula_name.to_uppercase()
+        }
     };
     let homepage_base =
         url.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.' || c == '-' || c == '/');
@@ -4353,7 +4358,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         // Handle different file types
         let filename = download_path
             .file_name()
-            .unwrap()
+            .ok_or_else(|| anyhow::anyhow!("Invalid download path: no filename"))?
             .to_string_lossy()
             .to_lowercase();
 
@@ -4750,14 +4755,11 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
             }
         } else {
             // Fallback: guess app name from cask name (capitalize first letter)
-            if cask_name.is_empty() {
-                vec![]
-            } else if cask_name.len() == 1 {
-                vec![format!("{}.app", cask_name.to_uppercase())]
+            let mut chars = cask_name.chars();
+            if let Some(first_char) = chars.next() {
+                vec![format!("{}.app", first_char.to_uppercase().to_string() + chars.as_str())]
             } else {
-                let mut chars = cask_name.chars();
-                let first = chars.next().unwrap().to_uppercase().to_string();
-                vec![format!("{}.app", first + chars.as_str())]
+                vec![]
             }
         };
 
@@ -5179,16 +5181,17 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     let version = &versions[0].version;
 
     // If no new tap specified, show information about current tap
-    if new_tap.is_none() {
-        println!("\n {} Migration information:", "ℹ".blue());
-        println!("  Formula: {} {}", formula_name.bold(), version.dimmed());
-        println!("  Currently installed from: {}", "homebrew/core".cyan());
-        println!("\nTo migrate to a different tap, use:");
-        println!("  {} --tap <tap-name>", "bru migrate".cyan());
-        return Ok(());
-    }
-
-    let tap = new_tap.unwrap();
+    let tap = match new_tap {
+        Some(t) => t,
+        None => {
+            println!("\n {} Migration information:", "ℹ".blue());
+            println!("  Formula: {} {}", formula_name.bold(), version.dimmed());
+            println!("  Currently installed from: {}", "homebrew/core".cyan());
+            println!("\nTo migrate to a different tap, use:");
+            println!("  {} --tap <tap-name>", "bru migrate".cyan());
+            return Ok(());
+        }
+    };
 
     println!("  Migrating {} to tap: {}", formula_name, tap.cyan());
     println!("\n {} Migration is a metadata operation only", "ℹ".blue());
@@ -5259,11 +5262,13 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                             let stdout = String::from_utf8_lossy(&output.stdout);
 
                             if show_all {
-                                println!("  {}:", path.file_name().unwrap().to_string_lossy());
-                                for line in stdout.lines().skip(1) {
-                                    let trimmed = line.trim();
-                                    if !trimmed.is_empty() {
-                                        println!("    {}", trimmed.dimmed());
+                                if let Some(name) = path.file_name() {
+                                    println!("  {}:", name.to_string_lossy());
+                                    for line in stdout.lines().skip(1) {
+                                        let trimmed = line.trim();
+                                        if !trimmed.is_empty() {
+                                            println!("    {}", trimmed.dimmed());
+                                        }
                                     }
                                 }
                             }
@@ -5420,13 +5425,13 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
         // This is a simplified search - real implementation would be more thorough
     }
 
-    if formula_path.is_none() {
-        println!("{} Formula not found: {}", "✗".red(), formula_name);
-        return Ok(());
-    }
-
-    let formula_path = formula_path.unwrap();
-    let source_tap = source_tap.unwrap();
+    let (formula_path, source_tap) = match (formula_path, source_tap) {
+        (Some(path), Some(tap)) => (path, tap),
+        _ => {
+            println!("{} Formula not found: {}", "✗".red(), formula_name);
+            return Ok(());
+        }
+    };
 
     println!("  {} Found in: {}", "✓".green(), source_tap.cyan());
 

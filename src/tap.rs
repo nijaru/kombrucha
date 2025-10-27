@@ -104,8 +104,12 @@ pub fn tap(tap_name: &str) -> Result<()> {
     // Clone the repository
     let git_url = format!("https://github.com/{}/{}.git", user, repo);
 
+    let tap_dir_str = tap_dir
+        .to_str()
+        .ok_or_else(|| anyhow!("Tap directory path contains invalid UTF-8"))?;
+
     let output = Command::new("git")
-        .args(["clone", "--depth", "1", &git_url, tap_dir.to_str().unwrap()])
+        .args(["clone", "--depth", "1", &git_url, tap_dir_str])
         .output()
         .context("Failed to execute git clone")?;
 
