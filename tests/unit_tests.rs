@@ -1048,7 +1048,7 @@ mod edge_case_tests {
         // Test the pattern used in commands.rs:4069 and commands.rs:4759
         // Previously: chars().next().unwrap() - would panic on empty string
         // Now: if-let pattern handles gracefully
-        
+
         let empty_name = "";
         let result = {
             let mut chars = empty_name.chars();
@@ -1117,7 +1117,7 @@ mod edge_case_tests {
     #[test]
     fn test_path_to_str_invalid_utf8() {
         use std::path::PathBuf;
-        
+
         // Test the pattern used in tap.rs:108
         // Previously: path.to_str().unwrap() - would panic on invalid UTF-8
         // Now: .ok_or_else() handles gracefully
@@ -1125,7 +1125,7 @@ mod edge_case_tests {
         // Normal UTF-8 path
         let normal_path = PathBuf::from("/usr/local/test");
         assert!(normal_path.to_str().is_some());
-        
+
         // Note: Creating truly invalid UTF-8 paths on macOS/Unix is difficult
         // as the filesystem usually enforces UTF-8. This test documents the pattern.
     }

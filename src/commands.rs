@@ -2573,7 +2573,11 @@ pub fn doctor() -> Result<()> {
         _ => {
             println!("  {} git is not installed or not in PATH", "✗".red());
             println!("    {} git is required for tap management", "ℹ".blue());
-            println!("    {} Install with: {}", "→".dimmed(), "brew install git".cyan());
+            println!(
+                "    {} Install with: {}",
+                "→".dimmed(),
+                "brew install git".cyan()
+            );
             issues += 1;
         }
     }
@@ -4758,7 +4762,10 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
             // Fallback: guess app name from cask name (capitalize first letter)
             let mut chars = cask_name.chars();
             if let Some(first_char) = chars.next() {
-                vec![format!("{}.app", first_char.to_uppercase().to_string() + chars.as_str())]
+                vec![format!(
+                    "{}.app",
+                    first_char.to_uppercase().to_string() + chars.as_str()
+                )]
             } else {
                 vec![]
             }
