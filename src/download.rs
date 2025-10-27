@@ -111,11 +111,11 @@ pub async fn download_bottle(
         pb.set_style(
             ProgressStyle::default_bar()
                 .template(
-                    "{msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
+                    "{msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
                 )?
-                .progress_chars("#>-"),
+                .progress_chars("━━╸"),
         );
-        pb.set_message(format!("⬇ {}", formula.name));
+        pb.set_message(format!("Downloading {}", formula.name));
         Some(pb)
     } else {
         None

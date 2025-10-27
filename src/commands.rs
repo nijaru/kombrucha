@@ -39,8 +39,7 @@ fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
     }
 
     println!(
-        "  {} Falling back to {}...",
-        "→".dimmed(),
+        "  Falling back to {}...",
         format!("brew {}", command).cyan()
     );
 
@@ -797,8 +796,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         if show_versions {
             let count = outdated_casks.len();
             println!(
-                "\n{} {} outdated {} found",
-                "→".cyan(),
+                "\n{} outdated {} found",
                 count.to_string().bold(),
                 if count == 1 { "cask" } else { "casks" }
             );
@@ -886,8 +884,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         if show_versions {
             let count = outdated_packages.len();
             println!(
-                "\n{} {} outdated {} found",
-                "→".cyan(),
+                "\n{} outdated {} found",
                 count.to_string().bold(),
                 if count == 1 { "package" } else { "packages" }
             );
@@ -3376,7 +3373,7 @@ pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
                 println!(
                     "{} {} {}",
                     alias_name.cyan().bold(),
-                    format!("→ {}", formula_name).dimmed(),
+                    format!("-> {}", formula_name).dimmed(),
                     format!("({})", desc).dimmed()
                 );
             }
@@ -3520,7 +3517,7 @@ pub fn log(formula_name: &str) -> Result<()> {
                         println!(
                             "  {} {}",
                             path.file_name().unwrap().to_string_lossy().cyan(),
-                            format!("→ {}", target.display()).dimmed()
+                            format!("-> {}", target.display()).dimmed()
                         );
                         file_count += 1;
                         if file_count >= 10 {
