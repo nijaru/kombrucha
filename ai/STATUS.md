@@ -70,6 +70,28 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Pre-existing runner warnings no longer fail builds
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
+**Unreleased** (post-v0.1.11, 2025-10-26):
+- **UX Polish**: Final refinements to progress indicators and symbols [5736f97]
+  - Removed arrow symbols (⬇ →) from output for cleaner appearance
+  - Improved progress bar with Unicode blocks (━━╸ instead of #>-)
+  - Simplified download messages: "Downloading wget" instead of "⬇ wget"
+  - Changed relationship indicators to ASCII (->) for better compatibility
+- **Quiet Mode**: Added --quiet/-q flag and BRU_QUIET env var [17f41aa]
+  - Suppresses progress bars and spinners
+  - ProgressBar::hidden() for quiet mode
+  - Respects user preference for minimal output
+- **Progress Indicators**: Enhanced UX for long-running operations [cf7067d]
+  - Dependency resolution spinner with status messages
+  - Install counter showing progress (Installing 3/10...)
+  - Modern spinner characters (⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏)
+- **Code Quality**:
+  - Added profiling support (debug = true in release profile)
+  - Created flamegraph.svg for performance analysis
+  - Identified 9 edge-case unwrap() calls for future fixing
+  - Documented UX best practices in ai/UX_AUDIT.md
+  - Comprehensive code review in ai/CODE_REVIEW.md
+  - Performance profile analysis in ai/PERFORMANCE_PROFILE.md
+
 **v0.1.10** (2025-10-23):
 - **CRITICAL DATA LOSS BUG FIXED**: cleanup command was deleting NEWEST versions!
   - **Discovered**: User testing revealed cleanup kept v1.7.0 and deleted v1.8.1

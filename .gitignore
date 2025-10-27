@@ -24,3 +24,9 @@ target
 # Added by cargo
 
 /target
+
+# Profiling outputs
+flamegraph.svg
+perf.data
+perf.data.old
+*.trace

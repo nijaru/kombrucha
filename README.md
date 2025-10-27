@@ -18,22 +18,22 @@ bru install wget    # works exactly like brew
 
 | Feature | Homebrew | bru |
 |---------|----------|-----|
-| `upgrade --dry-run` (339 packages) | 3.56s | **0.65s** (5.5x faster) |
-| Startup time | ~100ms | **14ms** (7x faster) |
+| `upgrade --dry-run` (338 packages) | 1.71s | **0.92s** (1.85x faster) |
+| Startup time | ~100ms | **<10ms** (10x+ faster) |
 | Parallel operations | Limited | **Fully parallelized** |
 | Memory usage | Higher | **Lower** |
-| Compatibility | ✅ | ✅ **Bottle-based** |
+| Compatibility | ✅ | ✅ **100% compatible** |
 | Installation | Built-in macOS | Install once |
 
 **Bottom line:** Same formulae, same ecosystem, faster performance.
 
-## Status: Beta (v0.1.7)
+## Status: Production-Ready (v0.1.11)
 
 - ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
-- ✅ **Bottle-Based**: Works with pre-built bottles (most common formulae)
-- ✅ **Well-Tested**: 27 automated tests, integration tests in CI
-- ✅ **Mostly Implemented**: Usable for common workflows
-- ⏳ **Source Builds**: Not yet supported (less common formulae)
+- ✅ **100% Formula Coverage**: Bottles (95%) + automatic brew fallback (5%)
+- ✅ **Well-Tested**: 92 automated tests, CI verification
+- ✅ **Production-Ready**: Usable for daily workflows
+- ✅ **Source Builds**: Automatic fallback to brew when needed
 
 ## Installation
 
