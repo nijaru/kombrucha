@@ -132,18 +132,20 @@ pub fn list_all_services() -> Result<Vec<ServiceInfo>> {
         let path = entry.path();
 
         if let Some(filename) = path.file_name().and_then(|f| f.to_str())
-            && filename.starts_with("homebrew.mxcl.") && filename.ends_with(".plist") {
-                // Extract formula name from filename
-                let formula_name = filename
-                    .strip_prefix("homebrew.mxcl.")
-                    .and_then(|s| s.strip_suffix(".plist"))
-                    .unwrap_or("");
+            && filename.starts_with("homebrew.mxcl.")
+            && filename.ends_with(".plist")
+        {
+            // Extract formula name from filename
+            let formula_name = filename
+                .strip_prefix("homebrew.mxcl.")
+                .and_then(|s| s.strip_suffix(".plist"))
+                .unwrap_or("");
 
-                if !formula_name.is_empty() {
-                    let info = get_service_status(formula_name)?;
-                    services.push(info);
-                }
+            if !formula_name.is_empty() {
+                let info = get_service_status(formula_name)?;
+                services.push(info);
             }
+        }
     }
 
     // Also check installed formulae that might have services

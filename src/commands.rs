@@ -757,9 +757,10 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 async move {
                     if let Ok(cask) = api.fetch_cask(&token).await
                         && let Some(latest) = &cask.version
-                            && latest != &installed_version {
-                                return Some((token, installed_version, latest.clone()));
-                            }
+                        && latest != &installed_version
+                    {
+                        return Some((token, installed_version, latest.clone()));
+                    }
                     None
                 }
             })
@@ -816,12 +817,12 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                     if let (Ok(existing_meta), Ok(pkg_meta)) = (
                         std::fs::metadata(&existing.path),
                         std::fs::metadata(&pkg.path),
-                    )
-                        && let (Ok(existing_time), Ok(pkg_time)) =
-                            (existing_meta.modified(), pkg_meta.modified())
-                            && pkg_time > existing_time {
-                                *existing = pkg.clone();
-                            }
+                    ) && let (Ok(existing_time), Ok(pkg_time)) =
+                        (existing_meta.modified(), pkg_meta.modified())
+                        && pkg_time > existing_time
+                    {
+                        *existing = pkg.clone();
+                    }
                 })
                 .or_insert(pkg);
         }
@@ -833,15 +834,16 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
             .iter()
             .map(|pkg| async move {
                 if let Ok(formula) = api.fetch_formula(&pkg.name).await
-                    && let Some(latest) = &formula.versions.stable {
-                        // Strip bottle revisions before comparison
-                        let installed_stripped = strip_bottle_revision(&pkg.version);
-                        let latest_stripped = strip_bottle_revision(latest);
+                    && let Some(latest) = &formula.versions.stable
+                {
+                    // Strip bottle revisions before comparison
+                    let installed_stripped = strip_bottle_revision(&pkg.version);
+                    let latest_stripped = strip_bottle_revision(latest);
 
-                        if installed_stripped != latest_stripped {
-                            return Some((pkg.clone(), latest.clone()));
-                        }
+                    if installed_stripped != latest_stripped {
+                        return Some((pkg.clone(), latest.clone()));
                     }
+                }
                 None
             })
             .collect();
@@ -1044,9 +1046,10 @@ pub async fn install(
             .map(|f| {
                 // Try to get the installed version
                 if let Ok(versions) = cellar::get_installed_versions(&f.name)
-                    && let Some(first) = versions.first() {
-                        return format!("{} {}", f.name, first.version.dimmed());
-                    }
+                    && let Some(first) = versions.first()
+                {
+                    return format!("{} {}", f.name, first.version.dimmed());
+                }
                 f.name.clone()
             })
             .collect();
@@ -1360,12 +1363,12 @@ pub async fn upgrade(
                     if let (Ok(existing_meta), Ok(pkg_meta)) = (
                         std::fs::metadata(&existing.path),
                         std::fs::metadata(&pkg.path),
-                    )
-                        && let (Ok(existing_time), Ok(pkg_time)) =
-                            (existing_meta.modified(), pkg_meta.modified())
-                            && pkg_time > existing_time {
-                                *existing = pkg.clone();
-                            }
+                    ) && let (Ok(existing_time), Ok(pkg_time)) =
+                        (existing_meta.modified(), pkg_meta.modified())
+                        && pkg_time > existing_time
+                    {
+                        *existing = pkg.clone();
+                    }
                 })
                 .or_insert(pkg);
         }
@@ -2586,9 +2589,10 @@ pub fn doctor() -> Result<()> {
                 };
 
                 if !resolved.exists()
-                    && let Some(name) = path.file_name() {
-                        broken_links.push(name.to_string_lossy().to_string());
-                    }
+                    && let Some(name) = path.file_name()
+                {
+                    broken_links.push(name.to_string_lossy().to_string());
+                }
             }
         }
     }
@@ -2693,12 +2697,12 @@ pub fn leaves() -> Result<()> {
                 if let (Ok(existing_meta), Ok(pkg_meta)) = (
                     std::fs::metadata(&existing.path),
                     std::fs::metadata(&pkg.path),
-                )
-                    && let (Ok(existing_time), Ok(pkg_time)) =
-                        (existing_meta.modified(), pkg_meta.modified())
-                        && pkg_time > existing_time {
-                            *existing = pkg.clone();
-                        }
+                ) && let (Ok(existing_time), Ok(pkg_time)) =
+                    (existing_meta.modified(), pkg_meta.modified())
+                    && pkg_time > existing_time
+                {
+                    *existing = pkg.clone();
+                }
             })
             .or_insert(pkg);
     }
@@ -3489,31 +3493,33 @@ pub fn log(formula_name: &str) -> Result<()> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_symlink()
-                && let Ok(target) = std::fs::read_link(&path) {
-                    // Resolve relative symlinks to absolute paths
-                    let resolved_target = if target.is_absolute() {
-                        target.clone()
-                    } else {
-                        bin_dir
-                            .join(&target)
-                            .canonicalize()
-                            .unwrap_or(target.clone())
-                    };
+                && let Ok(target) = std::fs::read_link(&path)
+            {
+                // Resolve relative symlinks to absolute paths
+                let resolved_target = if target.is_absolute() {
+                    target.clone()
+                } else {
+                    bin_dir
+                        .join(&target)
+                        .canonicalize()
+                        .unwrap_or(target.clone())
+                };
 
-                    if resolved_target.starts_with(&install_path)
-                        && let Some(name) = path.file_name() {
-                            println!(
-                                "  {} {}",
-                                name.to_string_lossy().cyan(),
-                                format!("-> {}", target.display()).dimmed()
-                            );
-                            file_count += 1;
-                            if file_count >= 10 {
-                                println!("  {} (showing first 10)", "...".dimmed());
-                                break;
-                            }
-                        }
+                if resolved_target.starts_with(&install_path)
+                    && let Some(name) = path.file_name()
+                {
+                    println!(
+                        "  {} {}",
+                        name.to_string_lossy().cyan(),
+                        format!("-> {}", target.display()).dimmed()
+                    );
+                    file_count += 1;
+                    if file_count >= 10 {
+                        println!("  {} (showing first 10)", "...".dimmed());
+                        break;
+                    }
                 }
+            }
         }
     }
 
@@ -3550,26 +3556,28 @@ pub fn which_formula(command: &str) -> Result<()> {
 
     // Check if it's a symlink
     if command_path.is_symlink()
-        && let Ok(target) = std::fs::read_link(&command_path) {
-            // Resolve to absolute path
-            let resolved = if target.is_absolute() {
-                target
-            } else {
-                bin_dir.join(&target).canonicalize().unwrap_or(target)
-            };
+        && let Ok(target) = std::fs::read_link(&command_path)
+    {
+        // Resolve to absolute path
+        let resolved = if target.is_absolute() {
+            target
+        } else {
+            bin_dir.join(&target).canonicalize().unwrap_or(target)
+        };
 
-            // Extract formula name from Cellar path
-            let cellar_path = cellar::cellar_path();
-            if resolved.starts_with(&cellar_path)
-                && let Ok(rel_path) = resolved.strip_prefix(&cellar_path)
-                    && let Some(formula_name) = rel_path.components().next() {
-                        println!(
-                            "\n{}",
-                            formula_name.as_os_str().to_string_lossy().green().bold()
-                        );
-                        return Ok(());
-                    }
+        // Extract formula name from Cellar path
+        let cellar_path = cellar::cellar_path();
+        if resolved.starts_with(&cellar_path)
+            && let Ok(rel_path) = resolved.strip_prefix(&cellar_path)
+            && let Some(formula_name) = rel_path.components().next()
+        {
+            println!(
+                "\n{}",
+                formula_name.as_os_str().to_string_lossy().green().bold()
+            );
+            return Ok(());
         }
+    }
 
     println!(
         "\n{} Could not determine formula for '{}'",
@@ -4268,9 +4276,10 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         .map(|name| async move {
             // Check if already installed
             if crate::cask::is_cask_installed(name)
-                && let Some(version) = crate::cask::get_installed_cask_version(name) {
-                    return (name.clone(), Err(format!("Already installed: {}", version)));
-                }
+                && let Some(version) = crate::cask::get_installed_cask_version(name)
+            {
+                return (name.clone(), Err(format!("Already installed: {}", version)));
+            }
 
             match api.fetch_cask(name).await {
                 Ok(c) => (name.clone(), Ok(c)),
@@ -4643,9 +4652,10 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 async move {
                     if let Ok(cask) = api.fetch_cask(&token).await
                         && let Some(latest) = &cask.version
-                            && latest != &installed_version {
-                                return Some(token);
-                            }
+                        && latest != &installed_version
+                    {
+                        return Some(token);
+                    }
                     None
                 }
             })
@@ -5003,10 +5013,9 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         .into_iter()
         .filter(|f| {
             // If specific formulae requested, only check those
-            if !formula_names.is_empty()
-                && !formula_names.contains(&f.name) {
-                    return false;
-                }
+            if !formula_names.is_empty() && !formula_names.contains(&f.name) {
+                return false;
+            }
 
             // Check if formula has no bottle
             f.bottle.is_none()
@@ -5222,54 +5231,53 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
         // Check bin/ directory
         let bin_dir = formula_path.join("bin");
         if bin_dir.exists()
-            && let Ok(entries) = std::fs::read_dir(&bin_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file() {
-                        checked_files += 1;
+            && let Ok(entries) = std::fs::read_dir(&bin_dir)
+        {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    checked_files += 1;
 
-                        // Use otool to check linkages on macOS
-                        let output = std::process::Command::new("otool")
-                            .arg("-L")
-                            .arg(&path)
-                            .output();
+                    // Use otool to check linkages on macOS
+                    let output = std::process::Command::new("otool")
+                        .arg("-L")
+                        .arg(&path)
+                        .output();
 
-                        if let Ok(output) = output {
-                            let stdout = String::from_utf8_lossy(&output.stdout);
+                    if let Ok(output) = output {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
 
-                            if show_all
-                                && let Some(name) = path.file_name() {
-                                    println!("  {}:", name.to_string_lossy());
-                                    for line in stdout.lines().skip(1) {
-                                        let trimmed = line.trim();
-                                        if !trimmed.is_empty() {
-                                            println!("    {}", trimmed.dimmed());
-                                        }
-                                    }
+                        if show_all && let Some(name) = path.file_name() {
+                            println!("  {}:", name.to_string_lossy());
+                            for line in stdout.lines().skip(1) {
+                                let trimmed = line.trim();
+                                if !trimmed.is_empty() {
+                                    println!("    {}", trimmed.dimmed());
                                 }
-
-                            // Check for broken links (simplified)
-                            if stdout.contains("dyld:") || stdout.contains("not found") {
-                                broken_links += 1;
                             }
+                        }
+
+                        // Check for broken links (simplified)
+                        if stdout.contains("dyld:") || stdout.contains("not found") {
+                            broken_links += 1;
                         }
                     }
                 }
             }
+        }
 
         // Check lib/ directory
         let lib_dir = formula_path.join("lib");
         if lib_dir.exists()
-            && let Ok(entries) = std::fs::read_dir(&lib_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file()
-                        && (path.extension().and_then(|s| s.to_str()) == Some("dylib"))
-                    {
-                        checked_files += 1;
-                    }
+            && let Ok(entries) = std::fs::read_dir(&lib_dir)
+        {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && (path.extension().and_then(|s| s.to_str()) == Some("dylib")) {
+                    checked_files += 1;
                 }
             }
+        }
 
         if checked_files == 0 {
             println!("  {} No linkable files found", "ℹ".blue());

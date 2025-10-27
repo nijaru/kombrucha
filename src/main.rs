@@ -867,13 +867,15 @@ async fn run() -> anyhow::Result<()> {
     std::panic::set_hook(Box::new(move |panic_info| {
         // Check if this is a broken pipe error
         if let Some(s) = panic_info.payload().downcast_ref::<String>()
-            && s.contains("Broken pipe") {
-                std::process::exit(0);
-            }
+            && s.contains("Broken pipe")
+        {
+            std::process::exit(0);
+        }
         if let Some(s) = panic_info.payload().downcast_ref::<&str>()
-            && s.contains("Broken pipe") {
-                std::process::exit(0);
-            }
+            && s.contains("Broken pipe")
+        {
+            std::process::exit(0);
+        }
         // Otherwise, use the default panic handler
         default_panic(panic_info);
     }));
