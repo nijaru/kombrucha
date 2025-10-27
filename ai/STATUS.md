@@ -71,6 +71,12 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
 **Unreleased** (post-v0.1.11, 2025-10-26):
+- **Robustness Improvements**: Eliminated all edge-case unwrap() calls [f071069]
+  - Fixed 9 problematic unwraps (path handling, empty strings, option unwrapping)
+  - Better error messages for invalid UTF-8 paths, empty formula names
+  - No more panics on edge-case inputs
+  - Reduced unwraps from 20 to 10 (all remaining are safe)
+  - All 84 tests passing (70 unit + 14 regression)
 - **UX Polish**: Final refinements to progress indicators and symbols [5736f97]
   - Removed arrow symbols (⬇ →) from output for cleaner appearance
   - Improved progress bar with Unicode blocks (━━╸ instead of #>-)
@@ -84,10 +90,9 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Dependency resolution spinner with status messages
   - Install counter showing progress (Installing 3/10...)
   - Modern spinner characters (⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏)
-- **Code Quality**:
+- **Code Quality**: Comprehensive audit and improvements [b2d8c94]
   - Added profiling support (debug = true in release profile)
   - Created flamegraph.svg for performance analysis
-  - Identified 9 edge-case unwrap() calls for future fixing
   - Documented UX best practices in ai/UX_AUDIT.md
   - Comprehensive code review in ai/CODE_REVIEW.md
   - Performance profile analysis in ai/PERFORMANCE_PROFILE.md

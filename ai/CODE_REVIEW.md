@@ -26,24 +26,21 @@
 
 ## Code Quality Issues
 
-### 1. Unwrap() Calls (20 total)
+### 1. Unwrap() Calls (10 remaining, all safe) ✅
 
-**Safe unwraps** (tests, valid assumptions): 10
-- Tests: `tap.rs:148, 152, 165`, `platform.rs:77`
-- Safe assumptions: `api.rs:254-255`, `receipt.rs:76`, `commands.rs:1215`, `download.rs:203`
+**All edge-case unwraps fixed** (f071069):
+- ✅ `tap.rs:108` - Now returns error on invalid UTF-8
+- ✅ `commands.rs:2600, 3519, 5262` - Now use if-let pattern
+- ✅ `commands.rs:4069, 4759` - Now handle empty strings
+- ✅ `commands.rs:4356` - Now returns error if no filename
+- ✅ `commands.rs:5191, 5428-5429` - Now use match patterns
 
-**Potentially problematic** (edge cases): 9
-1. `tap.rs:108` - `Path::to_str().unwrap()` - fails on invalid UTF-8
-2. `commands.rs:2600` - `file_name().unwrap()` - fails on ".." or "/"
-3. `commands.rs:3519` - `file_name().unwrap()` - same issue
-4. `commands.rs:4069` - `chars().next().unwrap()` - fails on empty string (KNOWN BUG - fixed in recent work)
-5. `commands.rs:4356` - `file_name().unwrap()` - fails on edge case paths
-6. `commands.rs:4759` - `chars().next().unwrap()` - same as #4
-7. `commands.rs:5191` - `new_tap.unwrap()` - after match, should use if-let
-8. `commands.rs:5262` - `file_name().unwrap()` - same as #2
-9. `commands.rs:5428-5429` - Two unwraps - should use if-let or ?
+**Remaining unwraps (10 total, all safe)**:
+- Tests: `tap.rs:152, 156, 169`, `platform.rs:77` (4 unwraps)
+- Semaphore: `download.rs:203` - acquire() cannot fail (1 unwrap)
+- Hardcoded/validated: `api.rs:254-255`, `receipt.rs:76`, `commands.rs:1215`, `cask.rs:211` (5 unwraps)
 
-**Priority**: Medium - These are edge cases but should be fixed for robustness.
+**Status**: Complete - All problematic unwraps eliminated.
 
 ### 2. TODO/FIXME Comments (6 total)
 
@@ -178,15 +175,15 @@ From TESTING_ISSUES.md (v0.1.10 analysis):
 ## Recommendations
 
 ### High Priority (Do Now)
-1. ✅ Add profiling support (debug = true) - DONE
-2. ✅ Run flamegraph - DONE
-3. 🔄 Document findings - IN PROGRESS
+1. ✅ Add profiling support (debug = true) - DONE (b2d8c94)
+2. ✅ Run flamegraph - DONE (b2d8c94)
+3. ✅ Document findings - DONE (b2d8c94)
+4. ✅ Fix 9 problematic unwrap() calls - DONE (f071069)
 
 ### Medium Priority (After Real-World Testing)
-1. Fix 9 problematic unwrap() calls
-2. Improve error messages (add "how to fix" guidance)
-3. Add edge case tests
-4. Extract duplicate code to helpers
+1. Improve error messages (add "how to fix" guidance)
+2. Add edge case tests for the fixed unwrap scenarios
+3. Extract duplicate code to helpers
 
 ### Low Priority (Future Technical Debt)
 1. Split commands.rs into modules (1-2 hour refactor)
@@ -200,17 +197,17 @@ From TESTING_ISSUES.md (v0.1.10 analysis):
 |--------|-------|------------|
 | Lines of Code | 10,952 | Moderate |
 | Largest File | 7,040 lines | Too large ⚠️ |
-| Unwrap Calls | 20 (9 problematic) | Good |
+| Unwrap Calls | 10 (all safe) ✅ | Excellent |
 | TODO Comments | 6 (all intentional) | Excellent |
-| Test Count | 92 | Good |
+| Test Count | 84 (70 unit + 14 regression) | Good |
 | Performance vs brew | 1.85x faster | Excellent |
 | Security Issues | 0 critical | Excellent |
 
 ## Action Items
 
-- [x] Profile performance
-- [x] Document UX best practices
-- [x] Analyze unwrap() calls
-- [ ] Fix problematic unwraps (defer to post-testing)
+- [x] Profile performance (b2d8c94)
+- [x] Document UX best practices (b2d8c94)
+- [x] Analyze unwrap() calls (b2d8c94)
+- [x] Fix problematic unwraps (f071069)
 - [ ] Improve error messages (defer to post-testing)
 - [ ] Consider commands.rs split (defer to v0.2.x)
