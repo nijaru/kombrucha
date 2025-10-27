@@ -4,7 +4,7 @@ Last updated: 2025-10-26
 
 ## Current State
 
-**Version**: 0.1.11 (Unreleased)
+**Version**: 0.1.11 (Released 2025-10-26)
 **Status**: Production-ready with brew fallback for source builds
 
 ### Metrics
@@ -56,7 +56,7 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ### Recent Changes
 
-**Unreleased** (post-v0.1.10):
+**v0.1.11** (2025-10-26):
 - **Brew Fallback for Source Builds**: Automatic fallback to brew for formulae without bottles [476cedc]
   - **Feature**: install, upgrade, reinstall now automatically delegate to brew when no bottle available
   - **User Experience**: Clear messaging: "requires building from source (no bottle available)"
@@ -65,6 +65,10 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - **Coverage**: 100% of Homebrew formulae (95% native bottles + 5% brew fallback)
   - **Design**: Full analysis in ai/FALLBACK_DESIGN.md
   - Commands updated: install (line ~1115), upgrade (line ~1469), reinstall (line ~1606)
+- **CI Improvements**: Fixed Homebrew integrity check to avoid false positives [c1af9e1]
+  - Updated check to verify Cellar integrity instead of brew doctor
+  - Pre-existing runner warnings no longer fail builds
+- **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
 **v0.1.10** (2025-10-23):
 - **CRITICAL DATA LOSS BUG FIXED**: cleanup command was deleting NEWEST versions!
@@ -212,12 +216,17 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
 
 ## Active Work
 
-**Real-World Validation** (2025-10-24):
-- 📋 Created comprehensive testing checklist (ai/REAL_WORLD_TESTING.md)
+**v0.1.11 Released** (2025-10-26):
+- ✅ Brew fallback feature implemented and released
+- ✅ Distributed to: crates.io, GitHub releases, Homebrew tap
+- ✅ 100% formula coverage (95% bottles + 5% brew fallback)
+
+**Real-World Validation** (CURRENT - Started 2025-10-26):
+- 📋 Testing checklist: ai/REAL_WORLD_TESTING.md
 - 🎯 Goal: Use bru daily for 1-2 weeks to validate core functionality
 - 📝 Document: bugs, performance issues, edge cases
-- ⏸️ **Source builds deferred** - Validate 95% bottle-based functionality first
-- ✅ Testing infrastructure now safe and follows Homebrew best practices
+- 🆕 **Test brew fallback** with source-only formulae
+- ⏸️ **Source builds deferred** - Validate 100% coverage via fallback first
 
 **Testing Infrastructure Overhaul** (2025-10-24 - COMPLETE):
 - ❌ **System Corruption Incident**: Integration tests corrupted macOS system (Oct 23)
@@ -255,8 +264,10 @@ None currently. Critical testing infrastructure issues resolved (Phase 1 & 2 com
 
 1. **Real-world testing (CURRENT)**: Use bru daily for 1-2 weeks (see ai/REAL_WORLD_TESTING.md)
    - Test all core operations (install, upgrade, cleanup)
+   - **Test brew fallback** with source-only formulae
    - Document bugs, performance issues, edge cases
    - Validate edge case handling (bottle revisions, keg-only, etc.)
 2. **Bug fixes**: Address issues found during real-world testing
 3. **Performance optimization**: Profile and fix any bottlenecks discovered
-4. **Source builds (DEFERRED)**: Only after 95% bottle-based functionality is validated
+4. **UX improvements**: Consider adding progress bars/indicators if needed
+5. **Source builds (DEFERRED)**: Only after 100% coverage via fallback is validated
