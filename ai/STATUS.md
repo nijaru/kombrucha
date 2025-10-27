@@ -4,13 +4,13 @@ Last updated: 2025-10-26
 
 ## Current State
 
-**Version**: 0.1.11 (Released 2025-10-26)
-**Status**: Production-ready with brew fallback for source builds
+**Version**: 0.1.12 (Released 2025-10-27)
+**Status**: Production-ready with improved UX and code quality
 
 ### Metrics
-- **Test Coverage**: 92 tests run automatically (8 inline + 70 unit + 14 regression)
+- **Test Coverage**: 84 tests run automatically (76 unit + 8 inline)
 - **Integration Tests**: 10 tests (run in CI on every push, all ignored by default)
-- **Total Tests**: 102 tests (92 passing + 10 ignored)
+- **Total Tests**: 94 tests (84 passing + 10 ignored)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae (native)
 - **Source Build Support**: 100% via automatic brew fallback
@@ -70,14 +70,14 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Pre-existing runner warnings no longer fail builds
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
-**Unreleased** (post-v0.1.11, 2025-10-27):
+**v0.1.12** (2025-10-27):
 - **Quick Wins**: UX improvements and code quality [50b4f65, c786cac, fabf8ba]
   - Added --no-color flag for easier color disabling (works like NO_COLOR env var)
   - Resolved all 36 clippy warnings (collapsible_if, type_complexity, if_same_then_else)
   - Added 8 edge case tests validating unwrap fixes from f071069
   - Improved git error message in doctor command with install guidance
   - Better let-chain formatting for consistency
-  - All 76 tests passing, CI green
+  - All 76 unit tests passing, CI green
 - **Robustness Improvements**: Eliminated all edge-case unwrap() calls [f071069]
   - Fixed 9 problematic unwraps (path handling, empty strings, option unwrapping)
   - Better error messages for invalid UTF-8 paths, empty formula names
