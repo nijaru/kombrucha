@@ -51,6 +51,10 @@ struct Cli {
     /// Suppress non-essential output
     #[arg(short, long, global = true)]
     quiet: bool,
+
+    /// Disable colored output (same as NO_COLOR=1)
+    #[arg(long, global = true)]
+    no_color: bool,
 }
 
 #[derive(Subcommand)]
@@ -876,10 +880,17 @@ async fn run() -> anyhow::Result<()> {
         default_panic(panic_info);
     }));
 
+    let cli = Cli::parse();
+
+    // Set NO_COLOR if --no-color flag is set
+    if cli.no_color {
+        unsafe {
+            std::env::set_var("NO_COLOR", "1");
+        }
+    }
+
     // Initialize color support (respects NO_COLOR, CLICOLOR, TTY)
     colors::init_colors();
-
-    let cli = Cli::parse();
 
     // Set quiet mode environment variable for commands to check
     if cli.quiet {

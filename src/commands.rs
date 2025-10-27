@@ -2573,6 +2573,7 @@ pub fn doctor() -> Result<()> {
         _ => {
             println!("  {} git is not installed or not in PATH", "✗".red());
             println!("    {} git is required for tap management", "ℹ".blue());
+            println!("    {} Install with: {}", "→".dimmed(), "brew install git".cyan());
             issues += 1;
         }
     }
