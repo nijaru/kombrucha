@@ -70,13 +70,19 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Pre-existing runner warnings no longer fail builds
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
-**Unreleased** (post-v0.1.11, 2025-10-26):
+**Unreleased** (post-v0.1.11, 2025-10-27):
+- **Quick Wins**: UX improvements and code quality [50b4f65, c786cac, fabf8ba]
+  - Added --no-color flag for easier color disabling (works like NO_COLOR env var)
+  - Resolved all 36 clippy warnings (collapsible_if, type_complexity, if_same_then_else)
+  - Added 8 edge case tests validating unwrap fixes from f071069
+  - Improved git error message in doctor command with install guidance
+  - Better let-chain formatting for consistency
+  - All 76 tests passing, CI green
 - **Robustness Improvements**: Eliminated all edge-case unwrap() calls [f071069]
   - Fixed 9 problematic unwraps (path handling, empty strings, option unwrapping)
   - Better error messages for invalid UTF-8 paths, empty formula names
   - No more panics on edge-case inputs
   - Reduced unwraps from 20 to 10 (all remaining are safe)
-  - All 84 tests passing (70 unit + 14 regression)
 - **UX Polish**: Final refinements to progress indicators and symbols [5736f97]
   - Removed arrow symbols (⬇ →) from output for cleaner appearance
   - Improved progress bar with Unicode blocks (━━╸ instead of #>-)
