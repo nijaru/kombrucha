@@ -755,16 +755,11 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 let token = token.clone();
                 let installed_version = installed_version.clone();
                 async move {
-                    match api.fetch_cask(&token).await {
-                        Ok(cask) => {
-                            if let Some(latest) = &cask.version {
-                                if latest != &installed_version {
-                                    return Some((token, installed_version, latest.clone()));
-                                }
+                    if let Ok(cask) = api.fetch_cask(&token).await
+                        && let Some(latest) = &cask.version
+                            && latest != &installed_version {
+                                return Some((token, installed_version, latest.clone()));
                             }
-                        }
-                        Err(_) => {}
-                    }
                     None
                 }
             })
@@ -821,15 +816,12 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                     if let (Ok(existing_meta), Ok(pkg_meta)) = (
                         std::fs::metadata(&existing.path),
                         std::fs::metadata(&pkg.path),
-                    ) {
-                        if let (Ok(existing_time), Ok(pkg_time)) =
+                    )
+                        && let (Ok(existing_time), Ok(pkg_time)) =
                             (existing_meta.modified(), pkg_meta.modified())
-                        {
-                            if pkg_time > existing_time {
+                            && pkg_time > existing_time {
                                 *existing = pkg.clone();
                             }
-                        }
-                    }
                 })
                 .or_insert(pkg);
         }
@@ -840,20 +832,16 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         let fetch_futures: Vec<_> = packages
             .iter()
             .map(|pkg| async move {
-                match api.fetch_formula(&pkg.name).await {
-                    Ok(formula) => {
-                        if let Some(latest) = &formula.versions.stable {
-                            // Strip bottle revisions before comparison
-                            let installed_stripped = strip_bottle_revision(&pkg.version);
-                            let latest_stripped = strip_bottle_revision(latest);
+                if let Ok(formula) = api.fetch_formula(&pkg.name).await
+                    && let Some(latest) = &formula.versions.stable {
+                        // Strip bottle revisions before comparison
+                        let installed_stripped = strip_bottle_revision(&pkg.version);
+                        let latest_stripped = strip_bottle_revision(latest);
 
-                            if installed_stripped != latest_stripped {
-                                return Some((pkg.clone(), latest.clone()));
-                            }
+                        if installed_stripped != latest_stripped {
+                            return Some((pkg.clone(), latest.clone()));
                         }
                     }
-                    Err(_) => {}
-                }
                 None
             })
             .collect();
@@ -1055,11 +1043,10 @@ pub async fn install(
             .filter(|f| installed_names.contains(f.name.as_str()))
             .map(|f| {
                 // Try to get the installed version
-                if let Ok(versions) = cellar::get_installed_versions(&f.name) {
-                    if let Some(first) = versions.first() {
+                if let Ok(versions) = cellar::get_installed_versions(&f.name)
+                    && let Some(first) = versions.first() {
                         return format!("{} {}", f.name, first.version.dimmed());
                     }
-                }
                 f.name.clone()
             })
             .collect();
@@ -1373,15 +1360,12 @@ pub async fn upgrade(
                     if let (Ok(existing_meta), Ok(pkg_meta)) = (
                         std::fs::metadata(&existing.path),
                         std::fs::metadata(&pkg.path),
-                    ) {
-                        if let (Ok(existing_time), Ok(pkg_time)) =
+                    )
+                        && let (Ok(existing_time), Ok(pkg_time)) =
                             (existing_meta.modified(), pkg_meta.modified())
-                        {
-                            if pkg_time > existing_time {
+                            && pkg_time > existing_time {
                                 *existing = pkg.clone();
                             }
-                        }
-                    }
                 })
                 .or_insert(pkg);
         }
@@ -2601,11 +2585,10 @@ pub fn doctor() -> Result<()> {
                     bin_dir.join(&target)
                 };
 
-                if !resolved.exists() {
-                    if let Some(name) = path.file_name() {
+                if !resolved.exists()
+                    && let Some(name) = path.file_name() {
                         broken_links.push(name.to_string_lossy().to_string());
                     }
-                }
             }
         }
     }
@@ -2710,15 +2693,12 @@ pub fn leaves() -> Result<()> {
                 if let (Ok(existing_meta), Ok(pkg_meta)) = (
                     std::fs::metadata(&existing.path),
                     std::fs::metadata(&pkg.path),
-                ) {
-                    if let (Ok(existing_time), Ok(pkg_time)) =
+                )
+                    && let (Ok(existing_time), Ok(pkg_time)) =
                         (existing_meta.modified(), pkg_meta.modified())
-                    {
-                        if pkg_time > existing_time {
+                        && pkg_time > existing_time {
                             *existing = pkg.clone();
                         }
-                    }
-                }
             })
             .or_insert(pkg);
     }
@@ -3508,8 +3488,8 @@ pub fn log(formula_name: &str) -> Result<()> {
     if let Ok(entries) = std::fs::read_dir(&bin_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_symlink() {
-                if let Ok(target) = std::fs::read_link(&path) {
+            if path.is_symlink()
+                && let Ok(target) = std::fs::read_link(&path) {
                     // Resolve relative symlinks to absolute paths
                     let resolved_target = if target.is_absolute() {
                         target.clone()
@@ -3520,8 +3500,8 @@ pub fn log(formula_name: &str) -> Result<()> {
                             .unwrap_or(target.clone())
                     };
 
-                    if resolved_target.starts_with(&install_path) {
-                        if let Some(name) = path.file_name() {
+                    if resolved_target.starts_with(&install_path)
+                        && let Some(name) = path.file_name() {
                             println!(
                                 "  {} {}",
                                 name.to_string_lossy().cyan(),
@@ -3533,9 +3513,7 @@ pub fn log(formula_name: &str) -> Result<()> {
                                 break;
                             }
                         }
-                    }
                 }
-            }
         }
     }
 
@@ -3571,8 +3549,8 @@ pub fn which_formula(command: &str) -> Result<()> {
     }
 
     // Check if it's a symlink
-    if command_path.is_symlink() {
-        if let Ok(target) = std::fs::read_link(&command_path) {
+    if command_path.is_symlink()
+        && let Ok(target) = std::fs::read_link(&command_path) {
             // Resolve to absolute path
             let resolved = if target.is_absolute() {
                 target
@@ -3582,19 +3560,16 @@ pub fn which_formula(command: &str) -> Result<()> {
 
             // Extract formula name from Cellar path
             let cellar_path = cellar::cellar_path();
-            if resolved.starts_with(&cellar_path) {
-                if let Ok(rel_path) = resolved.strip_prefix(&cellar_path) {
-                    if let Some(formula_name) = rel_path.components().next() {
+            if resolved.starts_with(&cellar_path)
+                && let Ok(rel_path) = resolved.strip_prefix(&cellar_path)
+                    && let Some(formula_name) = rel_path.components().next() {
                         println!(
                             "\n{}",
                             formula_name.as_os_str().to_string_lossy().green().bold()
                         );
                         return Ok(());
                     }
-                }
-            }
         }
-    }
 
     println!(
         "\n{} Could not determine formula for '{}'",
@@ -3859,7 +3834,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
                 println!("To create a service, the formula must support it.");
                 println!(
                     "Run {} to check if service is available",
-                    format!("bru services list").cyan()
+                    "bru services list".to_string().cyan()
                 );
                 return Ok(());
             }
@@ -3999,7 +3974,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
             None => {
                 println!("\n {} Formula file not found locally", "⚠".yellow());
                 println!("Formula exists in API but not in local taps");
-                println!("Try: {}", format!("brew tap homebrew/core").cyan());
+                println!("Try: {}", "brew tap homebrew/core".to_string().cyan());
                 return Ok(());
             }
         }
@@ -4124,7 +4099,7 @@ pub fn create(url: &str, name: Option<&str>) -> Result<()> {
     println!("{}", "Next steps:".bold());
     println!(
         "  1. Add SHA256 checksum: {}",
-        format!("shasum -a 256 <downloaded-file>").cyan()
+        "shasum -a 256 <downloaded-file>".to_string().cyan()
     );
     println!("  2. Fill in description and license");
     println!("  3. Update install method with build steps");
@@ -4292,11 +4267,10 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         .iter()
         .map(|name| async move {
             // Check if already installed
-            if crate::cask::is_cask_installed(name) {
-                if let Some(version) = crate::cask::get_installed_cask_version(name) {
+            if crate::cask::is_cask_installed(name)
+                && let Some(version) = crate::cask::get_installed_cask_version(name) {
                     return (name.clone(), Err(format!("Already installed: {}", version)));
                 }
-            }
 
             match api.fetch_cask(name).await {
                 Ok(c) => (name.clone(), Ok(c)),
@@ -4667,16 +4641,11 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 let token = token.clone();
                 let installed_version = installed_version.clone();
                 async move {
-                    match api.fetch_cask(&token).await {
-                        Ok(cask) => {
-                            if let Some(latest) = &cask.version {
-                                if latest != &installed_version {
-                                    return Some(token);
-                                }
+                    if let Ok(cask) = api.fetch_cask(&token).await
+                        && let Some(latest) = &cask.version
+                            && latest != &installed_version {
+                                return Some(token);
                             }
-                        }
-                        Err(_) => {}
-                    }
                     None
                 }
             })
@@ -4981,7 +4950,7 @@ pub async fn formulae(api: &BrewApi) -> Result<()> {
     }
 
     // Final newline if needed
-    if names.len() % num_cols != 0 {
+    if !names.len().is_multiple_of(num_cols) {
         println!();
     }
 
@@ -5017,7 +4986,7 @@ pub async fn casks(api: &BrewApi) -> Result<()> {
     }
 
     // Final newline if needed
-    if tokens.len() % num_cols != 0 {
+    if !tokens.len().is_multiple_of(num_cols) {
         println!();
     }
 
@@ -5034,11 +5003,10 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         .into_iter()
         .filter(|f| {
             // If specific formulae requested, only check those
-            if !formula_names.is_empty() {
-                if !formula_names.contains(&f.name) {
+            if !formula_names.is_empty()
+                && !formula_names.contains(&f.name) {
                     return false;
                 }
-            }
 
             // Check if formula has no bottle
             f.bottle.is_none()
@@ -5253,8 +5221,8 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
 
         // Check bin/ directory
         let bin_dir = formula_path.join("bin");
-        if bin_dir.exists() {
-            if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+        if bin_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&bin_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_file() {
@@ -5269,8 +5237,8 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                         if let Ok(output) = output {
                             let stdout = String::from_utf8_lossy(&output.stdout);
 
-                            if show_all {
-                                if let Some(name) = path.file_name() {
+                            if show_all
+                                && let Some(name) = path.file_name() {
                                     println!("  {}:", name.to_string_lossy());
                                     for line in stdout.lines().skip(1) {
                                         let trimmed = line.trim();
@@ -5279,7 +5247,6 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                                         }
                                     }
                                 }
-                            }
 
                             // Check for broken links (simplified)
                             if stdout.contains("dyld:") || stdout.contains("not found") {
@@ -5289,12 +5256,11 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                     }
                 }
             }
-        }
 
         // Check lib/ directory
         let lib_dir = formula_path.join("lib");
-        if lib_dir.exists() {
-            if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+        if lib_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&lib_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_file()
@@ -5304,7 +5270,6 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                     }
                 }
             }
-        }
 
         if checked_files == 0 {
             println!("  {} No linkable files found", "ℹ".blue());
@@ -5520,7 +5485,7 @@ pub fn command_not_found_init(shell: Option<&str>) -> Result<()> {
     let detected_shell = shell.map(String::from).unwrap_or_else(|| {
         std::env::var("SHELL")
             .ok()
-            .and_then(|s| s.split('/').last().map(String::from))
+            .and_then(|s| s.split('/').next_back().map(String::from))
             .unwrap_or_else(|| "bash".to_string())
     });
 
@@ -6283,7 +6248,7 @@ pub fn pr_pull(pr_ref: &str) -> anyhow::Result<()> {
     println!("{} Pulling PR: {}", "⬇️".bold(), pr_ref.cyan());
 
     let pr_number = if pr_ref.contains('/') {
-        pr_ref.split('/').last().unwrap_or(pr_ref)
+        pr_ref.split('/').next_back().unwrap_or(pr_ref)
     } else {
         pr_ref
     };

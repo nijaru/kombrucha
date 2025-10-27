@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 type Result<T> = anyhow::Result<T>;
+type ServiceTuple = (String, Option<i32>, Option<i32>);
 
 #[derive(Debug, Clone)]
 pub struct ServiceInfo {
@@ -49,7 +50,7 @@ pub fn service_exists(formula: &str) -> bool {
 }
 
 /// List all running launchd services
-pub fn list_running_services() -> Result<Vec<(String, Option<i32>, Option<i32>)>> {
+pub fn list_running_services() -> Result<Vec<ServiceTuple>> {
     let output = Command::new("launchctl").arg("list").output()?;
 
     if !output.status.success() {
@@ -130,8 +131,8 @@ pub fn list_all_services() -> Result<Vec<ServiceInfo>> {
         let entry = entry?;
         let path = entry.path();
 
-        if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-            if filename.starts_with("homebrew.mxcl.") && filename.ends_with(".plist") {
+        if let Some(filename) = path.file_name().and_then(|f| f.to_str())
+            && filename.starts_with("homebrew.mxcl.") && filename.ends_with(".plist") {
                 // Extract formula name from filename
                 let formula_name = filename
                     .strip_prefix("homebrew.mxcl.")
@@ -143,7 +144,6 @@ pub fn list_all_services() -> Result<Vec<ServiceInfo>> {
                     services.push(info);
                 }
             }
-        }
     }
 
     // Also check installed formulae that might have services

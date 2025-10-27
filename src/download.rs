@@ -177,13 +177,7 @@ pub async fn download_bottles(
     use std::sync::Arc;
     use tokio::sync::Semaphore;
 
-    // Don't create progress bars in quiet mode
-    let quiet = std::env::var("BRU_QUIET").is_ok();
-    let mp = if quiet {
-        MultiProgress::new() // Still create it but won't be used
-    } else {
-        MultiProgress::new()
-    };
+    let mp = MultiProgress::new();
     let mut tasks = Vec::new();
 
     // Limit concurrent downloads to prevent resource exhaustion
