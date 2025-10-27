@@ -179,7 +179,13 @@ pub async fn download_bottles(
     use std::sync::Arc;
     use tokio::sync::Semaphore;
 
-    let mp = MultiProgress::new();
+    // Don't create progress bars in quiet mode
+    let quiet = std::env::var("BRU_QUIET").is_ok();
+    let mp = if quiet {
+        MultiProgress::new() // Still create it but won't be used
+    } else {
+        MultiProgress::new()
+    };
     let mut tasks = Vec::new();
 
     // Limit concurrent downloads to prevent resource exhaustion
@@ -195,7 +201,13 @@ pub async fn download_bottles(
         let task = tokio::spawn(async move {
             // Acquire semaphore permit before downloading
             let _permit = sem.acquire().await.unwrap();
-            let result = download_bottle(&formula_clone, Some(&mp_clone)).await;
+            // Pass progress only if not in quiet mode
+            let progress = if std::env::var("BRU_QUIET").is_ok() {
+                None
+            } else {
+                Some(&mp_clone)
+            };
+            let result = download_bottle(&formula_clone, progress).await;
             (formula_clone.name.clone(), result)
         });
 

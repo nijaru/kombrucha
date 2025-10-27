@@ -1206,15 +1206,20 @@ async fn resolve_dependencies(
     let mut current_level = root_formulae.to_vec();
     let mut processed = HashSet::new();
 
-    // Create spinner for dependency resolution
-    let spinner = ProgressBar::new_spinner();
-    spinner.set_style(
-        ProgressStyle::default_spinner()
-            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
-            .template("{spinner:.cyan} {msg}")
-            .unwrap(),
-    );
-    spinner.enable_steady_tick(Duration::from_millis(80));
+    // Create spinner for dependency resolution (hidden in quiet mode)
+    let spinner = if std::env::var("BRU_QUIET").is_ok() {
+        ProgressBar::hidden()
+    } else {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.enable_steady_tick(Duration::from_millis(80));
+        pb
+    };
 
     // Process dependencies level by level in parallel
     while !current_level.is_empty() {
@@ -1259,7 +1264,11 @@ async fn resolve_dependencies(
     let dep_order = topological_sort(&all_formulae)?;
 
     spinner.finish_and_clear();
-    println!("✓ {} dependencies resolved", all_formulae.len());
+
+    // Only print summary if not in quiet mode
+    if std::env::var("BRU_QUIET").is_err() {
+        println!("✓ {} dependencies resolved", all_formulae.len());
+    }
 
     Ok((all_formulae, dep_order))
 }

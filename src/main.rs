@@ -47,6 +47,10 @@ struct Cli {
     /// Enable verbose output
     #[arg(short, long, global = true)]
     verbose: bool,
+
+    /// Suppress non-essential output
+    #[arg(short, long, global = true)]
+    quiet: bool,
 }
 
 #[derive(Subcommand)]
@@ -876,6 +880,13 @@ async fn run() -> anyhow::Result<()> {
     colors::init_colors();
 
     let cli = Cli::parse();
+
+    // Set quiet mode environment variable for commands to check
+    if cli.quiet {
+        unsafe {
+            std::env::set_var("BRU_QUIET", "1");
+        }
+    }
 
     // Create API client
     let api = api::BrewApi::new()?;
