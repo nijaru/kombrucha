@@ -3,9 +3,11 @@ use crate::cellar::{self, RuntimeDependency};
 use crate::error::Result;
 use crate::{download, extract, receipt, symlink};
 use colored::Colorize;
+use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
 
 /// Check if brew is available for fallback to source builds
 fn check_brew_available() -> bool {
@@ -1030,6 +1032,7 @@ pub async fn install(
     }
 
     // Resolve dependencies for valid formulae only
+    println!("Resolving dependencies...");
     let (all_formulae, dep_order) = resolve_dependencies(api, &valid_formulae).await?;
 
     // Filter installed packages (unless --force)
@@ -1101,6 +1104,8 @@ pub async fn install(
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
     // Step 3: Install in dependency order
+    let total_to_install = to_install.len();
+    let mut installed_count = 0;
     println!("\nInstalling packages...");
     let requested_set: HashSet<_> = formula_names.iter().map(|s| s.as_str()).collect();
 
@@ -1145,7 +1150,13 @@ pub async fn install(
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula.name))?;
 
-        println!("  Installing {}...", formula.name.cyan());
+        installed_count += 1;
+        println!(
+            "  Installing {} ({}/{})...",
+            formula.name.cyan(),
+            installed_count,
+            total_to_install
+        );
 
         // Extract bottle
         let extracted_path = extract::extract_bottle(bottle_path, &formula.name, version)?;
@@ -1195,6 +1206,16 @@ async fn resolve_dependencies(
     let mut current_level = root_formulae.to_vec();
     let mut processed = HashSet::new();
 
+    // Create spinner for dependency resolution
+    let spinner = ProgressBar::new_spinner();
+    spinner.set_style(
+        ProgressStyle::default_spinner()
+            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+            .template("{spinner:.cyan} {msg}")
+            .unwrap(),
+    );
+    spinner.enable_steady_tick(Duration::from_millis(80));
+
     // Process dependencies level by level in parallel
     while !current_level.is_empty() {
         // Filter out already processed formulae
@@ -1203,6 +1224,9 @@ async fn resolve_dependencies(
         if current_level.is_empty() {
             break;
         }
+
+        // Update spinner message
+        spinner.set_message(format!("Fetching {} formulae...", current_level.len()));
 
         // Fetch all formulae at this level in parallel
         let fetch_futures: Vec<_> = current_level
@@ -1229,8 +1253,13 @@ async fn resolve_dependencies(
         current_level = next_level;
     }
 
+    spinner.set_message("Building dependency graph...");
+
     // Build dependency order (topological sort)
     let dep_order = topological_sort(&all_formulae)?;
+
+    spinner.finish_and_clear();
+    println!("✓ {} dependencies resolved", all_formulae.len());
 
     Ok((all_formulae, dep_order))
 }
