@@ -70,6 +70,14 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Pre-existing runner warnings no longer fail builds
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
+**Unreleased** (post-v0.1.12, 2025-10-27):
+- **Critical Bug Fix**: Resolved "Too many open files" error in parallel downloads [df09a0b]
+  - Root cause: Each download created new reqwest::Client, exhausting file descriptors
+  - Fix: Create shared HTTP client once per operation, pass by reference
+  - Reduced MAX_CONCURRENT_DOWNLOADS from 16 to 8 for more conservative resource usage
+  - Client connection pooling now works correctly across all downloads
+  - Tested: Successfully upgraded 3 packages without errors
+
 **v0.1.12** (2025-10-27):
 - **Quick Wins**: UX improvements and code quality [50b4f65, c786cac, fabf8ba]
   - Added --no-color flag for easier color disabling (works like NO_COLOR env var)
