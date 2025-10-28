@@ -1189,9 +1189,11 @@ async fn resolve_dependencies(
     api: &BrewApi,
     root_formulae: &[String],
 ) -> Result<(HashMap<String, Formula>, Vec<String>)> {
-    let mut all_formulae = HashMap::new();
+    // Typical dependency depth is 10-20, so estimate total as root_count * 10
+    let estimated_capacity = root_formulae.len() * 10;
+    let mut all_formulae = HashMap::with_capacity(estimated_capacity);
     let mut current_level = root_formulae.to_vec();
-    let mut processed = HashSet::new();
+    let mut processed = HashSet::with_capacity(estimated_capacity);
 
     // Create spinner for dependency resolution (hidden in quiet mode)
     let spinner = if std::env::var("BRU_QUIET").is_ok() {
@@ -1262,8 +1264,9 @@ async fn resolve_dependencies(
 
 /// Topological sort for dependency order
 fn topological_sort(formulae: &HashMap<String, Formula>) -> anyhow::Result<Vec<String>> {
-    let mut in_degree: HashMap<String, usize> = HashMap::new();
-    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
+    let capacity = formulae.len();
+    let mut in_degree: HashMap<String, usize> = HashMap::with_capacity(capacity);
+    let mut graph: HashMap<String, Vec<String>> = HashMap::with_capacity(capacity);
 
     // Build dependency graph
     for (name, formula) in formulae {
@@ -1280,7 +1283,7 @@ fn topological_sort(formulae: &HashMap<String, Formula>) -> anyhow::Result<Vec<S
         .filter(|(_, count)| **count == 0)
         .map(|(name, _)| name.clone())
         .collect();
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(capacity);
 
     while let Some(node) = queue.pop() {
         result.push(node.clone());
@@ -1358,8 +1361,9 @@ pub async fn upgrade(
         let all_packages = cellar::list_installed()?;
 
         // Deduplicate multiple versions - keep only the most recent for each formula
+        let estimated_capacity = all_packages.len() / 2;  // ~50% typical dedup rate
         let mut package_map: std::collections::HashMap<String, cellar::InstalledPackage> =
-            std::collections::HashMap::new();
+            std::collections::HashMap::with_capacity(estimated_capacity);
 
         for pkg in all_packages {
             package_map
