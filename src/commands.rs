@@ -1427,6 +1427,9 @@ pub async fn upgrade(
     // Check for pinned formulae
     let pinned = read_pinned()?;
 
+    // Create shared HTTP client for all downloads
+    let client = reqwest::Client::new();
+
     for formula_name in &to_upgrade {
         // Skip pinned formulae
         if pinned.contains(formula_name) {
@@ -1492,7 +1495,7 @@ pub async fn upgrade(
         symlink::unlink_formula(formula_name, old_version)?;
 
         // Download new version
-        let bottle_path = match download::download_bottle(&formula, None).await {
+        let bottle_path = match download::download_bottle(&formula, None, &client).await {
             Ok(path) => path,
             Err(_) => {
                 // No bottle available - fall back to brew for source build
@@ -1596,6 +1599,9 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
     let mut actually_reinstalled = 0;
 
+    // Create shared HTTP client for all downloads
+    let client = reqwest::Client::new();
+
     for formula_name in formula_names {
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
@@ -1629,7 +1635,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula.name))?;
 
         // Download bottle
-        let bottle_path = match download::download_bottle(&formula, None).await {
+        let bottle_path = match download::download_bottle(&formula, None, &client).await {
             Ok(path) => path,
             Err(_) => {
                 // No bottle available - fall back to brew for source build

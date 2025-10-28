@@ -61,6 +61,7 @@ async fn verify_checksum(file_path: &Path, expected: &str) -> Result<bool> {
 pub async fn download_bottle(
     formula: &Formula,
     progress: Option<&MultiProgress>,
+    client: &reqwest::Client,
 ) -> Result<PathBuf> {
     // Get bottle info
     let bottle = formula
@@ -127,7 +128,6 @@ pub async fn download_bottle(
         .context("Failed to get GHCR token")?;
 
     // Download with authentication
-    let client = reqwest::Client::new();
     let mut response = client
         .get(&bottle_file.url)
         .header("Authorization", format!("Bearer {}", token))
@@ -180,15 +180,19 @@ pub async fn download_bottles(
     let mp = MultiProgress::new();
     let mut tasks = Vec::new();
 
+    // Create shared HTTP client (reused across all downloads)
+    let client = Arc::new(reqwest::Client::new());
+
     // Limit concurrent downloads to prevent resource exhaustion
-    // Each download holds: 1 TCP connection, 1 file descriptor, memory buffers
-    const MAX_CONCURRENT_DOWNLOADS: usize = 16;
+    // Reduced from 16 to 8 to be more conservative with file descriptors
+    const MAX_CONCURRENT_DOWNLOADS: usize = 8;
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_DOWNLOADS));
 
     for formula in formulae {
         let formula_clone = formula.clone();
         let mp_clone = mp.clone();
         let sem = semaphore.clone();
+        let client_clone = client.clone();
 
         let task = tokio::spawn(async move {
             // Acquire semaphore permit before downloading
@@ -199,7 +203,7 @@ pub async fn download_bottles(
             } else {
                 Some(&mp_clone)
             };
-            let result = download_bottle(&formula_clone, progress).await;
+            let result = download_bottle(&formula_clone, progress, &client_clone).await;
             (formula_clone.name.clone(), result)
         });
 
