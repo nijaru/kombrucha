@@ -1325,6 +1325,12 @@ fn build_runtime_deps(
         .collect()
 }
 
+struct UpgradeCandidate {
+    name: String,
+    old_version: String,
+    formula: crate::api::Formula,
+}
+
 pub async fn upgrade(
     api: &BrewApi,
     names: &[String],
@@ -1422,88 +1428,87 @@ pub async fn upgrade(
         return Ok(());
     }
 
-    println!("\nUpgrading {} packages...", to_upgrade.len());
-
     // Check for pinned formulae
     let pinned = read_pinned()?;
 
-    // Create shared HTTP client for all downloads
-    let client = reqwest::Client::new();
+    // Phase 1: Collect all upgrade candidates in parallel
+    println!("\nPreparing {} packages for upgrade...", to_upgrade.len());
 
-    for formula_name in &to_upgrade {
-        // Skip pinned formulae
-        if pinned.contains(formula_name) {
-            println!("  {} is pinned, skipping", formula_name.bold());
-            continue;
-        }
-
-        // Check if installed
-        let installed_versions = cellar::get_installed_versions(formula_name)?;
-        if installed_versions.is_empty() {
-            println!(
-                "  {} {} not installed, installing...",
-                "ℹ".blue(),
-                formula_name.bold()
-            );
-            install(api, std::slice::from_ref(formula_name), false, false, false).await?;
-            continue;
-        }
-
-        let old_version = &installed_versions[0].version;
-
-        // Fetch latest version
-        let formula = match api.fetch_formula(formula_name).await {
-            Ok(f) => f,
-            Err(e) => {
-                println!(
-                    "  {} Failed to fetch {}: {}",
-                    "⚠".yellow(),
-                    formula_name.bold(),
-                    e
-                );
-                continue;
+    let fetch_futures: Vec<_> = to_upgrade
+        .iter()
+        .filter(|name| !pinned.contains(*name))
+        .map(|formula_name| async move {
+            // Check if installed
+            let installed_versions = cellar::get_installed_versions(formula_name).ok()?;
+            if installed_versions.is_empty() {
+                return None;  // Will install separately
             }
-        };
-        let new_version = formula
-            .versions
-            .stable
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No stable version for {}", formula_name))?;
 
-        // Strip bottle revisions for comparison
-        let old_version_stripped = strip_bottle_revision(old_version);
-        let new_version_stripped = strip_bottle_revision(new_version);
+            let old_version = installed_versions[0].version.clone();
 
-        if old_version_stripped == new_version_stripped {
-            println!(
-                "  {} {} already at latest version {}",
-                "✓".green(),
-                formula_name.bold(),
-                new_version.dimmed()
-            );
-            continue;
-        }
+            // Fetch latest version
+            let formula = api.fetch_formula(formula_name).await.ok()?;
+            let new_version = formula.versions.stable.as_ref()?.clone();
 
+            // Strip bottle revisions for comparison
+            let old_version_stripped = strip_bottle_revision(&old_version);
+            let new_version_stripped = strip_bottle_revision(&new_version);
+
+            if old_version_stripped == new_version_stripped {
+                return None;  // Already at latest version
+            }
+
+            Some(UpgradeCandidate {
+                name: formula_name.clone(),
+                old_version,
+                formula,
+            })
+        })
+        .collect();
+
+    let candidates: Vec<_> = futures::future::join_all(fetch_futures)
+        .await
+        .into_iter()
+        .flatten()
+        .collect();
+
+    if candidates.is_empty() {
+        println!("\n {} All packages are up to date", "✓".green());
+        return Ok(());
+    }
+
+    // Show what will be upgraded
+    for candidate in &candidates {
+        let new_version = candidate.formula.versions.stable.as_ref().unwrap();
         println!(
-            "  Upgrading {} {} -> {}",
-            formula_name.cyan(),
-            old_version.dimmed(),
+            "  {} {} -> {}",
+            candidate.name.cyan(),
+            candidate.old_version.dimmed(),
             new_version.cyan()
         );
+    }
 
-        // Unlink old version
-        symlink::unlink_formula(formula_name, old_version)?;
+    // Phase 2: Download all bottles in parallel
+    println!("\nDownloading {} bottles...", candidates.len());
+    let formulae: Vec<_> = candidates.iter().map(|c| c.formula.clone()).collect();
+    let downloaded = download::download_bottles(api, &formulae).await?;
+    let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
-        // Download new version
-        let bottle_path = match download::download_bottle(&formula, None, &client).await {
-            Ok(path) => path,
-            Err(_) => {
+    // Phase 3: Install sequentially
+    println!("\nUpgrading packages...");
+
+    for candidate in &candidates {
+        let formula_name = &candidate.name;
+        let old_version = &candidate.old_version;
+        let formula = &candidate.formula;
+        let new_version = formula.versions.stable.as_ref().unwrap();
+
+        let bottle_path = match download_map.get(formula_name) {
+            Some(path) => path,
+            None => {
                 // No bottle available - fall back to brew for source build
                 match fallback_to_brew("upgrade", formula_name) {
-                    Ok(_) => {
-                        // Successfully upgraded via brew, continue to next package
-                        continue;
-                    }
+                    Ok(_) => continue,
                     Err(e) => {
                         println!(
                             "  {} Failed to upgrade {}: {}",
@@ -1511,13 +1516,14 @@ pub async fn upgrade(
                             formula_name.bold(),
                             e
                         );
-                        // Re-link old version since we unlinked it
-                        let _ = symlink::link_formula(formula_name, old_version);
                         continue;
                     }
                 }
             }
         };
+
+        // Unlink old version
+        symlink::unlink_formula(formula_name, old_version)?;
 
         // Install new version
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
