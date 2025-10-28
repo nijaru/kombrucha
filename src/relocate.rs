@@ -4,6 +4,7 @@
 //! that need to be replaced with actual paths for the binaries to work.
 
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -28,8 +29,15 @@ pub fn relocate_bottle(cellar_path: &Path, prefix: &Path) -> Result<()> {
     // Find all Mach-O binaries and libraries
     let files = find_mach_o_files(cellar_path)?;
 
-    for file in files {
-        relocate_file(&file, prefix_str, cellar_str)?;
+    // Process files in parallel (each file modification is independent)
+    let results: Vec<Result<()>> = files
+        .par_iter()
+        .map(|file| relocate_file(file, prefix_str, cellar_str))
+        .collect();
+
+    // Check for any errors
+    for result in results {
+        result?;
     }
 
     Ok(())
@@ -53,13 +61,11 @@ fn find_mach_o_files(dir: &Path) -> Result<Vec<PathBuf>> {
         }
     }
 
-    // Now check which ones are Mach-O files (file handles closed between checks)
-    let mut mach_o_files = Vec::new();
-    for path in all_files {
-        if is_mach_o(&path)? {
-            mach_o_files.push(path);
-        }
-    }
+    // Now check which ones are Mach-O files in parallel (file handles closed between checks)
+    let mach_o_files: Vec<PathBuf> = all_files
+        .into_par_iter()
+        .filter(|path| is_mach_o(path).unwrap_or(false))
+        .collect();
 
     Ok(mach_o_files)
 }
