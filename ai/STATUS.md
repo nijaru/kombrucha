@@ -4,8 +4,8 @@ Last updated: 2025-10-26
 
 ## Current State
 
-**Version**: 0.1.12 (Released 2025-10-27)
-**Status**: Production-ready with improved UX and code quality
+**Version**: 0.1.13 (Released 2025-10-27)
+**Status**: Production-ready with critical bug fix
 
 ### Metrics
 - **Test Coverage**: 84 tests run automatically (76 unit + 8 inline)
@@ -70,7 +70,7 @@ Verified benchmarks (M3 Max, macOS 15.7, 338 packages, October 2025):
   - Pre-existing runner warnings no longer fail builds
 - **Distribution**: Released to crates.io, GitHub, and Homebrew tap
 
-**Unreleased** (post-v0.1.12, 2025-10-27):
+**v0.1.13** (2025-10-27):
 - **Critical Bug Fix**: Resolved "Too many open files" error in parallel downloads [df09a0b]
   - Root cause: Each download created new reqwest::Client, exhausting file descriptors
   - Fix: Create shared HTTP client once per operation, pass by reference
