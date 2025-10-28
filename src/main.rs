@@ -840,9 +840,21 @@ enum Commands {
     UpdateIfNeeded,
 }
 
-#[tokio::main]
-async fn main() {
-    if let Err(e) = run().await {
+fn main() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_name("bru-worker")
+        .worker_threads(4)
+        .max_blocking_threads(8)
+        .build()
+        .expect("Failed to create Tokio runtime");
+
+    let result = runtime.block_on(async { run().await });
+
+    // Explicitly shutdown runtime with timeout
+    runtime.shutdown_timeout(std::time::Duration::from_secs(1));
+
+    if let Err(e) = result {
         eprintln!("{}", e);
         std::process::exit(1);
     }
