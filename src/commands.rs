@@ -2069,51 +2069,79 @@ pub fn update() -> Result<()> {
 
     println!("\nUpdating {} taps...", taps.len().to_string().bold());
 
+    // Parallel tap updates
+    let handles: Vec<_> = taps
+        .iter()
+        .map(|tap| {
+            let tap = tap.clone();
+            std::thread::spawn(move || -> (String, std::result::Result<&'static str, String>) {
+                let tap_dir = match crate::tap::tap_directory(&tap) {
+                    Ok(dir) => dir,
+                    Err(_) => return (tap, Err("invalid tap directory".to_string())),
+                };
+
+                if !tap_dir.exists() || !tap_dir.join(".git").exists() {
+                    return (tap, Err("not a git repository".to_string()));
+                }
+
+                let tap_dir_str = match tap_dir.to_str() {
+                    Some(s) => s,
+                    None => return (tap, Err("invalid path".to_string())),
+                };
+
+                let output = std::process::Command::new("git")
+                    .args(["-C", tap_dir_str, "pull", "--ff-only"])
+                    .output();
+
+                let result = match output {
+                    Ok(output) if output.status.success() => {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        if stdout.contains("Already up to date")
+                            || stdout.contains("Already up-to-date")
+                        {
+                            Ok("unchanged")
+                        } else {
+                            Ok("updated")
+                        }
+                    }
+                    Ok(output) => {
+                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                        Err(stderr)
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
+
+                (tap, result)
+            })
+        })
+        .collect();
+
     let mut updated = 0;
     let mut unchanged = 0;
     let mut errors = 0;
 
-    for tap in &taps {
+    for handle in handles {
+        let (tap, result) = handle.join().unwrap_or_else(|_| {
+            ("unknown".to_string(), Err("thread panicked".to_string()))
+        });
+
         print!("  Updating {}... ", tap.cyan());
 
-        let tap_dir = crate::tap::tap_directory(tap)?;
-
-        if !tap_dir.exists() || !tap_dir.join(".git").exists() {
-            println!("{} (not a git repository)", "⚠".yellow());
-            errors += 1;
-            continue;
-        }
-
-        // Run git pull
-        let tap_dir_str = match tap_dir.to_str() {
-            Some(s) => s,
-            None => {
-                println!("{} {}: invalid path", "⚠".yellow(), tap);
-                continue;
+        match result {
+            Ok("updated") => {
+                println!("{}", "updated".green());
+                updated += 1;
             }
-        };
-        let output = std::process::Command::new("git")
-            .args(["-C", tap_dir_str, "pull", "--ff-only"])
-            .output();
-
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                if stdout.contains("Already up to date") || stdout.contains("Already up-to-date") {
-                    println!("{}", "already up to date".dimmed());
-                    unchanged += 1;
-                } else {
-                    println!("{}", "updated".green());
-                    updated += 1;
-                }
+            Ok("unchanged") => {
+                println!("{}", "already up to date".dimmed());
+                unchanged += 1;
             }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                println!("{} {}", "failed".red(), stderr.trim().dimmed());
+            Ok(_) => {
+                println!("{}", "unknown status".yellow());
                 errors += 1;
             }
-            Err(e) => {
-                println!("{} {}", "failed".red(), e.to_string().dimmed());
+            Err(msg) => {
+                println!("{} {}", "failed".red(), msg.trim().to_string().dimmed());
                 errors += 1;
             }
         }
