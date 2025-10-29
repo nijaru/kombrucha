@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] - 2025-10-29
+
+### Fixed
+- Release workflow asset naming now uses Darwin target triples (fixes download failures)
+- Native tap formula support without Ruby runtime dependency
+- Receipt parsing now handles missing `compatibility_version` and null `changed_files`
+- `bru info` now displays tap formula information natively
+- `bru upgrade` correctly detects and upgrades tap packages (e.g., nijaru/tap/bru)
+- `bru reinstall` checks if package is from tap before uninstalling (prevents self-destruction)
+
 ## [0.1.16] - 2025-10-29
 
 ### Added
