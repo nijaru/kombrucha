@@ -85,8 +85,8 @@ impl InstallReceipt {
         let contents = fs::read_to_string(&receipt_path)
             .with_context(|| format!("Failed to read receipt: {}", receipt_path.display()))?;
 
-        let receipt: Self = serde_json::from_str(&contents)
-            .context("Failed to parse INSTALL_RECEIPT.json")?;
+        let receipt: Self =
+            serde_json::from_str(&contents).context("Failed to parse INSTALL_RECEIPT.json")?;
 
         Ok(receipt)
     }

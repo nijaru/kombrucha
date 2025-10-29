@@ -145,12 +145,17 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     // Check if this is an installed tap formula
     if let Ok(versions) = cellar::get_installed_versions(formula) {
         if let Some(installed_version) = versions.first() {
-            if let Ok(Some((tap_name, formula_path, _))) = crate::tap::get_package_tap_info(&installed_version.path) {
+            if let Ok(Some((tap_name, formula_path, _))) =
+                crate::tap::get_package_tap_info(&installed_version.path)
+            {
                 // For tap formulae, parse the Ruby file natively
                 match crate::tap::parse_formula_info(&formula_path, formula) {
                     Ok(tap_info) => {
                         // Display tap formula info in native format
-                        println!("\n {}", format!("==> {}/{}", tap_name, tap_info.name).bold().green());
+                        println!(
+                            "\n {}",
+                            format!("==> {}/{}", tap_name, tap_info.name).bold().green()
+                        );
                         if let Some(desc) = &tap_info.desc {
                             println!("{}", desc);
                         }
@@ -162,18 +167,33 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                         }
 
                         // Show installed versions
-                        println!("{}: {} versions installed", "Installed".bold(), versions.len());
+                        println!(
+                            "{}: {} versions installed",
+                            "Installed".bold(),
+                            versions.len()
+                        );
                         for v in &versions {
-                            let marker = if v.version == installed_version.version { "*" } else { "" };
+                            let marker = if v.version == installed_version.version {
+                                "*"
+                            } else {
+                                ""
+                            };
                             println!("  {} {}", v.version.dimmed(), marker);
                         }
 
-                        println!("{}: {}", "From".bold(), formula_path.display().to_string().dimmed());
+                        println!(
+                            "{}: {}",
+                            "From".bold(),
+                            formula_path.display().to_string().dimmed()
+                        );
                         return Ok(());
                     }
                     Err(e) => {
                         // If parsing fails, fall back to brew (shouldn't normally happen)
-                        eprintln!("Warning: Failed to parse tap formula ({}), falling back to brew", e);
+                        eprintln!(
+                            "Warning: Failed to parse tap formula ({}), falling back to brew",
+                            e
+                        );
                         let full_name = format!("{}/{}", tap_name, formula);
                         if check_brew_available() {
                             let _ = Command::new("brew").arg("info").arg(&full_name).status();
@@ -1447,11 +1467,15 @@ pub async fn upgrade(
                     crate::tap::get_package_tap_info(&pkg.path)
                 {
                     // Read version from tap formula file
-                    if let Ok(Some(latest_version)) = crate::tap::parse_formula_version(&formula_path) {
+                    if let Ok(Some(latest_version)) =
+                        crate::tap::parse_formula_version(&formula_path)
+                    {
                         return Some((pkg.name.clone(), installed_version, latest_version));
                     }
                     // If we can't read the formula file, try to get version from tap name
-                    if let Ok(Some(latest_version)) = crate::tap::get_tap_formula_version(&tap_name, &pkg.name) {
+                    if let Ok(Some(latest_version)) =
+                        crate::tap::get_tap_formula_version(&tap_name, &pkg.name)
+                    {
                         return Some((pkg.name.clone(), installed_version, latest_version));
                     }
                     return None;
@@ -1559,7 +1583,9 @@ pub async fn upgrade(
         .filter_map(|name| {
             if let Ok(versions) = cellar::get_installed_versions(name) {
                 if let Some(version) = versions.first() {
-                    if let Ok(Some((tap_name, _, _))) = crate::tap::get_package_tap_info(&version.path) {
+                    if let Ok(Some((tap_name, _, _))) =
+                        crate::tap::get_package_tap_info(&version.path)
+                    {
                         if !pinned.contains(name) {
                             return Some((name.clone(), tap_name));
                         }
@@ -1697,7 +1723,12 @@ pub async fn upgrade(
             let full_name = format!("{}/{}", tap_name, formula_name);
             match fallback_to_brew("upgrade", &full_name) {
                 Ok(_) => println!("  {} Upgraded {}", "✓".green(), formula_name.bold()),
-                Err(e) => println!("  {} Failed to upgrade {}: {}", "✗".red(), formula_name.bold(), e),
+                Err(e) => println!(
+                    "  {} Failed to upgrade {}: {}",
+                    "✗".red(),
+                    formula_name.bold(),
+                    e
+                ),
             }
         }
     }

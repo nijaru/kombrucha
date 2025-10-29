@@ -199,7 +199,10 @@ pub struct TapFormulaInfo {
 /// Parse formula metadata from a Ruby formula file
 pub fn parse_formula_info(formula_path: &Path, formula_name: &str) -> Result<TapFormulaInfo> {
     if !formula_path.exists() {
-        return Err(anyhow::anyhow!("Formula file not found: {}", formula_path.display()));
+        return Err(anyhow::anyhow!(
+            "Formula file not found: {}",
+            formula_path.display()
+        ));
     }
 
     let contents = fs::read_to_string(formula_path)
@@ -270,9 +273,7 @@ pub fn get_package_tap_info(cellar_path: &Path) -> Result<Option<(String, PathBu
         None => return Ok(None),
     };
 
-    let installed_version = source.versions
-        .and_then(|v| v.stable)
-        .unwrap_or_default();
+    let installed_version = source.versions.and_then(|v| v.stable).unwrap_or_default();
 
     Ok(Some((source.tap, path, installed_version)))
 }
