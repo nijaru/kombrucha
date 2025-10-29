@@ -1,11 +1,17 @@
 # Project Status
 
-Last updated: 2025-10-28
+Last updated: 2025-10-29
 
 ## Current State
 
-**Version**: 0.1.14 (Released 2025-10-28)
+**Version**: 0.1.14 (Released 2025-10-29)
 **Status**: Production-ready with comprehensive performance optimizations
+
+### Recent Improvements (553cc69)
+- Fixed services list filtering: Now correctly excludes cask-only plists (parity with brew)
+- Improved command output spacing: Removed excessive blank lines in analytics, casks list
+- Fixed release workflows: Removed duplicate workflow causing conflicts
+- Better consistency with Homebrew output formatting
 
 ### Metrics
 - **Test Coverage**: 84 tests run automatically (76 unit + 8 inline)
