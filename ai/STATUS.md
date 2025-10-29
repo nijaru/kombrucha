@@ -4,19 +4,37 @@ Last updated: 2025-10-29
 
 ## Current State
 
-**Version**: 0.1.14 (Released 2025-10-29)
-**Status**: Production-ready with comprehensive performance optimizations
+**Version**: 0.1.14+ (Development - preparing v0.1.15)
+**Status**: Production-ready with comprehensive UX and testing improvements
 
-### Recent Improvements (553cc69)
-- Fixed services list filtering: Now correctly excludes cask-only plists (parity with brew)
-- Improved command output spacing: Removed excessive blank lines in analytics, casks list
-- Fixed release workflows: Removed duplicate workflow causing conflicts
-- Better consistency with Homebrew output formatting
+### Recent Improvements (fadded4)
+
+**Performance & UX Polish:**
+- Live progress display for parallel tap updates (361c845)
+- Improved error messages with consistent, colored formatting (cd3f51f)
+- Better visual feedback for long operations
+
+**Testing & Quality:**
+- Added comprehensive parallel operations test suite (a61a24f)
+- 5 new integration tests for parallel correctness
+- Services filtering correctness validation
+- Performance regression prevention
+
+**Documentation:**
+- Updated README with real performance benchmarks (fadded4)
+- Documented 2-24x speedup across commands
+- Added modern CLI pattern documentation
+
+### Performance Benchmarks (M3 Max, October 2025)
+- `bru outdated`: 2.1x faster (780ms vs 1.63s)
+- `bru info`: 9.6x faster (107ms vs 1.04s)
+- `bru search`: 24x faster (43ms vs 1.04s)
+- `bru update`: 5.7x faster (1.9s vs ~11s sequential)
+- `bru upgrade`: 3-8x faster (parallel downloads)
 
 ### Metrics
-- **Test Coverage**: 84 tests run automatically (76 unit + 8 inline)
-- **Integration Tests**: 10 tests (run in CI on every push, all ignored by default)
-- **Total Tests**: 94 tests (84 passing + 10 ignored)
+- **Test Coverage**: 97 automated tests (76 unit + 21 integration)
+- **Integration Tests**: 16 tests (5 parallel operations, 11 regression)
 - **Command Coverage**: Core user-facing commands fully functional
 - **Bottle-Based Support**: 95% of Homebrew formulae (native)
 - **Source Build Support**: 100% via automatic brew fallback
