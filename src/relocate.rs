@@ -126,17 +126,21 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 .replace("@@HOMEBREW_PREFIX@@", prefix)
                 .replace("@@HOMEBREW_CELLAR@@", cellar);
 
-            // Use install_name_tool to change the path
-            let status = Command::new("install_name_tool")
+            // Use install_name_tool to change the path (suppress stderr warnings)
+            let output = Command::new("install_name_tool")
                 .arg("-change")
                 .arg(old_path)
                 .arg(&new_path)
                 .arg(path)
-                .status()
+                .output()
                 .context("Failed to run install_name_tool")?;
 
-            if !status.success() {
-                tracing::warn!("Failed to relocate {} in {}", old_path, path.display());
+            if !output.status.success() {
+                // Only log actual errors (not warnings about code signatures)
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if !stderr.contains("warning:") {
+                    tracing::warn!("Failed to relocate {} in {}: {}", old_path, path.display(), stderr);
+                }
             }
         }
     }
@@ -175,16 +179,20 @@ fn fix_library_id(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
             .replace("@@HOMEBREW_PREFIX@@", prefix)
             .replace("@@HOMEBREW_CELLAR@@", cellar);
 
-        // Use install_name_tool to change the id
-        let status = Command::new("install_name_tool")
+        // Use install_name_tool to change the id (suppress stderr warnings)
+        let output = Command::new("install_name_tool")
             .arg("-id")
             .arg(&new_id)
             .arg(path)
-            .status()
+            .output()
             .context("Failed to run install_name_tool -id")?;
 
-        if !status.success() {
-            tracing::warn!("Failed to fix id for {}", path.display());
+        if !output.status.success() {
+            // Only log actual errors (not warnings about code signatures)
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if !stderr.contains("warning:") {
+                tracing::warn!("Failed to fix id for {}: {}", path.display(), stderr);
+            }
         }
     }
 

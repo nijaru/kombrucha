@@ -1357,7 +1357,16 @@ pub async fn upgrade(
     // Determine which formulae to upgrade
     let to_upgrade = if formula_names.is_empty() {
         // Upgrade all outdated
-        println!("Checking for outdated packages...");
+        use indicatif::{ProgressBar, ProgressStyle};
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        spinner.set_message("Checking for outdated packages...");
+        spinner.enable_steady_tick(std::time::Duration::from_millis(100));
+
         let all_packages = cellar::list_installed()?;
 
         // Deduplicate multiple versions - keep only the most recent for each formula
@@ -1408,13 +1417,15 @@ pub async fn upgrade(
             }
         }
 
+        spinner.finish_and_clear();
+
         if outdated.is_empty() {
-            println!("\n {} All packages are up to date", "✓".green());
+            println!("{} All packages are up to date", "✓".green());
             return Ok(());
         }
 
         println!(
-            "  {} packages to upgrade: {}",
+            "Found {} outdated packages: {}",
             outdated.len().to_string().bold(),
             outdated.join(", ").cyan()
         );
@@ -1436,8 +1447,6 @@ pub async fn upgrade(
     let pinned = read_pinned()?;
 
     // Phase 1: Collect all upgrade candidates in parallel
-    println!("\nPreparing {} packages for upgrade...", to_upgrade.len());
-
     let fetch_futures: Vec<_> = to_upgrade
         .iter()
         .filter(|name| !pinned.contains(*name))
@@ -1477,7 +1486,7 @@ pub async fn upgrade(
         .collect();
 
     if candidates.is_empty() {
-        println!("\n {} All packages are up to date", "✓".green());
+        println!("{} All packages are up to date", "✓".green());
         return Ok(());
     }
 
@@ -1485,7 +1494,7 @@ pub async fn upgrade(
     for candidate in &candidates {
         let new_version = candidate.formula.versions.stable.as_ref().unwrap();
         println!(
-            "  {} {} -> {}",
+            "Upgrading {} {} -> {}",
             candidate.name.cyan(),
             candidate.old_version.dimmed(),
             new_version.cyan()
@@ -1493,19 +1502,28 @@ pub async fn upgrade(
     }
 
     // Phase 2: Download all bottles in parallel
-    println!("\nDownloading {} bottles...", candidates.len());
+    println!("Downloading {} bottles...", candidates.len());
     let formulae: Vec<_> = candidates.iter().map(|c| c.formula.clone()).collect();
     let downloaded = download::download_bottles(api, &formulae).await?;
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
     // Phase 3: Install sequentially
-    println!("\nUpgrading packages...");
-
     for candidate in &candidates {
         let formula_name = &candidate.name;
         let old_version = &candidate.old_version;
         let formula = &candidate.formula;
         let new_version = formula.versions.stable.as_ref().unwrap();
+
+        // Show spinner for this package
+        use indicatif::{ProgressBar, ProgressStyle};
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        spinner.set_message(format!("Upgrading {}...", formula_name.cyan()));
+        spinner.enable_steady_tick(std::time::Duration::from_millis(100));
 
         let bottle_path = match download_map.get(formula_name) {
             Some(path) => path,
@@ -1546,6 +1564,8 @@ pub async fn upgrade(
         let receipt_data = receipt::InstallReceipt::new_bottle(formula, runtime_deps, true);
         receipt_data.write(&extracted_path)?;
 
+        spinner.finish_and_clear();
+
         println!(
             "    ├ {} Linked {} files",
             "✓".green(),
@@ -1583,9 +1603,9 @@ pub async fn upgrade(
     }
 
     println!(
-        "\n{} Upgraded {} packages",
+        "{} Upgraded {} packages",
         "✓".green().bold(),
-        to_upgrade.len().to_string().bold()
+        candidates.len().to_string().bold()
     );
 
     Ok(())
