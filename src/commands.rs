@@ -1361,7 +1361,7 @@ pub async fn upgrade(
         let all_packages = cellar::list_installed()?;
 
         // Deduplicate multiple versions - keep only the most recent for each formula
-        let estimated_capacity = all_packages.len() / 2;  // ~50% typical dedup rate
+        let estimated_capacity = all_packages.len() / 2; // ~50% typical dedup rate
         let mut package_map: std::collections::HashMap<String, cellar::InstalledPackage> =
             std::collections::HashMap::with_capacity(estimated_capacity);
 
@@ -1445,7 +1445,7 @@ pub async fn upgrade(
             // Check if installed
             let installed_versions = cellar::get_installed_versions(formula_name).ok()?;
             if installed_versions.is_empty() {
-                return None;  // Will install separately
+                return None; // Will install separately
             }
 
             let old_version = installed_versions[0].version.clone();
@@ -1459,7 +1459,7 @@ pub async fn upgrade(
             let new_version_stripped = strip_bottle_revision(&new_version);
 
             if old_version_stripped == new_version_stripped {
-                return None;  // Already at latest version
+                return None; // Already at latest version
             }
 
             Some(UpgradeCandidate {
@@ -2084,45 +2084,47 @@ pub fn update() -> Result<()> {
         .iter()
         .map(|tap| {
             let tap = tap.clone();
-            std::thread::spawn(move || -> (String, std::result::Result<&'static str, String>) {
-                let tap_dir = match crate::tap::tap_directory(&tap) {
-                    Ok(dir) => dir,
-                    Err(_) => return (tap, Err("invalid tap directory".to_string())),
-                };
+            std::thread::spawn(
+                move || -> (String, std::result::Result<&'static str, String>) {
+                    let tap_dir = match crate::tap::tap_directory(&tap) {
+                        Ok(dir) => dir,
+                        Err(_) => return (tap, Err("invalid tap directory".to_string())),
+                    };
 
-                if !tap_dir.exists() || !tap_dir.join(".git").exists() {
-                    return (tap, Err("not a git repository".to_string()));
-                }
+                    if !tap_dir.exists() || !tap_dir.join(".git").exists() {
+                        return (tap, Err("not a git repository".to_string()));
+                    }
 
-                let tap_dir_str = match tap_dir.to_str() {
-                    Some(s) => s,
-                    None => return (tap, Err("invalid path".to_string())),
-                };
+                    let tap_dir_str = match tap_dir.to_str() {
+                        Some(s) => s,
+                        None => return (tap, Err("invalid path".to_string())),
+                    };
 
-                let output = std::process::Command::new("git")
-                    .args(["-C", tap_dir_str, "pull", "--ff-only"])
-                    .output();
+                    let output = std::process::Command::new("git")
+                        .args(["-C", tap_dir_str, "pull", "--ff-only"])
+                        .output();
 
-                let result = match output {
-                    Ok(output) if output.status.success() => {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        if stdout.contains("Already up to date")
-                            || stdout.contains("Already up-to-date")
-                        {
-                            Ok("unchanged")
-                        } else {
-                            Ok("updated")
+                    let result = match output {
+                        Ok(output) if output.status.success() => {
+                            let stdout = String::from_utf8_lossy(&output.stdout);
+                            if stdout.contains("Already up to date")
+                                || stdout.contains("Already up-to-date")
+                            {
+                                Ok("unchanged")
+                            } else {
+                                Ok("updated")
+                            }
                         }
-                    }
-                    Ok(output) => {
-                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                        Err(stderr)
-                    }
-                    Err(e) => Err(e.to_string()),
-                };
+                        Ok(output) => {
+                            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                            Err(stderr)
+                        }
+                        Err(e) => Err(e.to_string()),
+                    };
 
-                (tap, result)
-            })
+                    (tap, result)
+                },
+            )
         })
         .collect();
 
@@ -2131,9 +2133,9 @@ pub fn update() -> Result<()> {
     let mut errors = 0;
 
     for handle in handles {
-        let (tap, result) = handle.join().unwrap_or_else(|_| {
-            ("unknown".to_string(), Err("thread panicked".to_string()))
-        });
+        let (tap, result) = handle
+            .join()
+            .unwrap_or_else(|_| ("unknown".to_string(), Err("thread panicked".to_string())));
 
         print!("  Updating {}... ", tap.cyan());
 
