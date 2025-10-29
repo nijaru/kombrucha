@@ -11,6 +11,23 @@ pub fn taps_path() -> PathBuf {
     crate::cellar::detect_prefix().join("Library/Taps")
 }
 
+/// Extract formula name from a tap/formula string
+/// Input: "user/repo/formula" → Output: "formula"
+/// Input: "formula" → Output: "formula"
+pub fn extract_formula_name(tap_formula: &str) -> String {
+    // If the string contains slashes, it might be tap/formula format
+    if tap_formula.contains('/') {
+        // Split and take the last part
+        tap_formula
+            .split('/')
+            .last()
+            .unwrap_or(tap_formula)
+            .to_string()
+    } else {
+        tap_formula.to_string()
+    }
+}
+
 /// Parse a tap name into (user, repo) components
 /// Input: "user/repo" → Output: ("user", "homebrew-repo")
 fn parse_tap_name(tap: &str) -> Result<(String, String)> {

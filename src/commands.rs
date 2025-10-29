@@ -1535,8 +1535,11 @@ pub async fn upgrade(
         .iter()
         .filter(|name| !pinned.contains(*name))
         .map(|formula_name| async move {
+            // Extract actual formula name (strip tap prefix if present)
+            let pkg_name = crate::tap::extract_formula_name(formula_name);
+
             // Check if installed
-            let installed_versions = cellar::get_installed_versions(formula_name).ok()?;
+            let installed_versions = cellar::get_installed_versions(&pkg_name).ok()?;
             if installed_versions.is_empty() {
                 return None; // Will install separately
             }
@@ -1581,13 +1584,16 @@ pub async fn upgrade(
     let tap_packages: Vec<(String, String)> = to_upgrade
         .iter()
         .filter_map(|name| {
-            if let Ok(versions) = cellar::get_installed_versions(name) {
+            // Extract actual formula name (strip tap prefix if present)
+            let pkg_name = crate::tap::extract_formula_name(name);
+
+            if let Ok(versions) = cellar::get_installed_versions(&pkg_name) {
                 if let Some(version) = versions.first() {
                     if let Ok(Some((tap_name, _, _))) =
                         crate::tap::get_package_tap_info(&version.path)
                     {
-                        if !pinned.contains(name) {
-                            return Some((name.clone(), tap_name));
+                        if !pinned.contains(&pkg_name) {
+                            return Some((pkg_name, tap_name));
                         }
                     }
                 }
