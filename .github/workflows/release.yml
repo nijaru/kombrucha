@@ -20,10 +20,10 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
-            asset_name: bru-macos-arm64
+            asset_name: bru-aarch64-apple-darwin
           - os: macos-latest
             target: x86_64-apple-darwin
-            asset_name: bru-macos-x86_64
+            asset_name: bru-x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             asset_name: bru-linux-x86_64
