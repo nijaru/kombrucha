@@ -20,8 +20,8 @@ pub struct InstallReceipt {
     pub loaded_from_api: bool,
     pub installed_as_dependency: bool,
     pub installed_on_request: bool,
-    #[serde(default)]
-    pub changed_files: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changed_files: Option<Vec<String>>,
     pub time: i64,
     #[serde(default)]
     pub source_modified_time: i64,
@@ -61,6 +61,8 @@ pub struct SourceVersions {
     pub head: Option<String>,
     #[serde(default)]
     pub version_scheme: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compatibility_version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -109,7 +111,7 @@ impl InstallReceipt {
             loaded_from_api: true,
             installed_as_dependency: !installed_on_request,
             installed_on_request,
-            changed_files: vec![],
+            changed_files: None,
             time: now,
             source_modified_time: now,
             compiler: Some("clang".to_string()),

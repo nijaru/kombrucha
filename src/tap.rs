@@ -187,6 +187,67 @@ pub fn get_tap_formula_version(tap_name: &str, formula_name: &str) -> Result<Opt
     parse_formula_version(&path)
 }
 
+/// Tap formula metadata extracted from Ruby file
+#[derive(Debug, Clone)]
+pub struct TapFormulaInfo {
+    pub name: String,
+    pub desc: Option<String>,
+    pub homepage: Option<String>,
+    pub version: Option<String>,
+}
+
+/// Parse formula metadata from a Ruby formula file
+pub fn parse_formula_info(formula_path: &Path, formula_name: &str) -> Result<TapFormulaInfo> {
+    if !formula_path.exists() {
+        return Err(anyhow::anyhow!("Formula file not found: {}", formula_path.display()));
+    }
+
+    let contents = fs::read_to_string(formula_path)
+        .with_context(|| format!("Failed to read formula: {}", formula_path.display()))?;
+
+    let mut desc = None;
+    let mut homepage = None;
+    let mut version = None;
+
+    for line in contents.lines() {
+        let line = line.trim();
+
+        // Parse: desc "Description text"
+        if line.starts_with("desc ") && line.contains('"') {
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start + 1..].rfind('"') {
+                    desc = Some(line[start + 1..start + 1 + end].to_string());
+                }
+            }
+        }
+
+        // Parse: homepage "https://..."
+        if line.starts_with("homepage ") && line.contains('"') {
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start + 1..].rfind('"') {
+                    homepage = Some(line[start + 1..start + 1 + end].to_string());
+                }
+            }
+        }
+
+        // Parse: version "X.Y.Z"
+        if line.starts_with("version ") && line.contains('"') {
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start + 1..].find('"') {
+                    version = Some(line[start + 1..start + 1 + end].to_string());
+                }
+            }
+        }
+    }
+
+    Ok(TapFormulaInfo {
+        name: formula_name.to_string(),
+        desc,
+        homepage,
+        version,
+    })
+}
+
 /// Check if an installed package is from a tap (based on receipt)
 /// Returns (tap_name, formula_path, installed_version) if from a tap, None otherwise
 pub fn get_package_tap_info(cellar_path: &Path) -> Result<Option<(String, PathBuf, String)>> {

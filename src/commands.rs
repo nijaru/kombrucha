@@ -144,10 +144,43 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
 
     // Check if this is an installed tap formula
     if let Ok(versions) = cellar::get_installed_versions(formula) {
-        if let Some(version) = versions.first() {
-            if let Ok(Some(_tap_info)) = crate::tap::get_package_tap_info(&version.path) {
-                // For tap formulae, fall back to brew info
-                return fallback_to_brew("info", formula);
+        if let Some(installed_version) = versions.first() {
+            if let Ok(Some((tap_name, formula_path, _))) = crate::tap::get_package_tap_info(&installed_version.path) {
+                // For tap formulae, parse the Ruby file natively
+                match crate::tap::parse_formula_info(&formula_path, formula) {
+                    Ok(tap_info) => {
+                        // Display tap formula info in native format
+                        println!("\n {}", format!("==> {}/{}", tap_name, tap_info.name).bold().green());
+                        if let Some(desc) = &tap_info.desc {
+                            println!("{}", desc);
+                        }
+                        if let Some(homepage) = &tap_info.homepage {
+                            println!("{}: {}", "Homepage".bold(), homepage);
+                        }
+                        if let Some(version) = &tap_info.version {
+                            println!("{}: {}", "Version".bold(), version);
+                        }
+
+                        // Show installed versions
+                        println!("{}: {} versions installed", "Installed".bold(), versions.len());
+                        for v in &versions {
+                            let marker = if v.version == installed_version.version { "*" } else { "" };
+                            println!("  {} {}", v.version.dimmed(), marker);
+                        }
+
+                        println!("{}: {}", "From".bold(), formula_path.display().to_string().dimmed());
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        // If parsing fails, fall back to brew (shouldn't normally happen)
+                        eprintln!("Warning: Failed to parse tap formula ({}), falling back to brew", e);
+                        let full_name = format!("{}/{}", tap_name, formula);
+                        if check_brew_available() {
+                            let _ = Command::new("brew").arg("info").arg(&full_name).status();
+                        }
+                        return Err(e.into());
+                    }
+                }
             }
         }
     }
@@ -1520,19 +1553,21 @@ pub async fn upgrade(
         .collect();
 
     // Separate out tap packages that need to be upgraded via brew
-    let tap_packages: Vec<String> = to_upgrade
+    // Store as (formula_name, tap_name) so we can construct full tap/formula name
+    let tap_packages: Vec<(String, String)> = to_upgrade
         .iter()
-        .filter(|name| {
+        .filter_map(|name| {
             if let Ok(versions) = cellar::get_installed_versions(name) {
                 if let Some(version) = versions.first() {
-                    if let Ok(Some(_)) = crate::tap::get_package_tap_info(&version.path) {
-                        return !pinned.contains(*name);
+                    if let Ok(Some((tap_name, _, _))) = crate::tap::get_package_tap_info(&version.path) {
+                        if !pinned.contains(name) {
+                            return Some((name.clone(), tap_name));
+                        }
                     }
                 }
             }
-            false
+            None
         })
-        .cloned()
         .collect();
 
     if candidates.is_empty() && tap_packages.is_empty() {
@@ -1658,17 +1693,16 @@ pub async fn upgrade(
             "\nUpgrading {} tap packages via brew...",
             tap_packages.len()
         );
-        for package in &tap_packages {
-            match fallback_to_brew("upgrade", package) {
-                Ok(_) => println!("  {} Upgraded {}", "✓".green(), package.bold()),
-                Err(e) => println!("  {} Failed to upgrade {}: {}", "✗".red(), package.bold(), e),
+        for (formula_name, tap_name) in &tap_packages {
+            let full_name = format!("{}/{}", tap_name, formula_name);
+            match fallback_to_brew("upgrade", &full_name) {
+                Ok(_) => println!("  {} Upgraded {}", "✓".green(), formula_name.bold()),
+                Err(e) => println!("  {} Failed to upgrade {}: {}", "✗".red(), formula_name.bold(), e),
             }
         }
     }
 
-    let total_upgraded = candidates.len() + tap_packages.iter().filter(|p| {
-        cellar::get_installed_versions(p).ok().is_some()
-    }).count();
+    let total_upgraded = candidates.len() + tap_packages.len();
 
     println!(
         "\n{} Upgraded {} packages",
@@ -1709,6 +1743,37 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         }
 
         let old_version = &installed_versions[0].version;
+        let cellar_path = &installed_versions[0].path;
+
+        // Check if this is a tap formula BEFORE uninstalling
+        // Critical: We must check this before removing the package!
+        if let Ok(Some((tap_name, _, _))) = crate::tap::get_package_tap_info(cellar_path) {
+            println!(
+                "  Reinstalling {} {} (from {})",
+                formula_name.cyan(),
+                old_version.dimmed(),
+                tap_name.dimmed()
+            );
+            // For tap formulae, delegate to brew to avoid the fetch failure
+            let full_name = format!("{}/{}", tap_name, formula_name);
+            match fallback_to_brew("reinstall", &full_name) {
+                Ok(_) => {
+                    actually_reinstalled += 1;
+                    println!("  {} Reinstalled {}", "✓".green(), formula_name.bold());
+                    continue;
+                }
+                Err(e) => {
+                    println!(
+                        "  {} Failed to reinstall {}: {}",
+                        "✗".red(),
+                        formula_name.bold(),
+                        e
+                    );
+                    continue;
+                }
+            }
+        }
+
         println!(
             "  Reinstalling {} {}",
             formula_name.cyan(),
