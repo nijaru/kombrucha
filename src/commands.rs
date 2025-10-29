@@ -1530,7 +1530,7 @@ pub async fn upgrade(
         symlink::unlink_formula(formula_name, old_version)?;
 
         // Install new version
-        let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
+        let extracted_path = extract::extract_bottle(bottle_path, formula_name, new_version)?;
 
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
@@ -1543,7 +1543,7 @@ pub async fn upgrade(
             map.insert(formula.name.clone(), formula.clone());
             map
         });
-        let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
+        let receipt_data = receipt::InstallReceipt::new_bottle(formula, runtime_deps, true);
         receipt_data.write(&extracted_path)?;
 
         println!(
