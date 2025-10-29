@@ -5030,7 +5030,8 @@ pub async fn casks(api: &BrewApi) -> Result<()> {
 
     let all_casks = api.fetch_all_casks().await?;
 
-    println!("{} {} casks available",
+    println!(
+        "{} {} casks available",
         "✓".green(),
         all_casks.len().to_string().bold()
     );

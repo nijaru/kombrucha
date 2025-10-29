@@ -176,14 +176,8 @@ fn test_services_filtering_correctness() {
         .output()
         .expect("Failed to run brew services");
 
-    assert!(
-        bru_output.status.success(),
-        "bru services should succeed"
-    );
-    assert!(
-        brew_output.status.success(),
-        "brew services should succeed"
-    );
+    assert!(bru_output.status.success(), "bru services should succeed");
+    assert!(brew_output.status.success(), "brew services should succeed");
 
     let bru_stdout = String::from_utf8_lossy(&bru_output.stdout);
     let brew_stdout = String::from_utf8_lossy(&brew_output.stdout);

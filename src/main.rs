@@ -971,7 +971,10 @@ async fn run() -> anyhow::Result<()> {
             force,
         }) => {
             if formulae.is_empty() {
-                error_exit("No formulae specified", "bru install [OPTIONS] [FORMULAE]...");
+                error_exit(
+                    "No formulae specified",
+                    "bru install [OPTIONS] [FORMULAE]...",
+                );
             }
             if cask {
                 commands::install_cask(&api, &formulae).await?;
@@ -989,7 +992,10 @@ async fn run() -> anyhow::Result<()> {
         }
         Some(Commands::Reinstall { formulae, cask }) => {
             if formulae.is_empty() {
-                error_exit("No formulae specified", "bru reinstall [OPTIONS] [FORMULAE]...");
+                error_exit(
+                    "No formulae specified",
+                    "bru reinstall [OPTIONS] [FORMULAE]...",
+                );
             }
             commands::reinstall(&api, &formulae, cask).await?;
         }
@@ -999,7 +1005,10 @@ async fn run() -> anyhow::Result<()> {
             cask,
         }) => {
             if formulae.is_empty() {
-                error_exit("No formulae specified", "bru uninstall [OPTIONS] [FORMULAE]...");
+                error_exit(
+                    "No formulae specified",
+                    "bru uninstall [OPTIONS] [FORMULAE]...",
+                );
             }
             if cask {
                 commands::uninstall_cask(&formulae)?;
