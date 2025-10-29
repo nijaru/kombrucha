@@ -52,3 +52,4 @@ jobs:
           files: ${{ matrix.asset_name }}.tar.gz
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
