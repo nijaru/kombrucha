@@ -142,6 +142,16 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
         println!("Fetching info for: {}", formula.cyan());
     }
 
+    // Check if this is an installed tap formula
+    if let Ok(versions) = cellar::get_installed_versions(formula) {
+        if let Some(version) = versions.first() {
+            if let Ok(Some(_tap_info)) = crate::tap::get_package_tap_info(&version.path) {
+                // For tap formulae, fall back to brew info
+                return fallback_to_brew("info", formula);
+            }
+        }
+    }
+
     // Try formula first, then cask
     match api.fetch_formula(formula).await {
         Ok(formula) => {
@@ -1395,9 +1405,26 @@ pub async fn upgrade(
         let packages: Vec<_> = package_map.into_values().collect();
 
         // Fetch all formulae in parallel for better performance
+        // Handle both homebrew/core (via API) and tap formulae (via file reading)
         let fetch_futures: Vec<_> = packages
             .iter()
             .map(|pkg| async move {
+                // Check if this package is from a tap
+                if let Ok(Some((tap_name, formula_path, installed_version))) =
+                    crate::tap::get_package_tap_info(&pkg.path)
+                {
+                    // Read version from tap formula file
+                    if let Ok(Some(latest_version)) = crate::tap::parse_formula_version(&formula_path) {
+                        return Some((pkg.name.clone(), installed_version, latest_version));
+                    }
+                    // If we can't read the formula file, try to get version from tap name
+                    if let Ok(Some(latest_version)) = crate::tap::get_tap_formula_version(&tap_name, &pkg.name) {
+                        return Some((pkg.name.clone(), installed_version, latest_version));
+                    }
+                    return None;
+                }
+
+                // Fallback to API for homebrew/core packages
                 let formula = api.fetch_formula(&pkg.name).await.ok()?;
                 let latest = formula.versions.stable.as_ref()?;
                 Some((pkg.name.clone(), pkg.version.clone(), latest.clone()))
@@ -1458,8 +1485,15 @@ pub async fn upgrade(
             }
 
             let old_version = installed_versions[0].version.clone();
+            let cellar_path = &installed_versions[0].path;
 
-            // Fetch latest version
+            // Check if this is a tap formula - if so, we'll upgrade via brew
+            if let Ok(Some(_tap_info)) = crate::tap::get_package_tap_info(cellar_path) {
+                // For tap formulae, fall back to brew since we don't have bottles
+                return None;
+            }
+
+            // Fetch latest version from API (homebrew/core only)
             let formula = api.fetch_formula(formula_name).await.ok()?;
             let new_version = formula.versions.stable.as_ref()?.clone();
 
@@ -1485,7 +1519,23 @@ pub async fn upgrade(
         .flatten()
         .collect();
 
-    if candidates.is_empty() {
+    // Separate out tap packages that need to be upgraded via brew
+    let tap_packages: Vec<String> = to_upgrade
+        .iter()
+        .filter(|name| {
+            if let Ok(versions) = cellar::get_installed_versions(name) {
+                if let Some(version) = versions.first() {
+                    if let Ok(Some(_)) = crate::tap::get_package_tap_info(&version.path) {
+                        return !pinned.contains(*name);
+                    }
+                }
+            }
+            false
+        })
+        .cloned()
+        .collect();
+
+    if candidates.is_empty() && tap_packages.is_empty() {
         println!("{} All packages are up to date", "✓".green());
         return Ok(());
     }
@@ -1602,10 +1652,28 @@ pub async fn upgrade(
         );
     }
 
+    // Handle tap packages via brew
+    if !tap_packages.is_empty() {
+        println!(
+            "\nUpgrading {} tap packages via brew...",
+            tap_packages.len()
+        );
+        for package in &tap_packages {
+            match fallback_to_brew("upgrade", package) {
+                Ok(_) => println!("  {} Upgraded {}", "✓".green(), package.bold()),
+                Err(e) => println!("  {} Failed to upgrade {}: {}", "✗".red(), package.bold(), e),
+            }
+        }
+    }
+
+    let total_upgraded = candidates.len() + tap_packages.iter().filter(|p| {
+        cellar::get_installed_versions(p).ok().is_some()
+    }).count();
+
     println!(
-        "{} Upgraded {} packages",
+        "\n{} Upgraded {} packages",
         "✓".green().bold(),
-        candidates.len().to_string().bold()
+        total_upgraded.to_string().bold()
     );
 
     Ok(())

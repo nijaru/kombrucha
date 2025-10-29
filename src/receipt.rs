@@ -49,6 +49,18 @@ pub struct SourceInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tap_git_head: Option<String>,
     pub spec: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub versions: Option<SourceVersions>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SourceVersions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stable: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub head: Option<String>,
+    #[serde(default)]
+    pub version_scheme: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -65,6 +77,18 @@ pub struct BuiltOn {
 }
 
 impl InstallReceipt {
+    /// Read an existing INSTALL_RECEIPT.json file
+    pub fn read(cellar_path: &Path) -> Result<Self> {
+        let receipt_path = cellar_path.join("INSTALL_RECEIPT.json");
+        let contents = fs::read_to_string(&receipt_path)
+            .with_context(|| format!("Failed to read receipt: {}", receipt_path.display()))?;
+
+        let receipt: Self = serde_json::from_str(&contents)
+            .context("Failed to parse INSTALL_RECEIPT.json")?;
+
+        Ok(receipt)
+    }
+
     /// Create a new receipt for a bottle installation
     pub fn new_bottle(
         _formula: &Formula,
@@ -96,6 +120,7 @@ impl InstallReceipt {
                 tap: "homebrew/core".to_string(),
                 tap_git_head: None,
                 spec: "stable".to_string(),
+                versions: None,
             }),
             arch: Some(std::env::consts::ARCH.to_string()),
             built_on: detect_build_environment(),

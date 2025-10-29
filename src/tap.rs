@@ -1,8 +1,9 @@
 //! Homebrew tap management - adding and removing third-party repositories
+//! Also handles reading and parsing tap formula files for upgrade detection
 
 use anyhow::{Context, Result, anyhow};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Get the Taps directory path
@@ -141,6 +142,78 @@ pub fn untap(tap_name: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Get the formula file path for a package in a tap
+/// Returns the path even if the file doesn't exist
+pub fn formula_path(tap_name: &str, formula_name: &str) -> Result<PathBuf> {
+    let tap_dir = tap_directory(tap_name)?;
+    Ok(tap_dir.join("Formula").join(format!("{}.rb", formula_name)))
+}
+
+/// Parse version from a Ruby formula file
+/// Looks for: version "X.Y.Z"
+pub fn parse_formula_version(formula_path: &Path) -> Result<Option<String>> {
+    if !formula_path.exists() {
+        return Ok(None);
+    }
+
+    let contents = fs::read_to_string(formula_path)
+        .with_context(|| format!("Failed to read formula: {}", formula_path.display()))?;
+
+    // Parse version from Ruby formula file
+    for line in contents.lines() {
+        let line = line.trim();
+
+        // Look for: version "X.Y.Z"
+        if line.starts_with("version ") && line.contains('"') {
+            // Extract version string between quotes
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start + 1..].find('"') {
+                    let version = &line[start + 1..start + 1 + end];
+                    return Ok(Some(version.to_string()));
+                }
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Get the latest version for a tap formula
+/// Returns None if the formula file doesn't exist or version can't be parsed
+pub fn get_tap_formula_version(tap_name: &str, formula_name: &str) -> Result<Option<String>> {
+    let path = formula_path(tap_name, formula_name)?;
+    parse_formula_version(&path)
+}
+
+/// Check if an installed package is from a tap (based on receipt)
+/// Returns (tap_name, formula_path, installed_version) if from a tap, None otherwise
+pub fn get_package_tap_info(cellar_path: &Path) -> Result<Option<(String, PathBuf, String)>> {
+    use crate::receipt::InstallReceipt;
+
+    let receipt = InstallReceipt::read(cellar_path)?;
+
+    let source = match receipt.source {
+        Some(s) => s,
+        None => return Ok(None),
+    };
+
+    // homebrew/core is not considered a "tap" for upgrade purposes
+    if source.tap == "homebrew/core" {
+        return Ok(None);
+    }
+
+    let path = match source.path {
+        Some(p) => PathBuf::from(p),
+        None => return Ok(None),
+    };
+
+    let installed_version = source.versions
+        .and_then(|v| v.stable)
+        .unwrap_or_default();
+
+    Ok(Some((source.tap, path, installed_version)))
 }
 
 #[cfg(test)]
