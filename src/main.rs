@@ -860,6 +860,16 @@ fn main() {
     }
 }
 
+/// Display a user-friendly error and exit
+fn error_exit(message: &str, usage: &str) -> ! {
+    eprintln!("{} {}", "Error:".red().bold(), message);
+    eprintln!();
+    eprintln!("{} {}", "Usage:".bold(), usage);
+    eprintln!();
+    eprintln!("For more information, try '{}'", "--help".cyan());
+    std::process::exit(1);
+}
+
 async fn run() -> anyhow::Result<()> {
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
@@ -949,10 +959,7 @@ async fn run() -> anyhow::Result<()> {
         }
         Some(Commands::Fetch { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru fetch [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru fetch [FORMULAE]...");
             }
             commands::fetch(&api, &formulae).await?;
         }
@@ -964,10 +971,7 @@ async fn run() -> anyhow::Result<()> {
             force,
         }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru install [OPTIONS] [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru install [OPTIONS] [FORMULAE]...");
             }
             if cask {
                 commands::install_cask(&api, &formulae).await?;
@@ -985,10 +989,7 @@ async fn run() -> anyhow::Result<()> {
         }
         Some(Commands::Reinstall { formulae, cask }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru reinstall [OPTIONS] [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru reinstall [OPTIONS] [FORMULAE]...");
             }
             commands::reinstall(&api, &formulae, cask).await?;
         }
@@ -998,10 +999,7 @@ async fn run() -> anyhow::Result<()> {
             cask,
         }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru uninstall [OPTIONS] [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru uninstall [OPTIONS] [FORMULAE]...");
             }
             if cask {
                 commands::uninstall_cask(&formulae)?;
@@ -1051,46 +1049,31 @@ async fn run() -> anyhow::Result<()> {
         }
         Some(Commands::Pin { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru pin [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru pin [FORMULAE]...");
             }
             commands::pin(&formulae)?;
         }
         Some(Commands::Unpin { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru unpin [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru unpin [FORMULAE]...");
             }
             commands::unpin(&formulae)?;
         }
         Some(Commands::Desc { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru desc [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru desc [FORMULAE]...");
             }
             commands::desc(&api, &formulae).await?;
         }
         Some(Commands::Link { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru link [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru link [FORMULAE]...");
             }
             commands::link(&formulae)?;
         }
         Some(Commands::Unlink { formulae }) => {
             if formulae.is_empty() {
-                eprintln!("Error: No formulae specified\n");
-                eprintln!("Usage: bru unlink [FORMULAE]...\n");
-                eprintln!("For more information, try '--help'");
-                std::process::exit(1);
+                error_exit("No formulae specified", "bru unlink [FORMULAE]...");
             }
             commands::unlink(&formulae)?;
         }
