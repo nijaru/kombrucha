@@ -139,7 +139,12 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 // Only log actual errors (not warnings about code signatures)
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 if !stderr.contains("warning:") {
-                    tracing::warn!("Failed to relocate {} in {}: {}", old_path, path.display(), stderr);
+                    tracing::warn!(
+                        "Failed to relocate {} in {}: {}",
+                        old_path,
+                        path.display(),
+                        stderr
+                    );
                 }
             }
         }
