@@ -2079,64 +2079,72 @@ pub fn update() -> Result<()> {
 
     println!("\nUpdating {} taps...", taps.len().to_string().bold());
 
-    // Parallel tap updates
+    // Parallel tap updates with live progress
+    use std::sync::mpsc;
+    let (tx, rx) = mpsc::channel();
+
     let handles: Vec<_> = taps
         .iter()
         .map(|tap| {
             let tap = tap.clone();
-            std::thread::spawn(
-                move || -> (String, std::result::Result<&'static str, String>) {
-                    let tap_dir = match crate::tap::tap_directory(&tap) {
-                        Ok(dir) => dir,
-                        Err(_) => return (tap, Err("invalid tap directory".to_string())),
-                    };
-
-                    if !tap_dir.exists() || !tap_dir.join(".git").exists() {
-                        return (tap, Err("not a git repository".to_string()));
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                let tap_dir = match crate::tap::tap_directory(&tap) {
+                    Ok(dir) => dir,
+                    Err(_) => {
+                        let _ = tx.send((tap.clone(), Err("invalid tap directory".to_string())));
+                        return;
                     }
+                };
 
-                    let tap_dir_str = match tap_dir.to_str() {
-                        Some(s) => s,
-                        None => return (tap, Err("invalid path".to_string())),
-                    };
+                if !tap_dir.exists() || !tap_dir.join(".git").exists() {
+                    let _ = tx.send((tap.clone(), Err("not a git repository".to_string())));
+                    return;
+                }
 
-                    let output = std::process::Command::new("git")
-                        .args(["-C", tap_dir_str, "pull", "--ff-only"])
-                        .output();
+                let tap_dir_str = match tap_dir.to_str() {
+                    Some(s) => s,
+                    None => {
+                        let _ = tx.send((tap.clone(), Err("invalid path".to_string())));
+                        return;
+                    }
+                };
 
-                    let result = match output {
-                        Ok(output) if output.status.success() => {
-                            let stdout = String::from_utf8_lossy(&output.stdout);
-                            if stdout.contains("Already up to date")
-                                || stdout.contains("Already up-to-date")
-                            {
-                                Ok("unchanged")
-                            } else {
-                                Ok("updated")
-                            }
+                let output = std::process::Command::new("git")
+                    .args(["-C", tap_dir_str, "pull", "--ff-only"])
+                    .output();
+
+                let result = match output {
+                    Ok(output) if output.status.success() => {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        if stdout.contains("Already up to date")
+                            || stdout.contains("Already up-to-date")
+                        {
+                            Ok("unchanged")
+                        } else {
+                            Ok("updated")
                         }
-                        Ok(output) => {
-                            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                            Err(stderr)
-                        }
-                        Err(e) => Err(e.to_string()),
-                    };
+                    }
+                    Ok(output) => {
+                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                        Err(stderr)
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
 
-                    (tap, result)
-                },
-            )
+                let _ = tx.send((tap, result));
+            })
         })
         .collect();
+
+    drop(tx); // Close sender so receiver knows when done
 
     let mut updated = 0;
     let mut unchanged = 0;
     let mut errors = 0;
 
-    for handle in handles {
-        let (tap, result) = handle
-            .join()
-            .unwrap_or_else(|_| ("unknown".to_string(), Err("thread panicked".to_string())));
-
+    // Display results as they complete
+    for (tap, result) in rx {
         print!("  Updating {}... ", tap.cyan());
 
         match result {
@@ -2157,6 +2165,11 @@ pub fn update() -> Result<()> {
                 errors += 1;
             }
         }
+    }
+
+    // Wait for all threads
+    for handle in handles {
+        let _ = handle.join();
     }
 
     println!();
