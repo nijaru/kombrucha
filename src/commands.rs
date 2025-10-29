@@ -3126,7 +3126,6 @@ pub fn analytics(action: Option<&str>) -> Result<()> {
             // Show current state
             let enabled = !analytics_file.exists();
             println!("{}", "==> Analytics Status".bold().green());
-            println!();
             if enabled {
                 println!("{}: {}", "Status".bold(), "Enabled".green());
                 println!();
@@ -5018,8 +5017,7 @@ pub async fn casks(api: &BrewApi) -> Result<()> {
 
     let all_casks = api.fetch_all_casks().await?;
 
-    println!(
-        "\n{} {} casks available\n",
+    println!("{} {} casks available",
         "✓".green(),
         all_casks.len().to_string().bold()
     );

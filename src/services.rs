@@ -142,8 +142,12 @@ pub fn list_all_services() -> Result<Vec<ServiceInfo>> {
                 .unwrap_or("");
 
             if !formula_name.is_empty() {
-                let info = get_service_status(formula_name)?;
-                services.push(info);
+                // Only include if formula is actually installed (not just cask plist)
+                let formula_path = cellar::cellar_path().join(formula_name);
+                if formula_path.exists() {
+                    let info = get_service_status(formula_name)?;
+                    services.push(info);
+                }
             }
         }
     }
