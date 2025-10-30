@@ -58,13 +58,14 @@ fn macos_name(version: &str) -> &'static str {
         .unwrap_or(0);
 
     match major {
-        16 => "sequoia",  // macOS 16
+        26 => "tahoe",    // macOS 26 (Tahoe) - year-based versioning
+        16 => "tahoe",    // macOS 16 (Tahoe) - compatibility version number
         15 => "sequoia",  // macOS 15
         14 => "sonoma",   // macOS 14
         13 => "ventura",  // macOS 13
         12 => "monterey", // macOS 12
         11 => "big_sur",  // macOS 11
-        _ => "sonoma",    // Default to recent
+        _ => "sonoma",    // Default to recent compatible version
     }
 }
 

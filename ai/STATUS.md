@@ -4,8 +4,8 @@ Last updated: 2025-10-30
 
 ## Current State
 
-**Version**: 0.1.21 (In Development - Critical Fix)
-**Status**: All Mach-O files now signed - ready for release
+**Version**: 0.1.22 (In Development - Audit Fixes)
+**Status**: Complete audit completed, critical uninstall bug fixed
 
 ### v0.1.21 Release (2025-10-30) - CRITICAL FIXES
 
@@ -36,6 +36,104 @@ Last updated: 2025-10-30
 **Impact Assessment:**
 - v0.1.20: Binaries without placeholders crash, broken symlinks - **BROKEN**
 - v0.1.21: All binaries properly signed, symlinks correct ✅
+
+### v0.1.22 Development (2025-10-30) - Dependency Resolution Audit
+
+**Dependency Resolution Fix** (src/commands.rs):
+
+1. **`bru deps` now shows transitive dependencies**
+   - **Root Cause**: `deps` command only showed direct dependencies, not full closure
+   - **Impact**: Users couldn't see all dependencies that would be installed
+   - **Comparison (before fix)**:
+     - `brew deps ffmpeg`: 92 dependencies
+     - `bru deps ffmpeg`: 4 dependencies (WRONG - only direct deps)
+   - **Fix**: Modified `deps` command to use `resolve_dependencies()` function
+   - **Comparison (after fix)**:
+     - `brew deps wget`: 5 deps | `bru deps wget`: 5 deps ✅ (perfect match)
+     - `brew deps aom`: 16 deps | `bru deps aom`: 17 deps (1 extra: openjph)
+     - `brew deps ffmpeg`: 92 deps | `bru deps ffmpeg`: 93 deps (1 extra: openjph)
+   - **Note**: openjph discrepancy is because bru uses latest API (openexr@3.4.2 depends on openjph) while brew uses installed version (openexr@3.4.1 doesn't)
+
+2. **Added `--direct` flag to match `brew deps --direct`**
+   - Shows only immediate dependencies, not transitive
+   - Matches Homebrew behavior exactly
+   - Does NOT show build dependencies (matches brew default)
+
+3. **Verified `resolve_dependencies()` function is correct**
+   - Used by `install` command to determine what to install
+   - Correctly resolves full transitive closure of runtime dependencies
+   - Does NOT include build dependencies (correct for bottle installation)
+   - Homebrew doesn't install build deps when installing bottles (pre-compiled binaries)
+
+**Testing Results:**
+- Simple packages (wget): Perfect match ✅
+- Medium complexity (aom): 16 vs 17 (+1 from updated API) ✅
+- Complex packages (ffmpeg): 92 vs 93 (+1 from updated API) ✅
+- Direct deps flag: Exact match with brew ✅
+
+**Version/Bottle Selection Audit** (src/platform.rs, src/download.rs):
+
+1. **Platform detection is correct**
+   - Detects architecture: aarch64 → arm64, x86_64 → x86_64
+   - Detects macOS version and maps to Homebrew code names
+   - Format: `{arch}_{codename}` (e.g., "arm64_sequoia")
+
+2. **Fixed macOS 16/26 (Tahoe) version mapping**
+   - **Issue**: macOS 16 was mapped to "sequoia" instead of "tahoe"
+   - **Root Cause**: Missing "tahoe" in version mapping
+   - **Context**: macOS Tahoe uses dual versioning (16 and 26) for compatibility
+   - **Fix**: Added both version 16 and 26 → "tahoe" mapping
+
+3. **Added universal bottle fallback**
+   - **Issue**: No fallback when exact platform bottle unavailable
+   - **Fix**: Added fallback to "all" (universal) bottles, matching Homebrew
+   - **Logic**: Try exact platform first, then "all", then fail
+
+**Platform Version Mapping:**
+- macOS 26/16: tahoe
+- macOS 15: sequoia
+- macOS 14: sonoma
+- macOS 13: ventura
+- macOS 12: monterey
+- macOS 11: big_sur
+
+**Testing:**
+- All platform detection tests pass ✅
+- Bottle selection logic matches Homebrew ✅
+- Universal bottle fallback implemented ✅
+
+**Cleanup Logic Audit** (src/commands.rs):
+
+1. **Cleanup command verified correct**
+   - Removes old versions of installed formulae ✅
+   - Keeps latest version based on semantic versioning ✅
+   - Unlinks symlinks before removal ✅
+   - Calculates and reports space freed ✅
+   - Has dry-run mode ✅
+
+2. **CRITICAL BUG FOUND AND FIXED: Symlink handling in uninstall**
+   - **Issue**: Uninstall failed with "Not a directory (os error 20)" on symlinked formulae
+   - **Root Cause**: Code called `read_dir()` on symlinks without checking metadata first
+   - **Example**: python-certifi → certifi symlink in Cellar
+   - **Fix**: Use `symlink_metadata()` to check if path is symlink before calling `read_dir()`
+   - **Impact**: CRITICAL - breaks autoremove/uninstall for any renamed/symlinked formulae
+
+**Upgrade Logic Audit** (src/commands.rs):
+
+1. **Upgrade command verified correct**
+   - Detects outdated packages by comparing versions ✅
+   - Strips bottle revisions for accurate comparison ✅
+   - Handles tap formulae (falls back to brew) ✅
+   - Respects pinned packages ✅
+   - Parallel fetching for performance ✅
+   - Has dry-run and force modes ✅
+
+**Audit Status:**
+- ✅ Dependency resolution - VERIFIED CORRECT + FIXED
+- ✅ Version/bottle selection logic - VERIFIED CORRECT + ENHANCED
+- ✅ Cleanup logic - VERIFIED CORRECT
+- ✅ Upgrade logic - VERIFIED CORRECT
+- ✅ Uninstall logic - CRITICAL BUG FOUND AND FIXED
 
 ### v0.1.20 Release (2025-10-30) - PARTIAL FIX
 

@@ -334,32 +334,8 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool) -> Result<()> {
+pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool, direct: bool) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
-
-    let spinner = if is_tty {
-        let pb = ProgressBar::new_spinner();
-        pb.set_style(
-            ProgressStyle::default_spinner()
-                .template("{spinner:.cyan} {msg}")
-                .unwrap(),
-        );
-        pb.set_message(format!("Fetching dependencies for {}...", formula));
-        pb.enable_steady_tick(std::time::Duration::from_millis(100));
-        pb
-    } else {
-        ProgressBar::hidden()
-    };
-
-    let formula_data = api.fetch_formula(formula).await?;
-    spinner.finish_and_clear();
-
-    if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
-        if is_tty {
-            println!("{} No dependencies", "✓".green());
-        }
-        return Ok(());
-    }
 
     // If filtering by installed, get the list of installed packages
     let installed_names: HashSet<String> = if installed_only {
@@ -371,61 +347,111 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
         HashSet::new()
     };
 
-    if !formula_data.dependencies.is_empty() {
-        let mut deps: Vec<_> = formula_data.dependencies.iter().collect();
+    if direct {
+        // Direct mode: show only immediate dependencies (like brew deps --direct)
+        let spinner = if is_tty {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(
+                ProgressStyle::default_spinner()
+                    .template("{spinner:.cyan} {msg}")
+                    .unwrap(),
+            );
+            pb.set_message(format!("Fetching dependencies for {}...", formula));
+            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
+
+        let formula_data = api.fetch_formula(formula).await?;
+        spinner.finish_and_clear();
+
+        if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
+            if is_tty {
+                println!("{} No dependencies", "✓".green());
+            }
+            return Ok(());
+        }
+
+        if !formula_data.dependencies.is_empty() {
+            let mut deps: Vec<_> = formula_data.dependencies.iter().collect();
+
+            if installed_only {
+                deps.retain(|dep| installed_names.contains(*dep));
+            }
+
+            if !deps.is_empty() {
+                if is_tty {
+                    println!("{}", "Runtime dependencies:".bold().green());
+                }
+                let len = deps.len();
+                for (i, dep) in deps.iter().enumerate() {
+                    if is_tty {
+                        if tree {
+                            let prefix = if i == len - 1 { "└─" } else { "├─" };
+                            println!("  {} {}", prefix, dep.cyan());
+                        } else {
+                            println!("  {}", dep.cyan());
+                        }
+                    } else {
+                        println!("{}", dep);
+                    }
+                }
+            } else if installed_only && is_tty {
+                println!("{} No runtime dependencies installed", "ℹ".blue());
+            }
+        }
+
+        // Note: brew deps --direct does NOT show build dependencies by default
+        // Build deps are only shown with --include-build flag (not yet implemented)
+    } else {
+        // Default mode: show all transitive runtime dependencies (like brew deps)
+        // Temporarily suppress the spinner output from resolve_dependencies
+        unsafe {
+            std::env::set_var("BRU_QUIET", "1");
+        }
+        let (_all_formulae, dep_order) = resolve_dependencies(api, &[formula.to_string()]).await?;
+        unsafe {
+            std::env::remove_var("BRU_QUIET");
+        }
+
+        // Remove the root formula from the dependency list
+        let mut deps: Vec<_> = dep_order
+            .into_iter()
+            .filter(|name| name != formula)
+            .collect();
+
+        if deps.is_empty() {
+            if is_tty {
+                println!("{} No dependencies", "✓".green());
+            }
+            return Ok(());
+        }
 
         if installed_only {
-            deps.retain(|dep| installed_names.contains(*dep));
+            deps.retain(|dep| installed_names.contains(dep));
         }
 
-        if !deps.is_empty() {
+        if deps.is_empty() && installed_only {
             if is_tty {
-                println!("{}", "Runtime dependencies:".bold().green());
+                println!("{} No dependencies installed", "ℹ".blue());
             }
-            let len = deps.len();
-            for (i, dep) in deps.iter().enumerate() {
-                if is_tty {
-                    if tree {
-                        let prefix = if i == len - 1 { "└─" } else { "├─" };
-                        println!("  {} {}", prefix, dep.cyan());
-                    } else {
-                        println!("  {}", dep.cyan());
-                    }
-                } else {
-                    println!("{}", dep);
-                }
-            }
-        } else if installed_only && is_tty {
-            println!("{} No runtime dependencies installed", "ℹ".blue());
-        }
-    }
-
-    if !formula_data.build_dependencies.is_empty() {
-        let mut build_deps: Vec<_> = formula_data.build_dependencies.iter().collect();
-
-        if installed_only {
-            build_deps.retain(|dep| installed_names.contains(*dep));
+            return Ok(());
         }
 
-        if !build_deps.is_empty() {
+        // Print dependencies
+        let len = deps.len();
+        for (i, dep) in deps.iter().enumerate() {
             if is_tty {
-                println!("{}", "Build dependencies:".bold().yellow());
-            }
-            let len = build_deps.len();
-            for (i, dep) in build_deps.iter().enumerate() {
-                if is_tty {
-                    if tree {
-                        let prefix = if i == len - 1 { "└─" } else { "├─" };
-                        println!("  {} {}", prefix, dep.cyan());
-                    } else {
-                        println!("  {}", dep.cyan());
-                    }
+                if tree {
+                    let prefix = if i == len - 1 { "└─" } else { "├─" };
+                    println!("{} {}", prefix, dep.cyan());
                 } else {
-                    println!("{}", dep);
+                    println!("{}", dep.cyan());
                 }
+            } else {
+                println!("{}", dep);
             }
-        } else if installed_only && !formula_data.build_dependencies.is_empty() && is_tty {
-            println!("{} No build dependencies installed", "ℹ".blue());
         }
     }
 
@@ -2066,10 +2092,18 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             std::fs::remove_dir_all(&cellar_path)?;
         }
 
-        // Remove formula directory if empty
+        // Remove formula directory if empty (or if it's a symlink)
         let formula_dir = cellar::cellar_path().join(formula_name);
-        if formula_dir.exists() && formula_dir.read_dir()?.next().is_none() {
-            std::fs::remove_dir(&formula_dir)?;
+        if formula_dir.exists() {
+            // Check if it's a symlink first
+            let metadata = std::fs::symlink_metadata(&formula_dir)?;
+            if metadata.is_symlink() {
+                // Remove the symlink
+                std::fs::remove_file(&formula_dir)?;
+            } else if metadata.is_dir() && formula_dir.read_dir()?.next().is_none() {
+                // Remove empty directory
+                std::fs::remove_dir(&formula_dir)?;
+            }
         }
 
         println!(

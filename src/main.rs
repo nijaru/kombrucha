@@ -95,6 +95,10 @@ enum Commands {
         /// Only show installed dependencies
         #[arg(long)]
         installed: bool,
+
+        /// Show only direct dependencies (default: show all transitive dependencies)
+        #[arg(long)]
+        direct: bool,
     },
 
     /// Show formulae that depend on a formula
@@ -939,8 +943,9 @@ async fn run() -> anyhow::Result<()> {
             formula,
             tree,
             installed,
+            direct,
         }) => {
-            commands::deps(&api, &formula, tree, installed).await?;
+            commands::deps(&api, &formula, tree, installed, direct).await?;
         }
         Some(Commands::Uses { formula }) => {
             commands::uses(&api, &formula).await?;

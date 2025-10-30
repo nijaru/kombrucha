@@ -73,11 +73,13 @@ pub async fn download_bottle(
     // Detect platform
     let platform_tag = platform::detect_bottle_tag()?;
 
-    // Get bottle file for this platform
+    // Get bottle file for this platform, with fallback to "all" (universal)
+    // Matches Homebrew's fallback logic: exact platform first, then universal
     let bottle_file = bottle
         .files
         .get(&platform_tag)
-        .ok_or_else(|| anyhow!("No bottle for platform: {}", platform_tag))?;
+        .or_else(|| bottle.files.get("all"))
+        .ok_or_else(|| anyhow!("No bottle for platform: {} (no universal bottle available)", platform_tag))?;
 
     // Create cache directory
     let cache = cache_dir();
