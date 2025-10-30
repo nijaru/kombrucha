@@ -4,25 +4,54 @@ Last updated: 2025-10-30
 
 ## Current State
 
-**Version**: 0.1.18+ (Development - preparing v0.1.19)
-**Status**: Production-ready with comprehensive UX and testing improvements
+**Version**: 0.1.20 (In Development - Critical Fix)
+**Status**: Critical bottle relocation bugs fixed - ready for release
 
-### Recent Improvements (unreleased)
+### v0.1.20 Release (2025-10-30) - CRITICAL FIX
 
 **Critical Bug Fixes:**
-- Script & library relocation: Fixed broken shebangs and Python crashes (src/relocate.rs)
-  - **Script Issue**: @@HOMEBREW_CELLAR@@ placeholders not replaced in executable scripts
+- **Bottle relocation now works correctly** (src/relocate.rs)
+  - **Script Issue** (v0.1.18): @@HOMEBREW_CELLAR@@ placeholders not replaced in executable scripts
     - Root cause: relocate_bottle() only processed Mach-O binaries, ignored scripts
     - Impact: Scripts like `#!/@@HOMEBREW_CELLAR@@/package/version/bin/python` would fail with "bad interpreter"
-    - Fix: Added find_scripts_with_placeholders() and relocate_script_shebang()
+    - Fix (v0.1.19): Added find_scripts_with_placeholders() and relocate_script_shebang()
     - Only processes executable files in bin/ directories with placeholder shebangs
-    - Example: huggingface-cli's `hf` command now works correctly
-  - **Code Signature Issue**: Python shared libraries crashed with SIGKILL (Code Signature Invalid)
-    - Root cause: install_name_tool invalidates code signatures when relocating Mach-O files
-    - Impact: Python imports would crash with "EXC_BAD_ACCESS (SIGKILL (Code Signature Invalid))"
-    - Fix: Added `codesign --remove-signature` after all install_name_tool operations
-    - Applies to both relocate_file() and fix_library_id()
-  - User reported: bru-installed packages had broken scripts and Python crash popups
+    - Example: huggingface-cli's `hf` command now works correctly ✅
+
+  - **Code Signature Issue** (v0.1.19): Binaries crashed with SIGKILL after relocation
+    - Root cause: Used `codesign --remove-signature` but should use adhoc signing with Homebrew's exact flags
+    - Impact: ALL packages installed with bru v0.1.19 crashed with exit code 137 (SIGKILL)
+    - **Real fix (v0.1.20)**: Match Homebrew's exact codesign command:
+      ```
+      codesign --sign - --force --preserve-metadata=entitlements,requirements,flags,runtime
+      ```
+    - Missing flags `--preserve-metadata` caused signature corruption
+    - Verified by examining Homebrew source: `Library/Homebrew/extend/os/mac/keg.rb`
+    - Tested working: bat, hf, jq, wget all execute correctly ✅
+
+**Impact Assessment:**
+- v0.1.18: Broken scripts, some Python crashes - **5 packages affected**
+- v0.1.19: ALL packages crash with SIGKILL - **UNUSABLE, DO NOT USE**
+- v0.1.20: Fully working relocation matching Homebrew behavior ✅
+
+**Test Coverage Gaps Identified:**
+- **Missing**: Integration tests for bottle relocation
+  - Current tests only cover command-level functionality (outdated, upgrade, list, etc.)
+  - NO tests verify that installed packages actually execute without crashes
+  - NO tests verify script shebangs are properly relocated
+  - NO tests verify Mach-O binaries have code signatures removed after install_name_tool
+  - **Why we missed the bugs**: Tests never actually installed a bottle and tried to run the resulting binaries
+  - **Impact**: Critical relocation bugs (v0.1.18) shipped to users and broke installed packages
+
+**Packages Affected by Broken bru 0.1.18:**
+- User installed 26 packages with various bru versions (0.0.1 through 0.1.19)
+- **5 packages installed with broken bru 0.1.18** (2025-10-30 02:21-03:02):
+  - `mise/2025.10.20` - Oct 30 02:21 ✅ Tested working
+  - `vercel-cli/48.6.7` - Oct 30 03:02 ⚠️ Has unreplaced @@HOMEBREW_PREFIX@@ in shebang
+  - `doggo/1.1.0` - Oct 30 02:21 ✅ Tested working (binary, no script)
+  - `huggingface-cli/1.0.1` - Oct 30 02:58 ✅ Working (shebang was relocated)
+  - `opencode/0.15.29` - Oct 30 02:32 (not tested yet)
+- **bat status**: Reinstalled with Homebrew (not bru) after crash - **need to investigate why bat crashes even with bru 0.1.19**
 
 ### Previous Improvements (fadded4)
 

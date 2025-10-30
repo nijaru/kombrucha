@@ -108,6 +108,8 @@ fn is_mach_o(path: &Path) -> Result<bool> {
 
 /// Relocate a single Mach-O file
 fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
+    tracing::debug!("Checking {} for relocation", path.display());
+
     // First, get the current install names
     let output = Command::new("otool")
         .arg("-L")
@@ -116,6 +118,8 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
         .context("Failed to run otool")?;
 
     let otool_output = String::from_utf8_lossy(&output.stdout);
+
+    let mut modified = false;
 
     // Find and replace each placeholder
     for line in otool_output.lines().skip(1) {
@@ -160,11 +164,17 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 }
             }
 
-            // Remove code signature after modification (install_name_tool invalidates signatures)
+            // Re-sign with adhoc after modification (install_name_tool invalidates signatures)
+            // Note: We must re-sign, not remove signature, as unsigned binaries crash on Apple Silicon
+            // Match Homebrew's approach: preserve metadata and force re-signing
             let _ = Command::new("codesign")
-                .arg("--remove-signature")
+                .arg("--sign")
+                .arg("-")
+                .arg("--force")
+                .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
                 .arg(path)
-                .output(); // Ignore errors - not all files are signed
+                .output(); // Ignore errors - not all files need signing
+            modified = true;
         }
     }
 
@@ -173,6 +183,12 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
         && ext == "dylib"
     {
         fix_library_id(path, prefix, cellar)?;
+    }
+
+    if modified {
+        tracing::info!("Relocated {} successfully", path.display());
+    } else {
+        tracing::debug!("{} did not need relocation", path.display());
     }
 
     Ok(())
@@ -218,11 +234,14 @@ fn fix_library_id(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
             }
         }
 
-        // Remove code signature after modification
+        // Re-sign with adhoc after modification
         let _ = Command::new("codesign")
-            .arg("--remove-signature")
+            .arg("--sign")
+            .arg("-")
+            .arg("--force")
+            .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
             .arg(path)
-            .output(); // Ignore errors - not all files are signed
+            .output(); // Ignore errors - not all files need signing
     }
 
     Ok(())
