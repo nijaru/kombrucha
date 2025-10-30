@@ -79,7 +79,12 @@ pub async fn download_bottle(
         .files
         .get(&platform_tag)
         .or_else(|| bottle.files.get("all"))
-        .ok_or_else(|| anyhow!("No bottle for platform: {} (no universal bottle available)", platform_tag))?;
+        .ok_or_else(|| {
+            anyhow!(
+                "No bottle for platform: {} (no universal bottle available)",
+                platform_tag
+            )
+        })?;
 
     // Create cache directory
     let cache = cache_dir();

@@ -334,7 +334,13 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool, direct: bool) -> Result<()> {
+pub async fn deps(
+    api: &BrewApi,
+    formula: &str,
+    tree: bool,
+    installed_only: bool,
+    direct: bool,
+) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
     // If filtering by installed, get the list of installed packages
