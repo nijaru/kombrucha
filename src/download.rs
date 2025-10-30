@@ -128,9 +128,15 @@ pub async fn download_bottle(
     };
 
     // Get GHCR bearer token
-    // Repository format: homebrew/core/{formula}
-    let repository = format!("homebrew/core/{}", formula.name);
-    let token = get_ghcr_token(&repository)
+    // Extract repository from bottle URL (e.g., https://ghcr.io/v2/homebrew/core/python/3.13/blobs/...)
+    // Repository format: homebrew/core/{package}/{version}
+    let repository = bottle_file
+        .url
+        .strip_prefix("https://ghcr.io/v2/")
+        .and_then(|s| s.split("/blobs/").next())
+        .ok_or_else(|| anyhow!("Invalid GHCR URL format: {}", bottle_file.url))?;
+
+    let token = get_ghcr_token(repository)
         .await
         .context("Failed to get GHCR token")?;
 

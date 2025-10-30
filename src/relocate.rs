@@ -327,6 +327,8 @@ fn find_scripts_with_placeholders(dir: &Path) -> Result<Vec<PathBuf>> {
 
 /// Replace placeholders in a script's shebang line
 fn relocate_script_shebang(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
     let content = fs::read_to_string(path).context("Failed to read script")?;
 
     let mut lines: Vec<String> = content.lines().map(String::from).collect();
@@ -351,7 +353,19 @@ fn relocate_script_shebang(path: &Path, prefix: &str, cellar: &str) -> Result<()
             new_content
         };
 
+        // Make file writable before writing (bottles may extract files as read-only)
+        let metadata = fs::metadata(path)?;
+        let mut permissions = metadata.permissions();
+        let original_mode = permissions.mode();
+        permissions.set_mode(original_mode | 0o200); // Add write permission for owner
+        fs::set_permissions(path, permissions.clone())?;
+
+        // Write the modified content
         fs::write(path, final_content).context("Failed to write script")?;
+
+        // Restore original permissions
+        permissions.set_mode(original_mode);
+        fs::set_permissions(path, permissions)?;
     }
 
     Ok(())
