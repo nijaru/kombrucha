@@ -7,24 +7,35 @@ Last updated: 2025-10-30
 **Version**: 0.1.21 (In Development - Critical Fix)
 **Status**: All Mach-O files now signed - ready for release
 
-### v0.1.21 Release (2025-10-30) - CRITICAL FIX
+### v0.1.21 Release (2025-10-30) - CRITICAL FIXES
 
-**Critical Bug Fix:**
-- **ALL Mach-O files are now signed after extraction** (src/relocate.rs)
-  - **Root Cause**: v0.1.20 only signed files that had `@@HOMEBREW` placeholders
-  - **Impact**: Binaries without placeholders (like wget) were left UNSIGNED and crashed with SIGKILL
-  - **Fix**: Sign ALL Mach-O files after extraction, matching Homebrew's behavior
-  - **Details**:
-    - Homebrew's tar extraction does NOT preserve code signatures (uses `--no-same-owner`)
-    - ALL extracted binaries are unsigned and need signing
-    - wget uses `/opt/homebrew/opt/` symlinks (no placeholders) so v0.1.20 skipped it
-    - New approach: Separate signing pass after relocation, signs all Mach-O files
-    - Follows Homebrew's process: make writable → sign → restore permissions
-  - **Tested working**: wget, bat, jq all execute correctly ✅
+**Critical Bug Fixes:**
+
+1. **ALL Mach-O files are now signed after extraction** (src/relocate.rs)
+   - **Root Cause**: v0.1.20 only signed files that had `@@HOMEBREW` placeholders
+   - **Impact**: Binaries without placeholders (like wget) were left UNSIGNED and crashed with SIGKILL
+   - **Fix**: Sign ALL Mach-O files after extraction, matching Homebrew's behavior
+   - **Details**:
+     - Homebrew's tar extraction does NOT preserve code signatures (uses `--no-same-owner`)
+     - ALL extracted binaries are unsigned and need signing
+     - wget uses `/opt/homebrew/opt/` symlinks (no placeholders) so v0.1.20 skipped it
+     - New approach: Separate signing pass after relocation, signs all Mach-O files
+     - Follows Homebrew's process: make writable → sign → restore permissions
+   - **Tested working**: wget, bat, jq all execute correctly ✅
+
+2. **Symlink paths now match Homebrew's format** (src/symlink.rs)
+   - **Root Cause**: Always used `../Cellar` regardless of symlink depth
+   - **Impact**: Broken symlinks for nested directories (share/locale, etc)
+   - **Fix**: Calculate correct number of `../` based on directory depth from prefix
+   - **Examples**:
+     - `/opt/homebrew/bin/wget` → `../Cellar/wget/1.25.0/bin/wget` (1 level)
+     - `/opt/homebrew/share/man/man1/wget.1` → `../../../Cellar/...` (3 levels)
+     - `/opt/homebrew/share/locale/af/LC_MESSAGES/wget.mo` → `../../../../Cellar/...` (4 levels)
+   - **Tested working**: All symlink depths now match Homebrew exactly ✅
 
 **Impact Assessment:**
-- v0.1.20: Binaries without placeholders crash with SIGKILL - **wget affected**
-- v0.1.21: All binaries properly signed ✅
+- v0.1.20: Binaries without placeholders crash, broken symlinks - **BROKEN**
+- v0.1.21: All binaries properly signed, symlinks correct ✅
 
 ### v0.1.20 Release (2025-10-30) - PARTIAL FIX
 
