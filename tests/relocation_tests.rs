@@ -136,7 +136,10 @@ fn test_relocation_mach_o_binaries() {
     // Find the bat binary
     let cellar_path = Path::new("/opt/homebrew/Cellar/bat");
     if !cellar_path.exists() {
-        eprintln!("Warning: {} not found, skipping test", cellar_path.display());
+        eprintln!(
+            "Warning: {} not found, skipping test",
+            cellar_path.display()
+        );
         return;
     }
 
@@ -309,8 +312,7 @@ fn test_relocation_preserves_symlinks() {
     }
 
     // The link should be a symlink (not a regular file)
-    let metadata = fs::symlink_metadata(vercel_link)
-        .expect("Failed to get symlink metadata");
+    let metadata = fs::symlink_metadata(vercel_link).expect("Failed to get symlink metadata");
     assert!(
         metadata.file_type().is_symlink(),
         "{} should be a symlink",
@@ -318,8 +320,7 @@ fn test_relocation_preserves_symlinks() {
     );
 
     // The target should exist and have no @@HOMEBREW placeholders
-    let target = fs::read_link(vercel_link)
-        .expect("Failed to read symlink");
+    let target = fs::read_link(vercel_link).expect("Failed to read symlink");
     let target_path = vercel_link.parent().unwrap().join(target);
 
     assert!(

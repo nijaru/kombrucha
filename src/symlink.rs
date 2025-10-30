@@ -87,7 +87,8 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
         if let Ok(existing) = fs::read_link(target) {
             // Build expected relative path using same calculation as below
             let prefix = cellar_root.parent().unwrap_or(cellar_root);
-            let expected_relative = if source.starts_with(cellar_root) && target.starts_with(prefix) {
+            let expected_relative = if source.starts_with(cellar_root) && target.starts_with(prefix)
+            {
                 let target_dir = target.parent().unwrap_or(target);
                 let depth = if let Ok(rel_target) = target_dir.strip_prefix(prefix) {
                     rel_target.components().count()
