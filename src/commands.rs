@@ -64,7 +64,22 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
     // Detect if stdout is a TTY (for brew-compatible behavior)
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
+    let spinner = if is_tty {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.set_message(format!("Searching for '{}'...", query));
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb
+    } else {
+        ProgressBar::hidden()
+    };
+
     let results = api.search(query).await?;
+    spinner.finish_and_clear();
 
     if results.is_empty() {
         if is_tty {
@@ -138,9 +153,20 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
 pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
-    if !json && is_tty {
-        println!("Fetching info for: {}", formula.cyan());
-    }
+    // Spinner for API fetching (will be shown only if we reach API call)
+    let spinner = if !json && is_tty {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.set_message(format!("Fetching info for {}...", formula));
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb
+    } else {
+        ProgressBar::hidden()
+    };
 
     // Check if this is an installed tap formula
     if let Ok(versions) = cellar::get_installed_versions(formula) {
@@ -186,9 +212,11 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                             "From".bold(),
                             formula_path.display().to_string().dimmed()
                         );
+                        spinner.finish_and_clear();
                         return Ok(());
                     }
                     Err(e) => {
+                        spinner.finish_and_clear();
                         // If parsing fails, fall back to brew (shouldn't normally happen)
                         eprintln!(
                             "Warning: Failed to parse tap formula ({}), falling back to brew",
@@ -208,6 +236,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     // Try formula first, then cask
     match api.fetch_formula(formula).await {
         Ok(formula) => {
+            spinner.finish_and_clear();
             if json {
                 // Output as JSON
                 let json_str = serde_json::to_string_pretty(&formula)?;
@@ -263,6 +292,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
             // Try as cask
             match api.fetch_cask(formula).await {
                 Ok(cask) => {
+                    spinner.finish_and_clear();
                     if json {
                         let json_str = serde_json::to_string_pretty(&cask)?;
                         println!("{}", json_str);
@@ -283,6 +313,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                     }
                 }
                 Err(_) => {
+                    spinner.finish_and_clear();
                     if json {
                         println!(
                             "{{\"error\": \"No formula or cask found for '{}'\"}}",
@@ -306,15 +337,22 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
 pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
-    if is_tty {
-        if tree {
-            println!("Dependency tree for: {}", formula.cyan());
-        } else {
-            println!("Dependencies for: {}", formula.cyan());
-        }
-    }
+    let spinner = if is_tty {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.set_message(format!("Fetching dependencies for {}...", formula));
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb
+    } else {
+        ProgressBar::hidden()
+    };
 
     let formula_data = api.fetch_formula(formula).await?;
+    spinner.finish_and_clear();
 
     if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
         if is_tty {
@@ -397,12 +435,23 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
-    if is_tty {
-        println!("Finding formulae that depend on: {}", formula.cyan());
-    }
+    let spinner = if is_tty {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.set_message(format!("Finding formulae that depend on {}...", formula));
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb
+    } else {
+        ProgressBar::hidden()
+    };
 
     // Fetch all formulae
     let all_formulae = api.fetch_all_formulae().await?;
+    spinner.finish_and_clear();
 
     // Find formulae that depend on the target
     let dependent_formulae: Vec<_> = all_formulae
@@ -811,6 +860,21 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
             return Ok(());
         }
 
+        // Show spinner in TTY mode
+        let spinner = if is_tty {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(
+                ProgressStyle::default_spinner()
+                    .template("{spinner:.cyan} {msg}")
+                    .unwrap(),
+            );
+            pb.set_message("Checking for outdated casks...");
+            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
+
         // Fetch all cask versions in parallel
         let fetch_futures: Vec<_> = installed_casks
             .iter()
@@ -831,6 +895,8 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
 
         let results = futures::future::join_all(fetch_futures).await;
         let outdated_casks: Vec<_> = results.into_iter().flatten().collect();
+
+        spinner.finish_and_clear();
 
         if outdated_casks.is_empty() {
             return Ok(());
@@ -892,6 +958,21 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
 
         let packages: Vec<_> = package_map.into_values().collect();
 
+        // Show spinner in TTY mode
+        let spinner = if is_tty {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(
+                ProgressStyle::default_spinner()
+                    .template("{spinner:.cyan} {msg}")
+                    .unwrap(),
+            );
+            pb.set_message("Checking for outdated packages...");
+            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
+
         // Fetch all formula versions in parallel
         let fetch_futures: Vec<_> = packages
             .iter()
@@ -913,6 +994,8 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
 
         let results = futures::future::join_all(fetch_futures).await;
         let outdated_packages: Vec<_> = results.into_iter().flatten().collect();
+
+        spinner.finish_and_clear();
 
         if outdated_packages.is_empty() {
             return Ok(());
@@ -948,10 +1031,21 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
 }
 
 pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
-    println!(
-        "Fetching {} formulae...",
-        formula_names.len().to_string().bold()
-    );
+    let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+    let spinner = if is_tty {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.cyan} {msg}")
+                .unwrap(),
+        );
+        pb.set_message(format!("Fetching {} formulae...", formula_names.len()));
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb
+    } else {
+        ProgressBar::hidden()
+    };
 
     // Fetch formula metadata in parallel
     let fetch_futures: Vec<_> = formula_names
@@ -987,6 +1081,8 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
     let results = futures::future::join_all(fetch_futures).await;
     let formulae: Vec<_> = results.into_iter().flatten().collect();
+
+    spinner.finish_and_clear();
 
     if formulae.is_empty() {
         println!("{} No formulae to download", "ℹ".blue());
@@ -4883,7 +4979,21 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     // Determine which casks to upgrade
     let to_upgrade = if cask_names.is_empty() {
         // Upgrade all outdated casks - check in parallel
-        println!("Checking for outdated casks...");
+        let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
+
+        let spinner = if is_tty {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(
+                ProgressStyle::default_spinner()
+                    .template("{spinner:.cyan} {msg}")
+                    .unwrap(),
+            );
+            pb.set_message("Checking for outdated casks...");
+            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
 
         let installed_casks = crate::cask::list_installed_casks()?;
 
@@ -4906,6 +5016,8 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             .collect();
 
         let results = futures::future::join_all(fetch_futures).await;
+        spinner.finish_and_clear();
+
         let outdated: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated.is_empty() {
