@@ -625,7 +625,7 @@ pub async fn list(
 
             if is_tty {
                 println!(
-                    "\n{} {} casks installed",
+                    "{} {} casks installed",
                     "✓".green(),
                     casks.len().to_string().bold()
                 );
@@ -773,7 +773,7 @@ pub async fn list(
 
             if is_tty {
                 println!(
-                    "\n{} {} packages installed",
+                    "{} {} packages installed",
                     "✓".green(),
                     by_name.len().to_string().bold()
                 );
@@ -855,7 +855,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         if show_versions {
             let count = outdated_casks.len();
             println!(
-                "\n{} outdated {} found",
+                "{} outdated {} found",
                 count.to_string().bold(),
                 if count == 1 { "cask" } else { "casks" }
             );
@@ -937,7 +937,7 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         if show_versions {
             let count = outdated_packages.len();
             println!(
-                "\n{} outdated {} found",
+                "{} outdated {} found",
                 count.to_string().bold(),
                 if count == 1 { "package" } else { "packages" }
             );
@@ -1239,7 +1239,7 @@ pub async fn install(
     // Summary
     let installed_count = to_install.len();
     println!(
-        "\n{} Installed {} packages",
+        "{} Installed {} packages",
         "✓".green().bold(),
         installed_count.to_string().bold()
     );
@@ -1521,7 +1521,7 @@ pub async fn upgrade(
     // If dry-run, stop after showing what would be upgraded
     if dry_run {
         println!(
-            "\n{} Dry run complete - no packages were upgraded",
+            "{} Dry run complete - no packages were upgraded",
             "✓".green()
         );
         return Ok(());
@@ -1742,7 +1742,7 @@ pub async fn upgrade(
     let total_upgraded = candidates.len() + tap_packages.len();
 
     println!(
-        "\n{} Upgraded {} packages",
+        "{} Upgraded {} packages",
         "✓".green().bold(),
         total_upgraded.to_string().bold()
     );
@@ -1891,7 +1891,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
     if actually_reinstalled > 0 {
         println!(
-            "\n{} Reinstalled {} package{}",
+            "{} Reinstalled {} package{}",
             "✓".green().bold(),
             actually_reinstalled.to_string().bold(),
             if actually_reinstalled == 1 { "" } else { "s" }
@@ -1987,7 +1987,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
     if actually_uninstalled > 0 {
         println!(
-            "\n{} Uninstalled {} package{}",
+            "{} Uninstalled {} package{}",
             "✓".green().bold(),
             actually_uninstalled.to_string().bold(),
             if actually_uninstalled == 1 { "" } else { "s" }
@@ -2054,7 +2054,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     to_remove.sort_by(|a, b| a.name.cmp(&b.name));
 
     println!(
-        "\nFound {} unused dependencies:\n",
+        "Found {} unused dependencies:",
         to_remove.len().to_string().bold()
     );
 
@@ -2064,7 +2064,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
 
     if dry_run {
         println!(
-            "\n{} Would remove {} packages",
+            "{} Would remove {} packages",
             "ℹ".blue(),
             to_remove.len().to_string().bold()
         );
@@ -2108,7 +2108,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     }
 
     println!(
-        "\n{} Removed {} unused packages",
+        "{} Removed {} unused packages",
         "✓".green().bold(),
         to_remove.len().to_string().bold()
     );
@@ -2517,14 +2517,14 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
         println!("{} No old versions to remove", "✓".green());
     } else if dry_run {
         println!(
-            "\n{} Would remove {} old versions ({})",
+            "{} Would remove {} old versions ({})",
             "ℹ".blue(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
     } else {
         println!(
-            "\n{} Removed {} old versions, freed {}",
+            "{} Removed {} old versions, freed {}",
             "✓".green().bold(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
@@ -2561,7 +2561,7 @@ pub fn cache(clean: bool) -> Result<()> {
         }
 
         println!(
-            "\n{} Removed {} bottles, freed {}",
+            "{} Removed {} bottles, freed {}",
             "✓".green().bold(),
             removed_count.to_string().bold(),
             format_size(total_size).bold()
@@ -4862,14 +4862,14 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
         println!("{} No old cask versions to remove", "✓".green());
     } else if dry_run {
         println!(
-            "\n{} Would remove {} old cask versions ({})",
+            "{} Would remove {} old cask versions ({})",
             "ℹ".blue(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
     } else {
         println!(
-            "\n{} Removed {} old cask versions, freed {}",
+            "{} Removed {} old cask versions, freed {}",
             "✓".green().bold(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
