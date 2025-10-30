@@ -135,6 +135,37 @@ Last updated: 2025-10-30
 - ✅ Upgrade logic - VERIFIED CORRECT
 - ✅ Uninstall logic - CRITICAL BUG FOUND AND FIXED
 
+**Three Critical Bottle Installation Fixes** (2025-10-30, commit: 7b083c1):
+
+Discovered when upgrading python@3.13 (3.13.8 → 3.13.9). Three related issues:
+
+1. **GHCR Token Authentication Failure** (src/download.rs:130-141)
+   - **Issue**: "Failed to get GHCR token" for versioned formulae
+   - **Root Cause**: Repository path constructed as "homebrew/core/python@3.13"
+   - **Problem**: GHCR rejects @ symbol in repository names (returns "NAME_INVALID")
+   - **Actual Format**: "homebrew/core/python/3.13" (@ replaced with /)
+   - **Fix**: Extract repository path from bottle URL instead of constructing from formula name
+   - **Impact**: ALL versioned formulae (python@3.13, node@20, ruby@3.2, etc.)
+
+2. **Bottle Extraction Failure for Revision Suffixes** (src/extract.rs:33-58)
+   - **Issue**: "Extraction failed: expected path does not exist"
+   - **Root Cause**: Code expected exact version (3.13.9) but archive contained 3.13.9_1
+   - **Problem**: Bottle revisions append _N suffix to version directory in archive
+   - **Fix**: Look for directories matching version OR version_N pattern
+   - **Impact**: All bottles with non-zero revision numbers
+
+3. **Script Relocation Permission Failure** (src/relocate.rs:356-368)
+   - **Issue**: "Failed to write script" during shebang placeholder replacement
+   - **Root Cause**: Bottles may extract scripts as read-only
+   - **Problem**: Code tried to write without making file writable first
+   - **Fix**: Make file writable → write → restore original permissions
+   - **Impact**: Formulae with scripts containing @@HOMEBREW_PREFIX@@ placeholders
+
+**Testing:**
+- All 76 unit tests pass ✅
+- python@3.13 upgrade: 3.13.8 → 3.13.9_1 ✅
+- wget installation still works ✅
+
 ### v0.1.20 Release (2025-10-30) - PARTIAL FIX
 
 **Critical Bug Fixes:**
