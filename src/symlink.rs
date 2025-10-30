@@ -85,15 +85,26 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
     // If target already exists and points to same source, skip
     if target.symlink_metadata().is_ok() {
         if let Ok(existing) = fs::read_link(target) {
-            // Build expected relative path
-            let expected_relative = if source.starts_with(cellar_root) {
-                let mut path = PathBuf::from("..");
-                if let Ok(rel) = source.strip_prefix(cellar_root.parent().unwrap_or(cellar_root)) {
-                    path = path.join(rel);
+            // Build expected relative path using same calculation as below
+            let prefix = cellar_root.parent().unwrap_or(cellar_root);
+            let expected_relative = if source.starts_with(cellar_root) && target.starts_with(prefix) {
+                let target_dir = target.parent().unwrap_or(target);
+                let depth = if let Ok(rel_target) = target_dir.strip_prefix(prefix) {
+                    rel_target.components().count()
                 } else {
-                    path = source.to_path_buf();
+                    1
+                };
+
+                let mut path = PathBuf::new();
+                for _ in 0..depth {
+                    path.push("..");
                 }
-                path
+
+                if let Ok(rel_source) = source.strip_prefix(prefix) {
+                    path.join(rel_source)
+                } else {
+                    source.to_path_buf()
+                }
             } else {
                 source.to_path_buf()
             };
@@ -111,14 +122,26 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
     }
 
     // Calculate relative path from target to source
-    // Both paths should be under the prefix
-    let relative_source = if source.starts_with(cellar_root) {
-        // Create path like: ../Cellar/formula/version/bin/exe
-        let mut path = PathBuf::from("..");
+    // Count how many directories we need to go up from target to reach prefix
+    let prefix = cellar_root.parent().unwrap_or(cellar_root);
+    let relative_source = if source.starts_with(cellar_root) && target.starts_with(prefix) {
+        // Calculate depth: how many levels down from prefix is the target?
+        let target_dir = target.parent().unwrap_or(target);
+        let depth = if let Ok(rel_target) = target_dir.strip_prefix(prefix) {
+            rel_target.components().count()
+        } else {
+            1 // Fallback: assume 1 level
+        };
 
-        // Add components from cellar_root to source
-        if let Ok(rel) = source.strip_prefix(cellar_root.parent().unwrap_or(cellar_root)) {
-            path = path.join(rel);
+        // Build relative path: ../../../Cellar/formula/version/...
+        let mut path = PathBuf::new();
+        for _ in 0..depth {
+            path.push("..");
+        }
+
+        // Add path from prefix to source
+        if let Ok(rel_source) = source.strip_prefix(prefix) {
+            path = path.join(rel_source);
         } else {
             // Fallback to absolute path
             path = source.to_path_buf();
