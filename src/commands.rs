@@ -153,7 +153,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                     Ok(tap_info) => {
                         // Display tap formula info in native format
                         println!(
-                            "\n {}",
+                            "{}",
                             format!("==> {}/{}", tap_name, tap_info.name).bold().green()
                         );
                         if let Some(desc) = &tap_info.desc {
@@ -214,7 +214,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                 println!("{}", json_str);
             } else {
                 // Pretty print format
-                println!("\n {}", format!("==> {}", formula.name).bold().green());
+                println!("{}", format!("==> {}", formula.name).bold().green());
                 if let Some(desc) = &formula.desc {
                     println!("{}", desc);
                 }
@@ -267,7 +267,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                         let json_str = serde_json::to_string_pretty(&cask)?;
                         println!("{}", json_str);
                     } else {
-                        println!("\n {}", format!("==> {}", cask.token).bold().cyan());
+                        println!("{}", format!("==> {}", cask.token).bold().cyan());
                         if !cask.name.is_empty() {
                             println!("{}: {}", "Name".bold(), cask.name.join(", "));
                         }
@@ -318,7 +318,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 
     if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
         if is_tty {
-            println!("\n {} No dependencies", "✓".green());
+            println!("{} No dependencies", "✓".green());
         }
         return Ok(());
     }
@@ -342,7 +342,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 
         if !deps.is_empty() {
             if is_tty {
-                println!("\n {}", "Runtime dependencies:".bold().green());
+                println!("{}", "Runtime dependencies:".bold().green());
             }
             let len = deps.len();
             for (i, dep) in deps.iter().enumerate() {
@@ -358,7 +358,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
                 }
             }
         } else if installed_only && is_tty {
-            println!("\n {} No runtime dependencies installed", "ℹ".blue());
+            println!("{} No runtime dependencies installed", "ℹ".blue());
         }
     }
 
@@ -371,7 +371,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
 
         if !build_deps.is_empty() {
             if is_tty {
-                println!("\n {}", "Build dependencies:".bold().yellow());
+                println!("{}", "Build dependencies:".bold().yellow());
             }
             let len = build_deps.len();
             for (i, dep) in build_deps.iter().enumerate() {
@@ -387,7 +387,7 @@ pub async fn deps(api: &BrewApi, formula: &str, tree: bool, installed_only: bool
                 }
             }
         } else if installed_only && !formula_data.build_dependencies.is_empty() && is_tty {
-            println!("\n {} No build dependencies installed", "ℹ".blue());
+            println!("{} No build dependencies installed", "ℹ".blue());
         }
     }
 
@@ -415,14 +415,14 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
 
     if dependent_formulae.is_empty() {
         if is_tty {
-            println!("\n {} No formulae depend on '{}'", "✓".green(), formula);
+            println!("{} No formulae depend on '{}'", "✓".green(), formula);
         }
         return Ok(());
     }
 
     if is_tty {
         println!(
-            "\n{} Found {} formulae that depend on {}:\n",
+            "{} Found {} formulae that depend on {}:",
             "✓".green(),
             dependent_formulae.len().to_string().bold(),
             formula.cyan()
@@ -565,7 +565,7 @@ pub async fn list(
 
             if casks.is_empty() {
                 if is_tty {
-                    println!("\n {} No casks installed", "ℹ".blue());
+                    println!("{} No casks installed", "ℹ".blue());
                 }
                 return Ok(());
             }
@@ -602,7 +602,7 @@ pub async fn list(
 
             if casks.is_empty() {
                 if is_tty {
-                    println!("\n {} No casks installed", "ℹ".blue());
+                    println!("{} No casks installed", "ℹ".blue());
                 }
                 return Ok(());
             }
@@ -688,7 +688,7 @@ pub async fn list(
 
             if packages.is_empty() {
                 if is_tty {
-                    println!("\n {} No packages installed", "ℹ".blue());
+                    println!("{} No packages installed", "ℹ".blue());
                 }
                 return Ok(());
             }
@@ -738,7 +738,7 @@ pub async fn list(
 
             if packages.is_empty() {
                 if is_tty {
-                    println!("\n {} No packages installed", "ℹ".blue());
+                    println!("{} No packages installed", "ℹ".blue());
                 }
                 return Ok(());
             }
@@ -989,7 +989,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     let formulae: Vec<_> = results.into_iter().flatten().collect();
 
     if formulae.is_empty() {
-        println!("\n {} No formulae to download", "ℹ".blue());
+        println!("{} No formulae to download", "ℹ".blue());
         return Ok(());
     }
 
@@ -997,7 +997,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     match download::download_bottles(api, &formulae).await {
         Ok(results) => {
             println!(
-                "\n{} Downloaded {} bottles to {}",
+                "{} Downloaded {} bottles to {}",
                 "✓".green(),
                 results.len().to_string().bold(),
                 download::cache_dir().display().to_string().dimmed()
@@ -1011,7 +1011,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
             }
         }
         Err(e) => {
-            println!("\n {} Download failed: {}", "✗".red(), e);
+            println!("{} Download failed: {}", "✗".red(), e);
             return Err(e.into());
         }
     }
@@ -1039,7 +1039,7 @@ pub async fn install(
     );
 
     // Step 1: Validate requested formulae in parallel
-    println!("\nResolving dependencies...");
+    println!("Resolving dependencies...");
 
     let validation_futures: Vec<_> = formula_names
         .iter()
@@ -1117,13 +1117,13 @@ pub async fn install(
             })
             .collect();
 
-        println!("\n {} Already installed:", "ℹ".blue());
+        println!("{} Already installed:", "ℹ".blue());
         for pkg in &already_installed {
             println!("  {}", pkg.cyan());
         }
 
         if force {
-            println!("\n  Use {} to reinstall", "--force".dimmed());
+            println!("  Use {} to reinstall", "--force".dimmed());
         }
         return Ok(());
     }
@@ -1142,21 +1142,21 @@ pub async fn install(
     // If dry-run, stop here
     if dry_run {
         println!(
-            "\n{} Dry run complete - no packages were installed",
+            "{} Dry run complete - no packages were installed",
             "✓".green()
         );
         return Ok(());
     }
 
     // Step 2: Download all bottles in parallel
-    println!("\nDownloading bottles...");
+    println!("Downloading bottles...");
     let downloaded = download::download_bottles(api, &to_install).await?;
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
     // Step 3: Install in dependency order
     let total_to_install = to_install.len();
     let mut installed_count = 0;
-    println!("\nInstalling packages...");
+    println!("Installing packages...");
     let requested_set: HashSet<_> = formula_names.iter().map(|s| s.as_str()).collect();
 
     for formula_name in &dep_order {
@@ -1897,7 +1897,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             if actually_reinstalled == 1 { "" } else { "s" }
         );
     } else {
-        println!("\n {} No packages were reinstalled", "ℹ".blue());
+        println!("{} No packages were reinstalled", "ℹ".blue());
     }
 
     Ok(())
@@ -1993,7 +1993,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             if actually_uninstalled == 1 { "" } else { "s" }
         );
     } else {
-        println!("\n {} No packages were uninstalled", "ℹ".blue());
+        println!("{} No packages were uninstalled", "ℹ".blue());
     }
 
     Ok(())
@@ -2047,7 +2047,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
         .collect();
 
     if to_remove.is_empty() {
-        println!("\n {} No unused dependencies to remove", "✓".green());
+        println!("{} No unused dependencies to remove", "✓".green());
         return Ok(());
     }
 
@@ -2258,16 +2258,14 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
 }
 
 pub fn update() -> Result<()> {
-    println!("Updating Homebrew...");
-
     let taps = crate::tap::list_taps()?;
 
     if taps.is_empty() {
-        println!("\n {} No taps installed", "ℹ".blue());
+        println!("{} No taps installed", "ℹ".blue());
         return Ok(());
     }
 
-    println!("\nUpdating {} taps...", taps.len().to_string().bold());
+    println!("Updating {} taps...", taps.len().to_string().bold());
 
     // Parallel tap updates with live progress
     use std::sync::mpsc;
@@ -2361,8 +2359,6 @@ pub fn update() -> Result<()> {
     for handle in handles {
         let _ = handle.join();
     }
-
-    println!();
 
     if errors == 0 {
         if updated > 0 {
@@ -2518,7 +2514,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
     }
 
     if total_removed == 0 {
-        println!("\n {} No old versions to remove", "✓".green());
+        println!("{} No old versions to remove", "✓".green());
     } else if dry_run {
         println!(
             "\n{} Would remove {} old versions ({})",
@@ -2545,7 +2541,7 @@ pub fn cache(clean: bool) -> Result<()> {
         println!("Cleaning download cache...");
 
         if !cache_dir.exists() {
-            println!("\n {} Cache is already empty", "✓".green());
+            println!("{} Cache is already empty", "✓".green());
             return Ok(());
         }
 
@@ -4540,7 +4536,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
     // Process each cask sequentially (downloads and installs must be sequential)
     for (cask_name, result) in metadata_results {
-        println!("\nInstalling cask: {}", cask_name.cyan());
+        println!("Installing cask: {}", cask_name.cyan());
 
         let cask = match result {
             Ok(c) => c,
@@ -4725,7 +4721,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         );
     }
 
-    println!("\n {} Cask installation complete", "✓".green().bold());
+    println!("{} Cask installation complete", "✓".green().bold());
     Ok(())
 }
 
@@ -4758,7 +4754,7 @@ pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> 
         println!("  {} Reinstalled {}", "✓".green(), cask_name.bold().green());
     }
 
-    println!("\n {} Cask reinstall complete", "✓".green().bold());
+    println!("{} Cask reinstall complete", "✓".green().bold());
     Ok(())
 }
 
@@ -4863,7 +4859,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
     }
 
     if total_removed == 0 {
-        println!("\n {} No old cask versions to remove", "✓".green());
+        println!("{} No old cask versions to remove", "✓".green());
     } else if dry_run {
         println!(
             "\n{} Would remove {} old cask versions ({})",
@@ -4913,7 +4909,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         let outdated: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated.is_empty() {
-            println!("\n {} All casks are up to date", "✓".green());
+            println!("{} All casks are up to date", "✓".green());
             return Ok(());
         }
 
@@ -4927,7 +4923,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         cask_names.to_vec()
     };
 
-    println!("\nUpgrading {} casks...", to_upgrade.len());
+    println!("Upgrading {} casks...", to_upgrade.len());
 
     for cask_name in &to_upgrade {
         println!("  Upgrading {}...", cask_name.cyan());
@@ -4941,7 +4937,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         println!("  {} Upgraded {}", "✓".green(), cask_name.bold().green());
     }
 
-    println!("\n {} Cask upgrade complete", "✓".green().bold());
+    println!("{} Cask upgrade complete", "✓".green().bold());
     Ok(())
 }
 
@@ -4957,7 +4953,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
     );
 
     for cask_name in cask_names {
-        println!("\nUninstalling cask: {}", cask_name.cyan());
+        println!("Uninstalling cask: {}", cask_name.cyan());
 
         // Check if installed
         if !crate::cask::is_cask_installed(cask_name) {
@@ -5036,7 +5032,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
         );
     }
 
-    println!("\n {} Cask uninstallation complete", "✓".green().bold());
+    println!("{} Cask uninstallation complete", "✓".green().bold());
     Ok(())
 }
 
