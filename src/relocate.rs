@@ -164,7 +164,7 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
             let _ = Command::new("codesign")
                 .arg("--remove-signature")
                 .arg(path)
-                .output();  // Ignore errors - not all files are signed
+                .output(); // Ignore errors - not all files are signed
         }
     }
 
@@ -222,7 +222,7 @@ fn fix_library_id(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
         let _ = Command::new("codesign")
             .arg("--remove-signature")
             .arg(path)
-            .output();  // Ignore errors - not all files are signed
+            .output(); // Ignore errors - not all files are signed
     }
 
     Ok(())
