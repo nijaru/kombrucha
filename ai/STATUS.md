@@ -1,13 +1,30 @@
 # Project Status
 
-Last updated: 2025-10-29
+Last updated: 2025-10-30
 
 ## Current State
 
-**Version**: 0.1.14+ (Development - preparing v0.1.15)
+**Version**: 0.1.18+ (Development - preparing v0.1.19)
 **Status**: Production-ready with comprehensive UX and testing improvements
 
-### Recent Improvements (fadded4)
+### Recent Improvements (unreleased)
+
+**Critical Bug Fixes:**
+- Script & library relocation: Fixed broken shebangs and Python crashes (src/relocate.rs)
+  - **Script Issue**: @@HOMEBREW_CELLAR@@ placeholders not replaced in executable scripts
+    - Root cause: relocate_bottle() only processed Mach-O binaries, ignored scripts
+    - Impact: Scripts like `#!/@@HOMEBREW_CELLAR@@/package/version/bin/python` would fail with "bad interpreter"
+    - Fix: Added find_scripts_with_placeholders() and relocate_script_shebang()
+    - Only processes executable files in bin/ directories with placeholder shebangs
+    - Example: huggingface-cli's `hf` command now works correctly
+  - **Code Signature Issue**: Python shared libraries crashed with SIGKILL (Code Signature Invalid)
+    - Root cause: install_name_tool invalidates code signatures when relocating Mach-O files
+    - Impact: Python imports would crash with "EXC_BAD_ACCESS (SIGKILL (Code Signature Invalid))"
+    - Fix: Added `codesign --remove-signature` after all install_name_tool operations
+    - Applies to both relocate_file() and fix_library_id()
+  - User reported: bru-installed packages had broken scripts and Python crash popups
+
+### Previous Improvements (fadded4)
 
 **Performance & UX Polish:**
 - Live progress display for parallel tap updates (361c845)
