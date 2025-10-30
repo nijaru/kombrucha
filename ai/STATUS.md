@@ -4,10 +4,29 @@ Last updated: 2025-10-30
 
 ## Current State
 
-**Version**: 0.1.20 (In Development - Critical Fix)
-**Status**: Critical bottle relocation bugs fixed - ready for release
+**Version**: 0.1.21 (In Development - Critical Fix)
+**Status**: All Mach-O files now signed - ready for release
 
-### v0.1.20 Release (2025-10-30) - CRITICAL FIX
+### v0.1.21 Release (2025-10-30) - CRITICAL FIX
+
+**Critical Bug Fix:**
+- **ALL Mach-O files are now signed after extraction** (src/relocate.rs)
+  - **Root Cause**: v0.1.20 only signed files that had `@@HOMEBREW` placeholders
+  - **Impact**: Binaries without placeholders (like wget) were left UNSIGNED and crashed with SIGKILL
+  - **Fix**: Sign ALL Mach-O files after extraction, matching Homebrew's behavior
+  - **Details**:
+    - Homebrew's tar extraction does NOT preserve code signatures (uses `--no-same-owner`)
+    - ALL extracted binaries are unsigned and need signing
+    - wget uses `/opt/homebrew/opt/` symlinks (no placeholders) so v0.1.20 skipped it
+    - New approach: Separate signing pass after relocation, signs all Mach-O files
+    - Follows Homebrew's process: make writable → sign → restore permissions
+  - **Tested working**: wget, bat, jq all execute correctly ✅
+
+**Impact Assessment:**
+- v0.1.20: Binaries without placeholders crash with SIGKILL - **wget affected**
+- v0.1.21: All binaries properly signed ✅
+
+### v0.1.20 Release (2025-10-30) - PARTIAL FIX
 
 **Critical Bug Fixes:**
 - **Bottle relocation now works correctly** (src/relocate.rs)

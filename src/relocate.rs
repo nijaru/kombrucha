@@ -29,7 +29,7 @@ pub fn relocate_bottle(cellar_path: &Path, prefix: &Path) -> Result<()> {
     // Find all Mach-O binaries and libraries
     let mach_o_files = find_mach_o_files(cellar_path)?;
 
-    // Process Mach-O files in parallel
+    // Process Mach-O files in parallel (relocate placeholders)
     let mach_o_results: Vec<Result<()>> = mach_o_files
         .par_iter()
         .map(|file| relocate_file(file, prefix_str, cellar_str))
@@ -37,6 +37,21 @@ pub fn relocate_bottle(cellar_path: &Path, prefix: &Path) -> Result<()> {
 
     for result in mach_o_results {
         result?;
+    }
+
+    // Sign ALL Mach-O files after relocation
+    // Homebrew signs all binaries, not just ones with placeholders
+    // This is critical because tar extraction leaves all binaries unsigned
+    let sign_results: Vec<Result<()>> = mach_o_files
+        .par_iter()
+        .map(|file| codesign_file(file))
+        .collect();
+
+    for (i, result) in sign_results.iter().enumerate() {
+        if let Err(e) = result {
+            tracing::error!("Failed to sign {}: {}", mach_o_files[i].display(), e);
+        }
+        result.as_ref().map_err(|e| anyhow::anyhow!("{}", e))?;
     }
 
     // Find and process scripts with unreplaced shebangs (only in bin/ directories)
@@ -164,16 +179,6 @@ fn relocate_file(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 }
             }
 
-            // Re-sign with adhoc after modification (install_name_tool invalidates signatures)
-            // Note: We must re-sign, not remove signature, as unsigned binaries crash on Apple Silicon
-            // Match Homebrew's approach: preserve metadata and force re-signing
-            let _ = Command::new("codesign")
-                .arg("--sign")
-                .arg("-")
-                .arg("--force")
-                .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
-                .arg(path)
-                .output(); // Ignore errors - not all files need signing
             modified = true;
         }
     }
@@ -233,15 +238,6 @@ fn fix_library_id(path: &Path, prefix: &str, cellar: &str) -> Result<()> {
                 tracing::warn!("Failed to fix id for {}: {}", path.display(), stderr);
             }
         }
-
-        // Re-sign with adhoc after modification
-        let _ = Command::new("codesign")
-            .arg("--sign")
-            .arg("-")
-            .arg("--force")
-            .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
-            .arg(path)
-            .output(); // Ignore errors - not all files need signing
     }
 
     Ok(())
@@ -356,6 +352,53 @@ fn relocate_script_shebang(path: &Path, prefix: &str, cellar: &str) -> Result<()
         };
 
         fs::write(path, final_content).context("Failed to write script")?;
+    }
+
+    Ok(())
+}
+
+/// Codesign a Mach-O binary with adhoc signature
+///
+/// Follows Homebrew's approach:
+/// 1. Make file writable
+/// 2. Sign with adhoc signature
+/// 3. Restore original permissions
+/// 4. Log errors but don't fail (some files may not need signing)
+fn codesign_file(path: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Get original permissions
+    let metadata = fs::metadata(path)?;
+    let original_mode = metadata.permissions().mode();
+
+    // Make file writable (u+rw)
+    let mut perms = metadata.permissions();
+    perms.set_mode(original_mode | 0o600);
+    fs::set_permissions(path, perms)?;
+
+    // Sign with adhoc signature using Homebrew's exact flags
+    let output = Command::new("codesign")
+        .arg("--sign")
+        .arg("-")
+        .arg("--force")
+        .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
+        .arg(path)
+        .output()
+        .context("Failed to run codesign")?;
+
+    // Restore original permissions
+    let mut perms = fs::metadata(path)?.permissions();
+    perms.set_mode(original_mode);
+    fs::set_permissions(path, perms)?;
+
+    // Log errors but don't fail - some files legitimately can't be signed
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if !stderr.is_empty() {
+            tracing::debug!("Codesign note for {}: {}", path.display(), stderr.trim());
+        }
+    } else {
+        tracing::debug!("Signed {} successfully", path.display());
     }
 
     Ok(())
