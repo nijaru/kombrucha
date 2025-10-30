@@ -38,13 +38,18 @@ pub fn extract_bottle(bottle_path: &Path, formula_name: &str, version: &str) -> 
     } else {
         // Look for version with bottle revision suffix (version_N)
         let version_with_revision = fs::read_dir(&formula_dir)
-            .with_context(|| format!("Failed to read formula directory: {}", formula_dir.display()))?
+            .with_context(|| {
+                format!(
+                    "Failed to read formula directory: {}",
+                    formula_dir.display()
+                )
+            })?
             .filter_map(|entry| entry.ok())
             .map(|entry| entry.file_name())
             .find(|name| {
                 let name_str = name.to_string_lossy();
-                name_str.starts_with(version) &&
-                (name_str == version || name_str.starts_with(&format!("{}_", version)))
+                name_str.starts_with(version)
+                    && (name_str == version || name_str.starts_with(&format!("{}_", version)))
             })
             .ok_or_else(|| {
                 anyhow::anyhow!(
