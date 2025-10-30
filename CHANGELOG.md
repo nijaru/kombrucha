@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2025-10-29
+
+### Added
+- Spinners for all long-running network operations (outdated, info, search, fetch, cask upgrade, deps, uses)
+
+### Changed
+- Comprehensive compact output style across all commands following modern CLI patterns (uv, cargo, gh)
+- Removed leading newlines from all command output for cleaner, more professional appearance
+
+### Fixed
+- `bru upgrade` now correctly handles both tap/formula names (e.g., `nijaru/tap/bru`) and simple formula names
+
 ## [0.1.17] - 2025-10-29
 
 ### Fixed
