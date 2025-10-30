@@ -3790,7 +3790,7 @@ pub fn which_formula(command: &str) -> Result<()> {
 
     if !command_path.exists() {
         println!(
-            "\n{} Command '{}' not found in {}",
+            "{} Command '{}' not found in {}",
             "⚠".yellow(),
             command.bold(),
             bin_dir.display()
@@ -3816,7 +3816,7 @@ pub fn which_formula(command: &str) -> Result<()> {
             && let Some(formula_name) = rel_path.components().next()
         {
             println!(
-                "\n{}",
+                "{}",
                 formula_name.as_os_str().to_string_lossy().green().bold()
             );
             return Ok(());
@@ -3824,7 +3824,7 @@ pub fn which_formula(command: &str) -> Result<()> {
     }
 
     println!(
-        "\n{} Could not determine formula for '{}'",
+        "{} Could not determine formula for '{}'",
         "⚠".yellow(),
         command.bold()
     );
@@ -3954,7 +3954,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         }
 
         println!(
-            "\n{} Found: {} taps, {} formulae, {} casks",
+            "{} Found: {} taps, {} formulae, {} casks",
             "✓".green(),
             taps_to_add.len().to_string().bold(),
             formulae_to_install.len().to_string().bold(),
@@ -4078,7 +4078,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             if !crate::services::service_exists(formula) {
                 println!(
-                    "\n{} Service file not found for {}",
+                    "{} Service file not found for {}",
                     "⚠".yellow(),
                     formula.bold()
                 );
@@ -4106,7 +4106,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             if !crate::services::service_exists(formula) {
                 println!(
-                    "\n{} Service file not found for {}",
+                    "{} Service file not found for {}",
                     "⚠".yellow(),
                     formula.bold()
                 );
@@ -4128,7 +4128,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             if !crate::services::service_exists(formula) {
                 println!(
-                    "\n{} Service file not found for {}",
+                    "{} Service file not found for {}",
                     "⚠".yellow(),
                     formula.bold()
                 );
@@ -5181,7 +5181,7 @@ pub async fn formulae(api: &BrewApi) -> Result<()> {
     let all_formulae = api.fetch_all_formulae().await?;
 
     println!(
-        "\n{} {} formulae available\n",
+        "{} {} formulae available",
         "✓".green(),
         all_formulae.len().to_string().bold()
     );
@@ -5281,7 +5281,7 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     }
 
     println!(
-        "\n{} {} formulae without bottles:\n",
+        "{} {} formulae without bottles:",
         "ℹ".blue(),
         unbottled_formulae.len().to_string().bold()
     );
@@ -5381,7 +5381,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
     }
 
     println!(
-        "\n{} Tap created at: {}",
+        "{} Tap created at: {}",
         "✓".green().bold(),
         tap_path.display().to_string().cyan()
     );
@@ -5431,7 +5431,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     // For now, this is informational
 
     println!(
-        "\n{} Migration prepared (metadata would be updated)",
+        "{} Migration prepared (metadata would be updated)",
         "✓".green()
     );
 
@@ -5602,13 +5602,13 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
         println!("\n {} No formulae found in tap", "⚠".yellow());
     } else if valid == total {
         println!(
-            "\n{} All {} formulae are readable",
+            "{} All {} formulae are readable",
             "✓".green().bold(),
             total.to_string().bold()
         );
     } else {
         println!(
-            "\n{} {} of {} formulae are readable",
+            "{} {} of {} formulae are readable",
             "⚠".yellow(),
             valid,
             total
@@ -5685,7 +5685,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
     std::fs::copy(&formula_path, &target_path)?;
 
     println!(
-        "\n{} Extracted {} to {}",
+        "{} Extracted {} to {}",
         "✓".green().bold(),
         formula_name.bold(),
         target_tap.cyan()
@@ -5712,7 +5712,7 @@ pub async fn unpack(api: &BrewApi, formula_name: &str, dest_dir: Option<&str>) -
     // Note: Full implementation would download source tarball and extract
     // For now, provide informational output
     println!(
-        "\n{} Source unpacking requires Phase 3 (Ruby interop)",
+        "{} Source unpacking requires Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Formula source would be downloaded and extracted to:");
@@ -5857,11 +5857,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
         }
     }
 
-    println!(
-        "\n{} Tap reset complete: {}",
-        "✓".green().bold(),
-        tap.bold()
-    );
+    println!("{} Tap reset complete: {}", "✓".green().bold(), tap.bold());
 
     Ok(())
 }
@@ -5907,7 +5903,7 @@ pub fn test(formula_name: &str) -> anyhow::Result<()> {
     println!("Running tests for: {}", formula_name.cyan());
 
     println!(
-        "\n{} Formula testing requires Phase 3 (Ruby interop)",
+        "{} Formula testing requires Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Test suite would be executed from formula's test block");
@@ -5945,7 +5941,7 @@ pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
     }
 
     println!(
-        "\n{} Bottle generation requires Phase 3 (Ruby interop)",
+        "{} Bottle generation requires Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Would build from source and create bottles:");
@@ -6029,7 +6025,7 @@ pub fn vendor_gems() -> anyhow::Result<()> {
     println!("Installing Homebrew's vendored gems...");
 
     println!(
-        "\n{} Vendored gems require Phase 3 (Ruby interop)",
+        "{} Vendored gems require Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Would install Ruby gems required by Homebrew:");
@@ -6062,7 +6058,7 @@ pub fn ruby(args: &[String]) -> anyhow::Result<()> {
     }
 
     println!(
-        "\n{} Ruby execution requires Phase 3 (embedded Ruby interpreter)",
+        "{} Ruby execution requires Phase 3 (embedded Ruby interpreter)",
         "ℹ".blue()
     );
     println!("  Would run Ruby code with Homebrew's environment loaded");
@@ -6083,7 +6079,7 @@ pub fn irb() -> anyhow::Result<()> {
     println!("Starting Homebrew's interactive Ruby shell...");
 
     println!(
-        "\n{} IRB requires Phase 3 (embedded Ruby interpreter)",
+        "{} IRB requires Phase 3 (embedded Ruby interpreter)",
         "ℹ".blue()
     );
     println!("  Interactive Ruby shell with Homebrew environment loaded");
@@ -6149,10 +6145,7 @@ pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
 pub fn install_bundler_gems() -> anyhow::Result<()> {
     println!("Installing Homebrew's bundler gems...");
 
-    println!(
-        "\n{} Bundler gems require Phase 3 (Ruby interop)",
-        "ℹ".blue()
-    );
+    println!("{} Bundler gems require Phase 3 (Ruby interop)", "ℹ".blue());
     println!("  Would install gems from Homebrew's Gemfile:");
     println!("  - bundler");
     println!("  - rake");
@@ -6230,7 +6223,7 @@ pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
     }
 
     println!(
-        "\n{} Type checking requires Phase 3 (Ruby interop + Sorbet)",
+        "{} Type checking requires Phase 3 (Ruby interop + Sorbet)",
         "ℹ".blue()
     );
     println!("  Sorbet is a gradual type checker for Ruby");
@@ -6278,7 +6271,7 @@ pub fn update_report() -> anyhow::Result<()> {
             println!("\n {} No updates in the last 24 hours", "ℹ".blue());
         } else {
             println!(
-                "\n{} {} commits in the last 24 hours:",
+                "{} {} commits in the last 24 hours:",
                 "✓".green(),
                 lines.len().to_string().bold()
             );
@@ -6302,7 +6295,7 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
     }
 
     println!(
-        "\n{} Python resource updates require Phase 3 (Ruby interop)",
+        "{} Python resource updates require Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Would analyze Python package dependencies:");
@@ -6389,7 +6382,7 @@ pub fn bump_formula_pr(
     }
 
     println!(
-        "\n{} Formula PR creation requires Phase 3 (Ruby interop)",
+        "{} Formula PR creation requires Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Automated workflow to update a formula:");
@@ -6417,7 +6410,7 @@ pub fn bump_cask_pr(cask_name: &str, version: Option<&str>) -> anyhow::Result<()
     }
 
     println!(
-        "\n{} Cask PR creation requires Phase 3 (Ruby interop)",
+        "{} Cask PR creation requires Phase 3 (Ruby interop)",
         "ℹ".blue()
     );
     println!("  Automated workflow to update a cask:");
