@@ -1204,7 +1204,11 @@ pub async fn install(
 
             match fallback_to_brew("install", tap_formula) {
                 Ok(_) => {
-                    println!("  {} {} installed successfully", "✓".green(), tap_formula.bold());
+                    println!(
+                        "  {} {} installed successfully",
+                        "✓".green(),
+                        tap_formula.bold()
+                    );
                 }
                 Err(e) => {
                     println!(
