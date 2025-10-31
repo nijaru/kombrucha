@@ -20,6 +20,7 @@ use colored::Colorize;
 #[derive(Parser)]
 #[command(name = "bru")]
 #[command(author, version, about = "A fast Homebrew-compatible package manager", long_about = None)]
+#[command(disable_help_subcommand = true)]
 #[command(help_template = "\
 Example usage:
   bru search TEXT
@@ -840,6 +841,12 @@ enum Commands {
         alias: String,
     },
 
+    /// Show help for a command
+    Help {
+        /// Command to show help for (optional)
+        command: Option<String>,
+    },
+
     /// Update Homebrew only if needed
     UpdateIfNeeded,
 }
@@ -906,7 +913,31 @@ async fn run() -> anyhow::Result<()> {
         default_panic(panic_info);
     }));
 
-    let cli = Cli::parse();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(err) => {
+            // Check if this is an unrecognized command error
+            let err_str = err.to_string();
+            if err_str.contains("unrecognized subcommand") {
+                // Extract the command and arguments to pass to brew
+                let args: Vec<String> = std::env::args().skip(1).collect();
+
+                // Fall back to brew
+                let status = std::process::Command::new("brew").args(&args).status();
+
+                match status {
+                    Ok(s) => std::process::exit(s.code().unwrap_or(1)),
+                    Err(_) => {
+                        eprintln!("{} brew not available for fallback", "Error:".red().bold());
+                        std::process::exit(1);
+                    }
+                }
+            } else {
+                // Let clap handle the error (print help, etc.)
+                err.exit();
+            }
+        }
+    };
 
     // Set NO_COLOR if --no-color flag is set
     if cli.no_color {
@@ -1350,6 +1381,49 @@ async fn run() -> anyhow::Result<()> {
         }
         Some(Commands::Unalias { alias }) => {
             commands::unalias(&alias)?;
+        }
+        Some(Commands::Help { command }) => {
+            match command {
+                None => {
+                    // Show general help
+                    Cli::command().print_help()?;
+                }
+                Some(cmd) => {
+                    // Try to show help for the specific command using bru (suppress errors)
+                    let status = std::process::Command::new(std::env::current_exe()?)
+                        .arg(&cmd)
+                        .arg("--help")
+                        .stderr(std::process::Stdio::null())
+                        .status();
+
+                    match status {
+                        Ok(s) if s.success() => {
+                            // Command help succeeded
+                        }
+                        _ => {
+                            // Fall back to brew for unsupported commands
+                            let fallback_status = std::process::Command::new("brew")
+                                .arg("help")
+                                .arg(&cmd)
+                                .status();
+
+                            if let Ok(s) = fallback_status {
+                                if !s.success() {
+                                    eprintln!("{} Unknown command: {}", "Error:".red().bold(), cmd);
+                                    std::process::exit(1);
+                                }
+                            } else {
+                                eprintln!(
+                                    "{} Command '{}' not supported by bru or brew",
+                                    "Error:".red().bold(),
+                                    cmd
+                                );
+                                std::process::exit(1);
+                            }
+                        }
+                    }
+                }
+            }
         }
         Some(Commands::UpdateIfNeeded) => {
             commands::update_if_needed()?;

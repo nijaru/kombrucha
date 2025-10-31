@@ -4,6 +4,48 @@ Last updated: 2025-10-30
 
 ## Current State
 
+**Version**: 0.1.24
+**Status**: CLI output improvements and brew fallback implementation
+
+### v0.1.24 Release (2025-10-30) - UX Improvements
+
+**CLI Output Modernization:**
+
+1. **Removed 143 leading newlines from command output** (src/commands.rs)
+   - Converted all `println!("\n ...")` to `println!("...")`
+   - Modern CLI style matching uv/cargo (compact, clean output)
+   - Removed 5 excessive blank lines between related messages
+   - All commands now follow consistent output formatting
+
+2. **Fixed which-formula output** (src/commands.rs:3918)
+   - Removed extra status line "Finding formula for command: X"
+   - Output now matches brew exactly (just shows formula name)
+
+3. **Implemented help command** (src/main.rs)
+   - `bru help` shows general help
+   - `bru help <command>` shows command-specific help
+   - Automatically falls back to brew for unsupported commands
+   - Clean error handling without noise
+
+4. **Global brew fallback for all unsupported commands** (src/main.rs:916-942)
+   - Any unrecognized command automatically falls back to brew
+   - Transparent to users - all args/flags passed through
+   - Proper exit codes maintained
+   - Examples: `bru rubocop` → `brew rubocop`, `bru sh` → `brew sh`
+   - Enables kombrucha to focus on core package management while supporting all brew commands
+
+**Testing:**
+- All 76 unit tests pass ✅
+- Comprehensive manual testing of all scenarios ✅
+- Release build clean ✅
+
+**Impact:**
+- Better UX with modern CLI output style
+- Seamless brew fallback means users can use bru for everything
+- No breaking changes - all existing functionality preserved
+
+### v0.1.23 (Previous Release)
+
 **Version**: 0.1.22 (In Development - Audit Fixes)
 **Status**: Complete audit completed, critical uninstall bug fixed
 
