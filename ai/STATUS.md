@@ -1,11 +1,77 @@
 # Project Status
 
-Last updated: 2025-10-30
+Last updated: 2025-10-31
 
 ## Current State
 
-**Version**: 0.1.24
-**Status**: CLI output improvements and brew fallback implementation
+**Version**: 0.1.25
+**Status**: Custom tap support and CLI modernization complete
+
+### v0.1.25 (2025-10-31) - Custom Tap Support + CLI Modernization
+
+**1. Custom Tap Formula Installation:**
+
+**Fixed tap formula resolution** (src/commands.rs:21-36, 1186-1230)
+- Added `is_tap_formula()` helper to detect tap-prefixed names (≥2 slashes)
+- Excludes `homebrew/core/*` from tap detection (treats as core formulas)
+- Strips `homebrew/core/` prefix when present
+- Modified `install()` to separate tap formulas from core formulas
+- Tap formulas automatically delegated to brew (typically need source builds)
+- Core formulas continue via fast bottle installation
+- Supports mixed installs: `bru install jq homebrew/core/wget nijaru/tap/sy`
+
+**Root Cause:**
+- `api.fetch_formula()` only queries Homebrew API (formulae.brew.sh)
+- Custom tap formulas exist only as local Ruby files
+- Previous behavior: "Formula not found" error for all tap formulas
+
+**Solution:**
+- Early detection of tap-prefixed formulas (e.g., "user/tap/formula")
+- Smart handling of `homebrew/core/` prefix (stripped and treated as core)
+- Immediate delegation to brew for custom tap formulas
+- No disruption to core formula fast bottle logic
+- Clean separation of concerns
+
+**Testing:**
+- ✅ Tap formula only: `bru install nijaru/tap/sy`
+- ✅ Mixed install: `bru install jq nijaru/tap/sy`
+- ✅ Core with prefix: `bru install homebrew/core/wget` → fast bottles
+- ✅ Core formula unchanged: `bru install jq`
+- ✅ All 76 unit tests + 14 regression tests pass
+
+**2. Removed ℹ Icon for Modern CLI Style:**
+
+**Modernized informational messages** (src/commands.rs: 98 instances)
+- Removed all `ℹ` Unicode icons from output
+- Modern CLI pattern: plain text, reserve symbols for outcomes (✓/✗)
+- Matches cargo/uv/rustup style (no info icons, just colored text)
+- Cleaner, less cluttered output
+- Better terminal compatibility
+
+**Before:**
+```
+ℹ nijaru/tap/sy is from a custom tap - delegating to brew
+ℹ nijaru/tap/sy requires building from source
+```
+
+**After:**
+```
+nijaru/tap/sy is from a custom tap - delegating to brew
+nijaru/tap/sy requires building from source
+```
+
+**Research:**
+- cargo: Plain indented text, no icons
+- uv: Plain descriptive text
+- rustup: "info:" prefix, no icons
+- clig.dev: "Use symbols sparingly - excessive symbols make output cluttered"
+
+**Impact:**
+- Custom taps now work correctly
+- bru can install formulas from user taps (homebrew-core compatible)
+- Cleaner, more professional CLI output matching modern tools
+- No performance impact on core formula installations
+- Maintains bru's design: fast bottles for core, delegate source builds
 
 ### v0.1.24 Release (2025-10-30) - UX Improvements
 

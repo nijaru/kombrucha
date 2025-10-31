@@ -18,11 +18,28 @@ fn check_brew_available() -> bool {
         .unwrap_or(false)
 }
 
+/// Check if a formula name is from a custom tap (format: user/tap/formula)
+/// Returns true only for non-core taps (excludes homebrew/core)
+fn is_tap_formula(name: &str) -> bool {
+    // Tap formulas have format: user/tap/formula (at least 2 slashes)
+    if name.matches('/').count() < 2 {
+        return false;
+    }
+
+    // homebrew/core/* are core formulas, not custom taps
+    // homebrew/cask/* are casks, handled separately
+    if name.starts_with("homebrew/core/") {
+        return false;
+    }
+
+    // Everything else with tap/formula format is a custom tap
+    true
+}
+
 /// Fallback to brew for packages that require source builds
 fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
     println!(
-        "  {} {} requires building from source (no bottle available)",
-        "ℹ".blue(),
+        "  {} requires building from source (no bottle available)",
         formula_name.bold()
     );
 
@@ -31,10 +48,7 @@ fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
             "  {} brew is not installed - cannot build from source",
             "✗".red()
         );
-        println!(
-            "  {} Install Homebrew or use a formula with bottles",
-            "ℹ".blue()
-        );
+        println!("  Install Homebrew or use a formula with bottles");
         return Err(anyhow::anyhow!("brew not available for source build").into());
     }
 
@@ -404,7 +418,7 @@ pub async fn deps(
                     }
                 }
             } else if installed_only && is_tty {
-                println!("{} No runtime dependencies installed", "ℹ".blue());
+                println!("No runtime dependencies installed");
             }
         }
 
@@ -440,7 +454,7 @@ pub async fn deps(
 
         if deps.is_empty() && installed_only {
             if is_tty {
-                println!("{} No dependencies installed", "ℹ".blue());
+                println!("No dependencies installed");
             }
             return Ok(());
         }
@@ -646,7 +660,7 @@ pub async fn list(
 
             if casks.is_empty() {
                 if is_tty {
-                    println!("{} No casks installed", "ℹ".blue());
+                    println!("No casks installed");
                 }
                 return Ok(());
             }
@@ -683,7 +697,7 @@ pub async fn list(
 
             if casks.is_empty() {
                 if is_tty {
-                    println!("{} No casks installed", "ℹ".blue());
+                    println!("No casks installed");
                 }
                 return Ok(());
             }
@@ -769,7 +783,7 @@ pub async fn list(
 
             if packages.is_empty() {
                 if is_tty {
-                    println!("{} No packages installed", "ℹ".blue());
+                    println!("No packages installed");
                 }
                 return Ok(());
             }
@@ -819,7 +833,7 @@ pub async fn list(
 
             if packages.is_empty() {
                 if is_tty {
-                    println!("{} No packages installed", "ℹ".blue());
+                    println!("No packages installed");
                 }
                 return Ok(());
             }
@@ -1117,7 +1131,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     spinner.finish_and_clear();
 
     if formulae.is_empty() {
-        println!("{} No formulae to download", "ℹ".blue());
+        println!("No formulae to download");
         return Ok(());
     }
 
@@ -1155,10 +1169,7 @@ pub async fn install(
     force: bool,
 ) -> Result<()> {
     if dry_run {
-        println!(
-            "{} Dry run mode - no packages will be installed",
-            "ℹ".blue()
-        );
+        println!("Dry run mode - no packages will be installed");
     }
 
     println!(
@@ -1166,10 +1177,56 @@ pub async fn install(
         formula_names.len().to_string().bold()
     );
 
-    // Step 1: Validate requested formulae in parallel
+    // Separate tap formulas from core formulas
+    let mut tap_formulae = Vec::new();
+    let mut core_formulae = Vec::new();
+
+    for name in formula_names {
+        if is_tap_formula(name) {
+            tap_formulae.push(name.clone());
+        } else {
+            // Strip homebrew/core/ prefix if present
+            let clean_name = name
+                .strip_prefix("homebrew/core/")
+                .unwrap_or(name)
+                .to_string();
+            core_formulae.push(clean_name);
+        }
+    }
+
+    // Handle tap formulas by delegating to brew (they typically require source builds)
+    if !tap_formulae.is_empty() {
+        for tap_formula in &tap_formulae {
+            println!(
+                "  {} is from a custom tap - delegating to brew",
+                tap_formula.bold()
+            );
+
+            match fallback_to_brew("install", tap_formula) {
+                Ok(_) => {
+                    println!("  {} {} installed successfully", "✓".green(), tap_formula.bold());
+                }
+                Err(e) => {
+                    println!(
+                        "  {} Failed to install {}: {}",
+                        "✗".red(),
+                        tap_formula.bold(),
+                        e
+                    );
+                }
+            }
+        }
+    }
+
+    // If only tap formulas were requested, we're done
+    if core_formulae.is_empty() {
+        return Ok(());
+    }
+
+    // Step 1: Validate core formulae in parallel
     println!("Resolving dependencies...");
 
-    let validation_futures: Vec<_> = formula_names
+    let validation_futures: Vec<_> = core_formulae
         .iter()
         .map(|name| async move {
             match api.fetch_formula(name).await {
@@ -1245,7 +1302,7 @@ pub async fn install(
             })
             .collect();
 
-        println!("{} Already installed:", "ℹ".blue());
+        println!("Already installed:");
         for pkg in &already_installed {
             println!("  {}", pkg.cyan());
         }
@@ -2025,7 +2082,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             if actually_reinstalled == 1 { "" } else { "s" }
         );
     } else {
-        println!("{} No packages were reinstalled", "ℹ".blue());
+        println!("No packages were reinstalled");
     }
 
     Ok(())
@@ -2129,7 +2186,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             if actually_uninstalled == 1 { "" } else { "s" }
         );
     } else {
-        println!("{} No packages were uninstalled", "ℹ".blue());
+        println!("No packages were uninstalled");
     }
 
     Ok(())
@@ -2137,7 +2194,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
 pub fn autoremove(dry_run: bool) -> Result<()> {
     if dry_run {
-        println!("{} Dry run - no packages will be removed", "ℹ".blue());
+        println!("Dry run - no packages will be removed");
     } else {
         println!("Removing unused dependencies...");
     }
@@ -2256,7 +2313,7 @@ pub fn tap(tap_name: Option<&str>) -> Result<()> {
             // List all taps
             let taps = crate::tap::list_taps()?;
             if taps.is_empty() {
-                println!("{} No taps installed", "ℹ".blue());
+                println!("No taps installed");
             } else {
                 for tap in taps {
                     println!("{}", tap.cyan());
@@ -2395,7 +2452,7 @@ pub fn update() -> Result<()> {
     let taps = crate::tap::list_taps()?;
 
     if taps.is_empty() {
-        println!("{} No taps installed", "ℹ".blue());
+        println!("No taps installed");
         return Ok(());
     }
 
@@ -2541,7 +2598,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
     let mut total_space_freed = 0u64;
 
     if dry_run {
-        println!("{} Dry run - no files will be removed", "ℹ".blue());
+        println!("Dry run - no files will be removed");
     } else {
         println!("Cleaning up old versions...");
     }
@@ -2938,7 +2995,7 @@ pub fn doctor() -> Result<()> {
         }
         _ => {
             println!("  {} git is not installed or not in PATH", "✗".red());
-            println!("    {} git is required for tap management", "ℹ".blue());
+            println!("    git is required for tap management");
             println!(
                 "    {} Install with: {}",
                 "→".dimmed(),
@@ -2995,7 +3052,7 @@ pub fn doctor() -> Result<()> {
 
     // Check for outdated packages
     let packages = cellar::list_installed()?;
-    println!("  {} {} packages installed", "ℹ".blue(), packages.len());
+    println!("  {} packages installed", packages.len());
 
     println!();
     println!("{}", "Summary:".bold());
@@ -3036,7 +3093,7 @@ pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
                 }
                 _ => {
                     println!("  {} Could not open browser automatically", "⚠".yellow());
-                    println!("  {} Please visit: {}", "ℹ".blue(), url);
+                    println!("  Please visit: {}", url);
                 }
             }
         }
@@ -3106,7 +3163,7 @@ pub fn leaves() -> Result<()> {
 
     if leaves.is_empty() {
         if is_tty {
-            println!("{} No leaf packages found", "ℹ".blue());
+            println!("No leaf packages found");
         }
     } else {
         for pkg in &leaves {
@@ -3176,7 +3233,7 @@ pub fn pin(formula_names: &[String]) -> Result<()> {
         }
 
         if pinned.contains(formula) {
-            println!("  {} {} is already pinned", "ℹ".blue(), formula.bold());
+            println!("  {} is already pinned", formula.bold());
         } else {
             pinned.push(formula.clone());
             println!("  {} Pinned {}", "✓".green(), formula.bold().green());
@@ -3203,7 +3260,7 @@ pub fn unpin(formula_names: &[String]) -> Result<()> {
             pinned.remove(pos);
             println!("  {} Unpinned {}", "✓".green(), formula.bold().green());
         } else {
-            println!("  {} {} is not pinned", "ℹ".blue(), formula.bold());
+            println!("  {} is not pinned", formula.bold());
         }
     }
 
@@ -3384,7 +3441,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
     };
 
     if to_check.is_empty() {
-        println!("{} No packages installed", "ℹ".blue());
+        println!("No packages installed");
         return Ok(());
     }
 
@@ -3786,7 +3843,7 @@ pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
                         }
                     } else {
                         println!();
-                        println!("{} No known aliases", "ℹ".blue());
+                        println!("No known aliases");
                     }
                 }
                 Err(_) => {
@@ -3973,7 +4030,7 @@ pub async fn options(api: &BrewApi, formula_name: &str) -> Result<()> {
                 println!("{}", desc);
             }
             println!();
-            println!("{} No options available", "ℹ".blue());
+            println!("No options available");
             println!(
                 "{}",
                 "Bottles are pre-built binaries with fixed options.".dimmed()
@@ -4120,7 +4177,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
 
         // Casks - for now, just notify
         if !casks_to_install.is_empty() {
-            println!("{} Cask installation not yet implemented", "ℹ".blue());
+            println!("Cask installation not yet implemented");
             println!(
                 "  Casks to install: {}",
                 casks_to_install.join(", ").dimmed()
@@ -4153,7 +4210,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
             let services = crate::services::list_all_services()?;
 
             if services.is_empty() {
-                println!("{} No services found", "ℹ".blue());
+                println!("No services found");
                 println!("Services are background processes like databases and web servers.");
                 println!("Common services: postgresql, mysql, redis, nginx");
                 return Ok(());
@@ -4506,7 +4563,7 @@ pub async fn livecheck(api: &BrewApi, formula_name: &str) -> Result<()> {
     }
 
     println!();
-    println!("{} Livecheck not yet implemented", "ℹ".blue());
+    println!("Livecheck not yet implemented");
     println!("Would check:");
     if let Some(homepage) = &formula.homepage {
         println!("  - {}", homepage.dimmed());
@@ -4885,7 +4942,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
     let caskroom = crate::cask::caskroom_dir();
 
     if !caskroom.exists() {
-        println!("{} No casks installed", "ℹ".blue());
+        println!("No casks installed");
         return Ok(());
     }
 
@@ -4905,7 +4962,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
     let mut total_space_freed = 0u64;
 
     if dry_run {
-        println!("{} Dry run - no files will be removed", "ℹ".blue());
+        println!("Dry run - no files will be removed");
     } else {
         println!("Cleaning up old cask versions...");
     }
@@ -5307,7 +5364,7 @@ pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
 
         // Post-install would run .rb postinstall block
         // For now, this is a stub since we don't have Ruby interop yet
-        println!("  {} Post-install not yet implemented", "ℹ".blue());
+        println!("  Post-install not yet implemented");
         println!("  Requires Phase 3 (Ruby interop) to execute formula post-install blocks");
     }
 
@@ -5552,7 +5609,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     let tap = match new_tap {
         Some(t) => t,
         None => {
-            println!("{} Migration information:", "ℹ".blue());
+            println!("Migration information:");
             println!("  Formula: {} {}", formula_name.bold(), version.dimmed());
             println!("  Currently installed from: {}", "homebrew/core".cyan());
             println!("To migrate to a different tap, use:");
@@ -5562,7 +5619,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     };
 
     println!("  Migrating {} to tap: {}", formula_name, tap.cyan());
-    println!("{} Migration is a metadata operation only", "ℹ".blue());
+    println!("Migration is a metadata operation only");
     println!("  No reinstallation needed - formula remains at same location");
     println!("  Future upgrades will use the new tap");
 
@@ -5591,7 +5648,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
     };
 
     if formulae_to_check.is_empty() {
-        println!("{} No formulae to check", "ℹ".blue());
+        println!("No formulae to check");
         return Ok(());
     }
 
@@ -5663,7 +5720,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
         }
 
         if checked_files == 0 {
-            println!("  {} No linkable files found", "ℹ".blue());
+            println!("  No linkable files found");
         } else if broken_links > 0 {
             println!(
                 "  {} {} files checked, {} broken links",
@@ -6013,7 +6070,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
     );
 
     if fix {
-        println!("  {} Auto-fix enabled", "ℹ".blue());
+        println!("  Auto-fix enabled");
     }
 
     println!(
@@ -6032,7 +6089,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
     }
 
     if fix {
-        println!(" {} Auto-fix would correct violations", "ℹ".blue());
+        println!(" Auto-fix would correct violations");
     }
 
     Ok(())
@@ -6116,7 +6173,7 @@ pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
     let pin_file = pinned_dir.join(tap_name.replace('/', "--"));
 
     if pin_file.exists() {
-        println!("{} Tap already pinned", "ℹ".blue());
+        println!("Tap already pinned");
         return Ok(());
     }
 
@@ -6140,7 +6197,7 @@ pub fn tap_unpin(tap_name: &str) -> anyhow::Result<()> {
     let pin_file = pinned_dir.join(tap_name.replace('/', "--"));
 
     if !pin_file.exists() {
-        println!("{} Tap is not pinned", "ℹ".blue());
+        println!("Tap is not pinned");
         return Ok(());
     }
 
@@ -6242,7 +6299,7 @@ pub fn prof(args: &[String]) -> anyhow::Result<()> {
 
     println!("Profiling command: {}", args.join(" ").cyan());
 
-    println!(" {} Profiling functionality", "ℹ".blue());
+    println!(" Profiling functionality");
     println!("  Would measure:");
     println!("  - Execution time");
     println!("  - Memory usage");
@@ -6267,10 +6324,10 @@ pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
     let readme_path = tap_dir.join("README.md");
 
     if readme_path.exists() {
-        println!(" {} README.md already exists", "ℹ".blue());
+        println!(" README.md already exists");
         println!("  Location: {}", readme_path.display().to_string().dimmed());
     } else {
-        println!(" {} Would generate README.md with:", "ℹ".blue());
+        println!(" Would generate README.md with:");
         println!("  - Tap name and description");
         println!("  - Installation instructions");
         println!("  - List of formulae/casks");
@@ -6284,7 +6341,7 @@ pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
 pub fn install_bundler_gems() -> anyhow::Result<()> {
     println!("Installing Homebrew's bundler gems...");
 
-    println!("{} Bundler gems require Phase 3 (Ruby interop)", "ℹ".blue());
+    println!("Bundler gems require Phase 3 (Ruby interop)");
     println!("  Would install gems from Homebrew's Gemfile:");
     println!("  - bundler");
     println!("  - rake");
@@ -6327,7 +6384,7 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
         }
         Some("on") => {
             if dev_flag_file.exists() {
-                println!("{} Developer mode already enabled", "ℹ".blue());
+                println!("Developer mode already enabled");
             } else {
                 std::fs::write(&dev_flag_file, "")?;
                 println!("{} Developer mode enabled", "✓".green().bold());
@@ -6338,7 +6395,7 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
         }
         Some("off") => {
             if !dev_flag_file.exists() {
-                println!("{} Developer mode already disabled", "ℹ".blue());
+                println!("Developer mode already disabled");
             } else {
                 std::fs::remove_file(&dev_flag_file)?;
                 println!("{} Developer mode disabled", "✓".green().bold());
@@ -6395,7 +6452,7 @@ pub fn update_report() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!(" {} Checking git log for recent changes...", "ℹ".blue());
+    println!(" Checking git log for recent changes...");
 
     let output = std::process::Command::new("git")
         .current_dir(&repository_path)
@@ -6407,7 +6464,7 @@ pub fn update_report() -> anyhow::Result<()> {
         let lines: Vec<&str> = log.lines().collect();
 
         if lines.is_empty() {
-            println!(" {} No updates in the last 24 hours", "ℹ".blue());
+            println!(" No updates in the last 24 hours");
         } else {
             println!(
                 "{} {} commits in the last 24 hours:",
@@ -6430,7 +6487,7 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
     println!("Updating Python resources for: {}", formula_name.cyan());
 
     if print_only {
-        println!("  {} Print-only mode enabled", "ℹ".blue());
+        println!("  Print-only mode enabled");
     }
 
     println!(
@@ -6463,7 +6520,7 @@ pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
         formula_names.len().to_string().bold()
     );
 
-    println!(" {} Test runner detection", "ℹ".blue());
+    println!(" Test runner detection");
     println!("  Would analyze formulae to determine:");
     println!("  - Language/framework used");
     println!("  - Test framework (pytest, jest, cargo test, etc.)");
@@ -6490,7 +6547,7 @@ pub fn dispatch_build_bottle(formula_name: &str, platform: Option<&str>) -> anyh
         println!("  Platform: {}", "current".dimmed());
     }
 
-    println!(" {} Bottle build dispatch (CI/CD command)", "ℹ".blue());
+    println!(" Bottle build dispatch (CI/CD command)");
     println!("  This command is used by Homebrew's CI system");
     println!("  Would trigger:");
     println!("  - Remote build on specified platform");
@@ -6579,7 +6636,7 @@ pub async fn generate_formula_api(formula_names: &[String]) -> anyhow::Result<()
         );
     }
 
-    println!(" {} API generation", "ℹ".blue());
+    println!(" API generation");
     println!("  Generates JSON API data consumed by:");
     println!("  - formulae.brew.sh");
     println!("  - Homebrew website");
@@ -6610,7 +6667,7 @@ pub async fn generate_cask_api(cask_names: &[String]) -> anyhow::Result<()> {
         );
     }
 
-    println!(" {} API generation", "ℹ".blue());
+    println!(" API generation");
     println!("  Generates JSON API data for casks");
     println!("  Used by formulae.brew.sh and Homebrew website");
 
@@ -6637,7 +6694,7 @@ pub fn pr_pull(pr_ref: &str) -> anyhow::Result<()> {
         pr_ref
     };
 
-    println!(" {} PR pull workflow", "ℹ".blue());
+    println!(" PR pull workflow");
     println!("  Downloads and applies a pull request locally");
     println!("  Useful for testing PRs before merge");
 
@@ -6666,7 +6723,7 @@ pub fn pr_upload(use_bintray: bool) -> anyhow::Result<()> {
     };
     println!("  Target: {}", target.cyan());
 
-    println!(" {} Bottle upload (CI/CD workflow)", "ℹ".blue());
+    println!(" Bottle upload (CI/CD workflow)");
     println!("  This is typically run by CI after building bottles");
 
     println!("  Would execute:");
@@ -6692,10 +6749,10 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
     }
 
     if skip_cleanup {
-        println!("  {} Cleanup will be skipped", "ℹ".blue());
+        println!("  Cleanup will be skipped");
     }
 
-    println!(" {} Homebrew test-bot (CI system)", "ℹ".blue());
+    println!(" Homebrew test-bot (CI system)");
     println!("  Comprehensive CI testing workflow:");
     println!("  1. Build formula from source");
     println!("  2. Run formula tests");
@@ -6734,7 +6791,7 @@ pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow:
         println!("  Reason: {}", msg.dimmed());
     }
 
-    println!(" {} Revision bump", "ℹ".blue());
+    println!(" Revision bump");
     println!("  Increments formula revision number");
     println!("  Used when formula changes but version doesn't");
     println!("  (e.g., build fixes, dependency updates)");
@@ -6754,7 +6811,7 @@ pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
         println!("  Strategy: {}", strat.cyan());
     }
 
-    println!(" {} PR auto-merge (CI workflow)", "ℹ".blue());
+    println!(" PR auto-merge (CI workflow)");
     println!("  Automatically merges PRs that meet criteria:");
     println!("  - All CI checks pass");
     println!("  - Approved by maintainers");
@@ -6778,7 +6835,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
         println!("  From: {}", date.dimmed());
     }
 
-    println!(" {} Analyzing git history...", "ℹ".blue());
+    println!(" Analyzing git history...");
 
     let prefix = cellar::detect_prefix();
     let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
@@ -6804,7 +6861,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
                 if let Some(line) = user_line {
                     println!(" {} {}", "✓".green(), line);
                 } else {
-                    println!(" {} No contributions found for {}", "ℹ".blue(), username);
+                    println!(" No contributions found for {}", username);
                 }
             } else {
                 println!(" {} Top contributors:", "✓".green());
@@ -6826,7 +6883,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
 pub fn update_license_data() -> anyhow::Result<()> {
     println!("Updating SPDX license data...");
 
-    println!(" {} License data update", "ℹ".blue());
+    println!(" License data update");
     println!("  Downloads and updates SPDX license list");
     println!("  Used for validating license fields in formulae");
 
@@ -6893,7 +6950,7 @@ pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result
         println!("  Arguments: {}", args.join(" ").dimmed());
     }
 
-    println!(" {} External tap commands", "ℹ".blue());
+    println!(" External tap commands");
     println!("  Taps can provide custom commands");
     println!("  These are scripts in the tap's cmd/ directory");
 
@@ -6913,7 +6970,7 @@ pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result
 pub fn install_formula_api() -> anyhow::Result<()> {
     println!("Installing formula API locally...");
 
-    println!(" {} Formula API installation", "ℹ".blue());
+    println!(" Formula API installation");
     println!("  Downloads and caches formula JSON API");
     println!("  Used for fast offline formula lookups");
 
@@ -6934,7 +6991,7 @@ pub fn install_formula_api() -> anyhow::Result<()> {
 pub fn uses_cask(cask_name: &str) -> anyhow::Result<()> {
     println!("Checking what uses cask: {}", cask_name.cyan());
 
-    println!(" {} Cask usage analysis", "ℹ".blue());
+    println!(" Cask usage analysis");
     println!("  Unlike formulae, casks typically don't have dependents");
     println!("  Casks are GUI applications, not libraries");
 
@@ -6975,7 +7032,7 @@ pub async fn abv_cask(api: &BrewApi, cask_name: &str) -> anyhow::Result<()> {
 pub fn setup() -> anyhow::Result<()> {
     println!("Setting up Homebrew development environment...");
 
-    println!(" {} Development setup", "ℹ".blue());
+    println!(" Development setup");
     println!("  Configures environment for Homebrew development:");
 
     println!("  Would execute:");
@@ -7004,7 +7061,7 @@ pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
         formula_names.len().to_string().bold()
     );
 
-    println!(" {} Bottle tag repair", "ℹ".blue());
+    println!(" Bottle tag repair");
     println!("  Updates bottle tags to current platform naming");
     println!("  Homebrew periodically changes platform identifiers");
 
@@ -7020,7 +7077,7 @@ pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
 pub fn generate_man_completions() -> anyhow::Result<()> {
     println!("Generating man pages and completions...");
 
-    println!(" {} Documentation generation", "ℹ".blue());
+    println!(" Documentation generation");
     println!("  Generates Homebrew documentation:");
 
     println!("  Would generate:");
@@ -7034,7 +7091,7 @@ pub fn generate_man_completions() -> anyhow::Result<()> {
     println!("    - {}", "completions/zsh/_brew".cyan());
     println!("    - {}", "completions/fish/brew.fish".cyan());
 
-    println!(" {} This is a maintainer command", "ℹ".blue());
+    println!(" This is a maintainer command");
     println!("  Used during Homebrew releases");
     println!("  Requires access to Homebrew/brew repository");
 
@@ -7052,7 +7109,7 @@ pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
         bottle_files.len().to_string().bold()
     );
 
-    println!(" {} Bottle merge (CI workflow)", "ℹ".blue());
+    println!(" Bottle merge (CI workflow)");
     println!("  Merges bottle metadata from multiple builds");
     println!("  Used in Homebrew's CI when building for multiple platforms");
 
@@ -7066,7 +7123,7 @@ pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
     println!("    - All platform SHAs merged");
     println!("    - Ready for PR upload");
 
-    println!(" {} This is a CI command", "ℹ".blue());
+    println!(" This is a CI command");
     println!("  Typically run by test-bot");
 
     Ok(())
@@ -7075,7 +7132,7 @@ pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
 pub fn install_bundler() -> anyhow::Result<()> {
     println!("Installing Homebrew's bundler...");
 
-    println!(" {} Bundler installation", "ℹ".blue());
+    println!(" Bundler installation");
     println!("  Installs Ruby bundler gem for Homebrew development");
 
     let prefix = cellar::detect_prefix();
@@ -7088,7 +7145,7 @@ pub fn install_bundler() -> anyhow::Result<()> {
     println!("    - bundler gem");
     println!("    - Dependencies for formula development");
 
-    println!(" {} This is a development command", "ℹ".blue());
+    println!(" This is a development command");
     println!("  Required for formula creation and testing");
 
     Ok(())
@@ -7105,7 +7162,7 @@ pub fn bump(formula: &str, no_audit: bool) -> anyhow::Result<()> {
         println!("  Skipping audit");
     }
 
-    println!(" {} Version bump workflow", "ℹ".blue());
+    println!(" Version bump workflow");
     println!("  Automated PR creation for formula updates");
 
     println!("  Would do:");
@@ -7118,7 +7175,7 @@ pub fn bump(formula: &str, no_audit: bool) -> anyhow::Result<()> {
     println!("  Formula:");
     println!("    {}", formula.cyan());
 
-    println!(" {} This is a maintainer command", "ℹ".blue());
+    println!(" This is a maintainer command");
     println!("  Requires GitHub authentication");
     println!("  Used for keeping formulae up-to-date");
 
@@ -7133,11 +7190,11 @@ pub fn analytics_state() -> anyhow::Result<()> {
 
     if analytics_disabled {
         println!("  Status: {}", "disabled".dimmed());
-        println!("  {} Analytics are currently turned off", "ℹ".blue());
+        println!("  Analytics are currently turned off");
         println!("  {} No usage data is being collected", "✓".green());
     } else {
         println!("  Status: {}", "enabled".green());
-        println!("  {} Analytics are currently enabled", "ℹ".blue());
+        println!("  Analytics are currently enabled");
         println!("  Anonymous usage data is collected");
     }
 
@@ -7157,7 +7214,7 @@ pub fn sponsor(target: Option<&str>) -> anyhow::Result<()> {
         println!("Homebrew Sponsors");
     }
 
-    println!(" {} GitHub Sponsors", "ℹ".blue());
+    println!(" GitHub Sponsors");
     println!("  Support open source development");
 
     if let Some(name) = target {
@@ -7179,7 +7236,7 @@ pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
         println!("  Arguments: {}", args.join(" ").dimmed());
     }
 
-    println!(" {} Sub-command execution", "ℹ".blue());
+    println!(" Sub-command execution");
     println!("  Runs external Homebrew commands or scripts");
 
     println!("  Would execute:");
@@ -7189,7 +7246,7 @@ pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
         println!("    brew-{} {}", subcommand, args.join(" "));
     }
 
-    println!(" {} This is an internal command", "ℹ".blue());
+    println!(" This is an internal command");
     println!("  Used by Homebrew to run external commands");
 
     Ok(())
@@ -7198,7 +7255,7 @@ pub fn command(subcommand: &str, args: &[String]) -> anyhow::Result<()> {
 pub fn nodenv_sync() -> anyhow::Result<()> {
     println!("Syncing nodenv shims...");
 
-    println!(" {} nodenv integration", "ℹ".blue());
+    println!(" nodenv integration");
     println!("  Synchronizes Node.js version manager shims");
 
     let prefix = cellar::detect_prefix();
@@ -7208,7 +7265,7 @@ pub fn nodenv_sync() -> anyhow::Result<()> {
         println!("  {} nodenv installation found", "✓".green());
         println!("    {}", nodenv_dir.display().to_string().dimmed());
     } else {
-        println!("  {} nodenv not installed", "ℹ".blue());
+        println!("  nodenv not installed");
         println!("    Install with: {}", "bru install nodenv".cyan());
     }
 
@@ -7223,7 +7280,7 @@ pub fn nodenv_sync() -> anyhow::Result<()> {
 pub fn pyenv_sync() -> anyhow::Result<()> {
     println!("Syncing pyenv shims...");
 
-    println!(" {} pyenv integration", "ℹ".blue());
+    println!(" pyenv integration");
     println!("  Synchronizes Python version manager shims");
 
     let prefix = cellar::detect_prefix();
@@ -7233,7 +7290,7 @@ pub fn pyenv_sync() -> anyhow::Result<()> {
         println!("  {} pyenv installation found", "✓".green());
         println!("    {}", pyenv_dir.display().to_string().dimmed());
     } else {
-        println!("  {} pyenv not installed", "ℹ".blue());
+        println!("  pyenv not installed");
         println!("    Install with: {}", "bru install pyenv".cyan());
     }
 
@@ -7248,7 +7305,7 @@ pub fn pyenv_sync() -> anyhow::Result<()> {
 pub fn rbenv_sync() -> anyhow::Result<()> {
     println!("Syncing rbenv shims...");
 
-    println!(" {} rbenv integration", "ℹ".blue());
+    println!(" rbenv integration");
     println!("  Synchronizes Ruby version manager shims");
 
     let prefix = cellar::detect_prefix();
@@ -7258,7 +7315,7 @@ pub fn rbenv_sync() -> anyhow::Result<()> {
         println!("  {} rbenv installation found", "✓".green());
         println!("    {}", rbenv_dir.display().to_string().dimmed());
     } else {
-        println!("  {} rbenv not installed", "ℹ".blue());
+        println!("  rbenv not installed");
         println!("    Install with: {}", "bru install rbenv".cyan());
     }
 
@@ -7273,7 +7330,7 @@ pub fn rbenv_sync() -> anyhow::Result<()> {
 pub fn setup_ruby() -> anyhow::Result<()> {
     println!("Setting up Ruby environment...");
 
-    println!(" {} Homebrew Ruby setup", "ℹ".blue());
+    println!(" Homebrew Ruby setup");
     println!("  Configures Ruby environment for Homebrew development");
 
     let prefix = cellar::detect_prefix();
@@ -7293,7 +7350,7 @@ pub fn setup_ruby() -> anyhow::Result<()> {
     println!("    - Bundler dependencies");
     println!("    - Development gems");
 
-    println!(" {} This is a development command", "ℹ".blue());
+    println!(" This is a development command");
     println!("  Required for formula development and testing");
 
     Ok(())
@@ -7304,7 +7361,7 @@ pub async fn tab(api: &BrewApi, formula_name: &str) -> anyhow::Result<()> {
 
     let formula = api.fetch_formula(formula_name).await?;
 
-    println!(" {} Tab format", "ℹ".blue());
+    println!(" Tab format");
     println!("  Generates machine-readable formula information");
 
     println!("  Output format:");
@@ -7335,7 +7392,7 @@ pub fn unalias(alias_name: &str) -> anyhow::Result<()> {
     let prefix = cellar::detect_prefix();
     let alias_file = prefix.join(format!(".brew_alias_{}", alias_name));
 
-    println!(" {} Alias management", "ℹ".blue());
+    println!(" Alias management");
     println!("  Removes command aliases");
 
     if alias_file.exists() {
@@ -7345,7 +7402,7 @@ pub fn unalias(alias_name: &str) -> anyhow::Result<()> {
         std::fs::remove_file(&alias_file)?;
         println!(" {} Alias removed successfully", "✓".green().bold());
     } else {
-        println!("  {} Alias not found: {}", "ℹ".blue(), alias_name);
+        println!("  Alias not found: {}", alias_name);
         println!("    To see all aliases: {}", "bru alias".cyan());
     }
 
@@ -7363,7 +7420,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!(" {} Conditional update", "ℹ".blue());
+    println!(" Conditional update");
     println!("  Only updates if last update was more than 24 hours ago");
 
     let last_update_file = prefix.join(".homebrew_last_update");
