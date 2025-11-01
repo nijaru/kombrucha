@@ -61,10 +61,7 @@ fn fallback_to_brew_with_reason(
         return Err(anyhow::anyhow!("brew not available").into());
     }
 
-    println!(
-        "  Delegating to {}...",
-        format!("brew {}", command).cyan()
-    );
+    println!("  Delegating to {}...", format!("brew {}", command).cyan());
 
     let status = Command::new("brew")
         .arg(command)
