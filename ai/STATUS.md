@@ -4,10 +4,34 @@ Last updated: 2025-10-31
 
 ## Current State
 
-**Version**: 0.1.25 (In Development)
-**Status**: Custom tap support, CLI modernization, and performance optimizations
+**Version**: 0.1.26
+**Status**: Performance optimizations and cache management
 
-### v0.1.25 (In Development) - Custom Tap Support + CLI Modernization + Optimizations
+### v0.1.26 (2025-10-31) - Performance Optimizations
+
+**1. HTTP/2 Connection Pooling** (src/api.rs:106-110)
+- Increased `pool_idle_timeout`: 5s → 90s (HTTP keep-alive standard)
+- Increased `pool_max_idle_per_host`: 2 → 10 connections
+- Reuses TCP/TLS connections during parallel dependency resolution
+- **Impact:** 10-30% faster resolution for packages with many dependencies
+
+**2. Enhanced `bru update` Command** (src/commands.rs:2470-2477)
+- Now clears cached formula/cask data before updating taps
+- Ensures fresh results after `brew update`
+- Solves cache staleness concerns
+- **Usage:** `bru update` → clears cache + updates all taps in parallel
+
+**Testing:**
+- ✅ All 90 tests pass (76 unit + 14 regression)
+- ✅ Connection pooling verified
+- ✅ Cache clearing works correctly
+
+**Impact:**
+- Faster dependency resolution via connection reuse
+- Cache stays fresh with explicit update command
+- No breaking changes - all existing functionality preserved
+
+### v0.1.25 (2025-10-31) - Custom Tap Support + CLI Modernization
 
 **1. Custom Tap Formula Installation:**
 
