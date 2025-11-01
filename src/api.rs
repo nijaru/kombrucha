@@ -105,8 +105,8 @@ impl BrewApi {
     pub fn new() -> Result<Self> {
         let client = reqwest::Client::builder()
             .timeout(REQUEST_TIMEOUT)
-            .pool_idle_timeout(Duration::from_secs(5))
-            .pool_max_idle_per_host(2)
+            .pool_idle_timeout(Duration::from_secs(90)) // HTTP keep-alive standard
+            .pool_max_idle_per_host(10) // Reuse connections during parallel resolution
             .user_agent(format!("bru/{}", env!("CARGO_PKG_VERSION")))
             .build()?;
 

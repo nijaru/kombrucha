@@ -36,24 +36,33 @@ fn is_tap_formula(name: &str) -> bool {
     true
 }
 
-/// Fallback to brew for packages that require source builds
+/// Fallback to brew for packages that require source builds or custom tap formulas
 fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
-    println!(
-        "  {} requires building from source (no bottle available)",
-        formula_name.bold()
-    );
+    fallback_to_brew_with_reason(command, formula_name, None)
+}
+
+/// Fallback to brew with optional custom reason message
+fn fallback_to_brew_with_reason(
+    command: &str,
+    formula_name: &str,
+    reason: Option<&str>,
+) -> Result<()> {
+    if let Some(msg) = reason {
+        println!("  {}", msg);
+    }
 
     if !check_brew_available() {
         println!(
-            "  {} brew is not installed - cannot build from source",
-            "✗".red()
+            "  {} brew is not installed - cannot install {}",
+            "✗".red(),
+            formula_name.bold()
         );
-        println!("  Install Homebrew or use a formula with bottles");
-        return Err(anyhow::anyhow!("brew not available for source build").into());
+        println!("  Install Homebrew to handle this formula");
+        return Err(anyhow::anyhow!("brew not available").into());
     }
 
     println!(
-        "  Falling back to {}...",
+        "  Delegating to {}...",
         format!("brew {}", command).cyan()
     );
 
@@ -1194,15 +1203,14 @@ pub async fn install(
         }
     }
 
-    // Handle tap formulas by delegating to brew (they typically require source builds)
+    // Handle tap formulas by delegating to brew
     if !tap_formulae.is_empty() {
         for tap_formula in &tap_formulae {
-            println!(
-                "  {} is from a custom tap - delegating to brew",
-                tap_formula.bold()
-            );
-
-            match fallback_to_brew("install", tap_formula) {
+            match fallback_to_brew_with_reason(
+                "install",
+                tap_formula,
+                Some(&format!("{} (custom tap)", tap_formula.bold())),
+            ) {
                 Ok(_) => {
                     println!(
                         "  {} {} installed successfully",
@@ -1364,7 +1372,14 @@ pub async fn install(
             Some(path) => path,
             None => {
                 // No bottle available - fall back to brew for source build
-                match fallback_to_brew("install", &formula.name) {
+                match fallback_to_brew_with_reason(
+                    "install",
+                    &formula.name,
+                    Some(&format!(
+                        "{} requires building from source (no bottle available)",
+                        formula.name.bold()
+                    )),
+                ) {
                     Ok(_) => {
                         // Successfully installed via brew, continue to next package
                         continue;
@@ -2453,6 +2468,14 @@ pub fn tap_info(tap_name: &str) -> Result<()> {
 }
 
 pub fn update() -> Result<()> {
+    // Clear cached formula/cask data to ensure fresh results
+    println!("Refreshing formula and cask cache...");
+    if let Err(e) = crate::cache::clear_caches() {
+        println!("  {} Failed to clear cache: {}", "⚠".yellow(), e);
+    } else {
+        println!("  {} Cache cleared", "✓".green());
+    }
+
     let taps = crate::tap::list_taps()?;
 
     if taps.is_empty() {

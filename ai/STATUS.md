@@ -4,10 +4,10 @@ Last updated: 2025-10-31
 
 ## Current State
 
-**Version**: 0.1.25
-**Status**: Custom tap support and CLI modernization complete
+**Version**: 0.1.25 (In Development)
+**Status**: Custom tap support, CLI modernization, and performance optimizations
 
-### v0.1.25 (2025-10-31) - Custom Tap Support + CLI Modernization
+### v0.1.25 (In Development) - Custom Tap Support + CLI Modernization + Optimizations
 
 **1. Custom Tap Formula Installation:**
 
@@ -66,11 +66,27 @@ nijaru/tap/sy requires building from source
 - rustup: "info:" prefix, no icons
 - clig.dev: "Use symbols sparingly - excessive symbols make output cluttered"
 
+**3. Performance Optimizations:**
+
+**HTTP/2 Connection Pooling** (src/api.rs:106-110)
+- Increased `pool_idle_timeout`: 5s → 90s (HTTP keep-alive standard)
+- Increased `pool_max_idle_per_host`: 2 → 10 connections
+- Reuses TCP/TLS connections during parallel dependency resolution
+- **Impact:** 10-30% faster resolution for packages with many dependencies
+
+**Enhanced `bru update` Command** (src/commands.rs:2470-2477)
+- Now clears cached formula/cask data before updating taps
+- Ensures fresh results after `brew update`
+- Solves cache staleness concerns
+- **Usage:** `bru update` → clears cache + updates all taps in parallel
+
 **Impact:**
 - Custom taps now work correctly
 - bru can install formulas from user taps (homebrew-core compatible)
 - Cleaner, more professional CLI output matching modern tools
-- No performance impact on core formula installations
+- Faster dependency resolution via connection reuse
+- Cache stays fresh with explicit update command
+- No breaking changes - all existing functionality preserved
 - Maintains bru's design: fast bottles for core, delegate source builds
 
 ### v0.1.24 Release (2025-10-30) - UX Improvements

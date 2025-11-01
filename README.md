@@ -29,14 +29,15 @@ bru install wget    # works exactly like brew
 
 **Bottom line:** Same formulae, same ecosystem, dramatically faster.
 
-## Status: Production-Ready (v0.1.14)
+## Status: Production-Ready (v0.1.25)
 
 - ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
 - ✅ **100% Formula Coverage**: Bottles (95%) + automatic brew fallback (5%)
-- ✅ **Well-Tested**: 97 automated tests (76 unit + 21 integration), CI verification
+- ✅ **Custom Tap Support**: Works with third-party taps (delegated to brew)
+- ✅ **Well-Tested**: 90 automated tests (76 unit + 14 regression), CI verification
 - ✅ **Production-Ready**: Usable for daily workflows
-- ✅ **Source Builds**: Automatic fallback to brew when needed
-- ✅ **Modern CLI**: Live progress updates, colored errors, clean output
+- ✅ **Modern CLI**: Clean output matching cargo/uv, live progress updates
+- ✅ **Optimized**: HTTP/2 connection pooling, parallel resolution
 
 ## Installation
 
@@ -108,13 +109,13 @@ Installing sccache...
 - `bru re` → reinstall
 - `bru rm` / `bru remove` → uninstall
 
-**Clear messaging** - No more confusing "Already installed" when nothing happened:
+**Clear messaging** - Shows what's already installed:
 ```
-ℹ Already installed:
+Already installed:
   python@3.14 3.14.0
   openssl@3 3.6.0
 
-  Use --force to reinstall
+Use --force to reinstall
 ```
 
 ### Optimizations
@@ -143,8 +144,9 @@ Every sequential operation has been parallelized:
 - `which-formula`, `cat`, `log`
 
 ### Repository Management
-- `tap`, `untap`, `tap-info`, `update`
-- Works with all Homebrew taps
+- `tap`, `untap`, `tap-info`
+- `update` - Refresh cache + update all taps (parallel)
+- Works with all Homebrew taps (custom taps delegate to brew)
 
 ### System & Utilities
 - `config`, `doctor`, `env`, `shellenv`
@@ -185,7 +187,7 @@ For most daily package management, bru works well.
 - In-memory caching (no redundant requests)
 - Efficient data structures
 
-See [v0.1.7 release notes](https://github.com/nijaru/kombrucha/releases/tag/v0.1.7) for the latest changes.
+See [releases](https://github.com/nijaru/kombrucha/releases) for detailed version history.
 
 ## Compatibility
 
@@ -260,7 +262,7 @@ cargo build --release
 ## FAQ
 
 ### Is bru stable?
-It's in beta. Tested with 339 packages, has 27 automated tests, and runs integration tests in CI on every commit. Works well for bottle-based workflows.
+Production-ready for bottle-based workflows. Tested with 339+ packages, has 90 automated tests, and runs CI verification on every commit.
 
 ### Will it break my Homebrew setup?
 **No.** bru uses the same Cellar and infrastructure as Homebrew. You can use both interchangeably.
