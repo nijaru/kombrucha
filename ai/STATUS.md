@@ -1,11 +1,40 @@
 # Project Status
 
-Last updated: 2025-10-31
+Last updated: 2025-11-02
 
 ## Current State
 
-**Version**: 0.1.26
-**Status**: Performance optimizations and cache management
+**Version**: 0.1.27
+**Status**: Critical hotfix for architecture compatibility
+
+### v0.1.27 (2025-11-02) - Critical Hotfix: Architecture Compatibility
+
+**Critical Bug Fixed:** INSTALL_RECEIPT.json arch field incompatibility with Homebrew
+
+**Problem:**
+- bru v0.1.26 wrote `"arch": "aarch64"` in INSTALL_RECEIPT.json files
+- Homebrew expects `"arch": "arm64"` on Apple Silicon Macs
+- Packages installed by bru could not be used as dependencies for brew installations
+- Error: "dependencies not built for the arm64 CPU architecture: <dep> was built for aarch64"
+
+**Fix:** (src/receipt.rs:146-153)
+- Added `homebrew_arch()` helper function to map Rust architecture names to Homebrew platform names
+- Maps `aarch64` → `arm64` (Apple Silicon)
+- Keeps `x86_64` → `x86_64` (Intel Mac)
+- Applied to both `arch` field (line 127) and `cpu_family` field (line 172)
+
+**Impact:**
+- ✅ brew now accepts bru-installed packages as dependencies
+- ✅ brew can reinstall bru-installed packages without arch errors
+- ✅ Full interoperability between bru and brew maintained
+
+**Testing:**
+- ✅ All 103 tests pass
+- ✅ Verified INSTALL_RECEIPT.json contains `"arch": "arm64"` and `"cpu_family": "arm64"`
+- ✅ Verified `brew reinstall <bru-installed-package>` works without errors
+
+**Affected versions:** v0.1.26 and likely earlier versions
+**Upgrade urgency:** HIGH - All v0.1.26 users should upgrade immediately
 
 ### v0.1.26 (2025-10-31) - Performance Optimizations
 

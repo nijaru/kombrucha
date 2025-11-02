@@ -124,7 +124,7 @@ impl InstallReceipt {
                 spec: "stable".to_string(),
                 versions: None,
             }),
-            arch: Some(std::env::consts::ARCH.to_string()),
+            arch: Some(homebrew_arch().to_string()),
             built_on: detect_build_environment(),
             stdlib: Some("libc++".to_string()),
         }
@@ -140,6 +140,15 @@ impl InstallReceipt {
             .with_context(|| format!("Failed to write receipt: {}", receipt_path.display()))?;
 
         Ok(())
+    }
+}
+
+/// Convert Rust target architecture to Homebrew platform name
+/// Homebrew uses "arm64" for Apple Silicon, while Rust uses "aarch64"
+fn homebrew_arch() -> &'static str {
+    match std::env::consts::ARCH {
+        "aarch64" => "arm64",
+        arch => arch,
     }
 }
 
@@ -160,7 +169,7 @@ fn detect_build_environment() -> Option<BuiltOn> {
         Some(BuiltOn {
             os: "Macintosh".to_string(),
             os_version: format!("macOS {}", os_version),
-            cpu_family: std::env::consts::ARCH.to_string(),
+            cpu_family: homebrew_arch().to_string(),
             xcode: None,
             clt: None,
             preferred_perl: Some("5.34".to_string()),
