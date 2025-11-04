@@ -117,9 +117,29 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
             }
         }
 
-        // Target exists but points elsewhere - skip for safety
-        // In future, could add --force flag to overwrite
-        return Ok(());
+        // Target exists but points elsewhere
+        // Match Homebrew's behavior: overwrite existing symlinks (like `brew link --overwrite`)
+        // Check if it's a symlink or a regular file
+        if let Ok(metadata) = target.symlink_metadata() {
+            if metadata.is_symlink() {
+                // It's a symlink - safe to remove and replace (likely old version)
+                fs::remove_file(target)
+                    .with_context(|| format!("Failed to remove existing symlink: {}", target.display()))?;
+                // Continue to create new symlink below
+            } else {
+                // It's a real file - skip for safety
+                eprintln!(
+                    "Warning: {} exists as a file (not symlink), skipping link",
+                    target.display()
+                );
+                return Ok(());
+            }
+        } else {
+            // Metadata failed but target exists according to line 86 check
+            // Might be a broken symlink - try to remove it
+            let _ = fs::remove_file(target);
+            // Continue to create new symlink below
+        }
     }
 
     // Calculate relative path from target to source

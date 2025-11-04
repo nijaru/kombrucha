@@ -1,11 +1,44 @@
 # Project Status
 
-Last updated: 2025-11-02
+Last updated: 2025-11-04
 
 ## Current State
 
-**Version**: 0.1.27
-**Status**: Critical hotfix for architecture compatibility
+**Version**: 0.1.28 (in development)
+**Status**: Bug fix for symlink overwriting
+
+### v0.1.28 (2025-11-04) - Bug Fix: Symlink Conflict Handling
+
+**Bug Fixed:** Packages were not being linked when symlinks already existed
+
+**Problem:**
+- bru would silently skip creating symlinks if target already existed (even if pointing elsewhere)
+- This caused packages to be installed but not linked to `/opt/homebrew/bin/`
+- Commands like `topgrade`, `mise`, `yq` were installed but not accessible in PATH
+- No error or warning was shown - linking silently failed
+
+**Root Cause:** (src/symlink.rs:120-122)
+- Code returned `Ok(())` (success) when symlink existed but pointed elsewhere
+- This was "for safety" but broke upgrades when brew/bru created conflicting symlinks
+- Homebrew's behavior: overwrite existing symlinks by default (like `brew link --overwrite`)
+
+**Fix:** (src/symlink.rs:120-142)
+- Check if target is a symlink or regular file
+- **Symlinks**: Remove and replace (matches Homebrew's `--overwrite` behavior)
+- **Regular files**: Warn and skip (protect user files)
+- **Broken symlinks**: Automatically remove and replace
+
+**Testing:**
+- ✅ Reinstall with missing symlink → creates symlink correctly
+- ✅ Reinstall with conflicting symlink → overwrites symlink
+- ✅ Reinstall with regular file → warns and skips (file preserved)
+- ✅ Binary execution verified after reinstall
+
+**Impact:**
+- ✅ Packages now properly linked even when conflicts exist
+- ✅ Matches Homebrew's overwrite behavior
+- ✅ User files protected (warns instead of overwriting)
+- ✅ No breaking changes
 
 ### v0.1.27 (2025-11-02) - Critical Hotfix: Architecture Compatibility
 
