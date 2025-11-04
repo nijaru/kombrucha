@@ -123,8 +123,9 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
         if let Ok(metadata) = target.symlink_metadata() {
             if metadata.is_symlink() {
                 // It's a symlink - safe to remove and replace (likely old version)
-                fs::remove_file(target)
-                    .with_context(|| format!("Failed to remove existing symlink: {}", target.display()))?;
+                fs::remove_file(target).with_context(|| {
+                    format!("Failed to remove existing symlink: {}", target.display())
+                })?;
                 // Continue to create new symlink below
             } else {
                 // It's a real file - skip for safety

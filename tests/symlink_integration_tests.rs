@@ -53,7 +53,10 @@ fn test_link_formula_basic() -> Result<()> {
     // Verify symlink exists and points to correct location
     assert!(target_bin.symlink_metadata()?.is_symlink());
     let link_target = fs::read_link(&target_bin)?;
-    assert_eq!(link_target, PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary"));
+    assert_eq!(
+        link_target,
+        PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary")
+    );
 
     // Verify target resolves correctly
     let resolved = target_bin.parent().unwrap().join(&link_target);
@@ -79,7 +82,10 @@ fn test_symlink_overwrite_existing() -> Result<()> {
     // Create symlink to v1.0.0
     unix_fs::symlink("../Cellar/testpkg/1.0.0/bin/test-binary", &target)?;
     let link1 = fs::read_link(&target)?;
-    assert_eq!(link1, PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary"));
+    assert_eq!(
+        link1,
+        PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary")
+    );
 
     // Simulate upgrading by removing old symlink and creating new one
     fs::remove_file(&target)?;
@@ -87,7 +93,10 @@ fn test_symlink_overwrite_existing() -> Result<()> {
 
     // Verify it now points to v2.0.0
     let link2 = fs::read_link(&target)?;
-    assert_eq!(link2, PathBuf::from("../Cellar/testpkg/2.0.0/bin/test-binary"));
+    assert_eq!(
+        link2,
+        PathBuf::from("../Cellar/testpkg/2.0.0/bin/test-binary")
+    );
 
     Ok(())
 }
@@ -148,7 +157,10 @@ fn test_symlink_replace_broken() -> Result<()> {
 
     // Verify new symlink works
     let link = fs::read_link(&target)?;
-    assert_eq!(link, PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary"));
+    assert_eq!(
+        link,
+        PathBuf::from("../Cellar/testpkg/1.0.0/bin/test-binary")
+    );
 
     Ok(())
 }
@@ -246,10 +258,19 @@ fn test_directory_recursion() -> Result<()> {
     // Create nested directory structure
     let share_dir = formula_path.join("share");
     fs::create_dir_all(share_dir.join("doc").join("testpkg"))?;
-    fs::write(share_dir.join("doc").join("testpkg").join("README"), "readme")?;
+    fs::write(
+        share_dir.join("doc").join("testpkg").join("README"),
+        "readme",
+    )?;
 
     // Verify nested structure exists
-    assert!(share_dir.join("doc").join("testpkg").join("README").exists());
+    assert!(
+        share_dir
+            .join("doc")
+            .join("testpkg")
+            .join("README")
+            .exists()
+    );
 
     // Test directory traversal
     fn count_files(dir: &Path) -> usize {
