@@ -366,12 +366,8 @@ pub fn unoptlink(formula_name: &str) -> Result<()> {
     // Remove opt/ symlink
     let opt_record = prefix.join("opt").join(formula_name);
     if opt_record.symlink_metadata().is_ok() {
-        fs::remove_file(&opt_record).with_context(|| {
-            format!(
-                "Failed to remove opt symlink: {}",
-                opt_record.display()
-            )
-        })?;
+        fs::remove_file(&opt_record)
+            .with_context(|| format!("Failed to remove opt symlink: {}", opt_record.display()))?;
     }
 
     // Remove linked/ symlink
