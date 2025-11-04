@@ -4,8 +4,45 @@ Last updated: 2025-11-04
 
 ## Current State
 
-**Version**: 0.1.28 (in development)
-**Status**: Bug fix for symlink overwriting
+**Version**: 0.1.29 (in development)
+**Status**: Bug fix for missing version-agnostic symlinks
+
+### v0.1.29 (2025-11-04) - Bug Fix: Missing Version-Agnostic Symlinks
+
+**Bug Fixed:** Packages were missing version-agnostic symlinks in opt/ and var/homebrew/linked/
+
+**Problem:**
+- bru was not creating `/opt/homebrew/opt/<formula>` symlinks
+- bru was not creating `/opt/homebrew/var/homebrew/linked/<formula>` symlinks
+- These symlinks are used by other packages to find dependencies
+- After upgrades, symlinks were left pointing to removed versions (broken symlinks)
+- Example: `/opt/homebrew/opt/librsvg` → `../Cellar/librsvg/2.61.2` (removed)
+
+**Root Cause:**
+- bru never implemented Homebrew's `optlink` functionality
+- Only created bin/lib/include symlinks, not the version-agnostic ones
+- Homebrew uses `optlink` method in keg.rb to create these during install/upgrade
+
+**Fix:** (src/symlink.rs:273-395, src/commands.rs:1427,1880,2077,2178,2315,3357,3394)
+- Implemented `optlink()` function matching Homebrew's behavior
+- Creates `/opt/homebrew/opt/<formula>` → `../Cellar/<formula>/<version>`
+- Creates `/opt/homebrew/var/homebrew/linked/<formula>` → `../../../Cellar/<formula>/<version>`
+- Called after every `link_formula()` in install, upgrade, reinstall, and link commands
+- Implemented `unoptlink()` to remove symlinks during uninstall and unlink
+- Automatically updates symlinks during upgrades to point to new version
+
+**Testing:**
+- ✅ Real-world test with librsvg reinstall
+- ✅ Both symlinks created correctly
+- ✅ Symlinks use relative paths matching Homebrew
+- ✅ All 85 existing tests still pass
+
+**Impact:**
+- ✅ Packages now fully compatible with Homebrew
+- ✅ Dependencies can be found via `/opt/homebrew/opt/<formula>`
+- ✅ No more broken symlinks after upgrades
+- ✅ Matches Homebrew's directory structure exactly
+- ✅ No breaking changes
 
 ### v0.1.28 (2025-11-04) - Bug Fix: Symlink Conflict Handling
 

@@ -1423,6 +1423,9 @@ pub async fn install(
             linked.len().to_string().dimmed()
         );
 
+        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::optlink(&formula.name, version)?;
+
         // Generate install receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
         let is_requested = requested_set.contains(formula.name.as_str());
@@ -1873,6 +1876,9 @@ pub async fn upgrade(
 
         let linked = symlink::link_formula(formula_name, new_version)?;
 
+        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::optlink(formula_name, new_version)?;
+
         // Generate receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &{
             let mut map = HashMap::new();
@@ -2067,6 +2073,9 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
         let linked = symlink::link_formula(formula_name, new_version)?;
 
+        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::optlink(formula_name, new_version)?;
+
         // Generate receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &{
             let mut map = HashMap::new();
@@ -2164,6 +2173,9 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
                 unlinked.len().to_string().dimmed()
             );
         }
+
+        // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::unoptlink(formula_name)?;
 
         // Remove from Cellar
         let cellar_path = cellar::cellar_path().join(formula_name).join(version);
@@ -2298,6 +2310,9 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
                 unlinked.len().to_string().dimmed()
             );
         }
+
+        // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::unoptlink(&pkg.name)?;
 
         // Remove from Cellar
         let cellar_path = cellar::cellar_path().join(&pkg.name).join(&pkg.version);
@@ -3343,6 +3358,10 @@ pub fn link(formula_names: &[String]) -> Result<()> {
         println!("  Linking {} {}", formula_name.cyan(), version.dimmed());
 
         let linked = symlink::link_formula(formula_name, version)?;
+
+        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::optlink(formula_name, version)?;
+
         println!(
             "    {} Linked {} files",
             "✓".green(),
@@ -3376,6 +3395,10 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
         println!("  Unlinking {} {}", formula_name.cyan(), version.dimmed());
 
         let unlinked = symlink::unlink_formula(formula_name, version)?;
+
+        // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
+        symlink::unoptlink(formula_name)?;
+
         println!(
             "    {} Unlinked {} files",
             "✓".green(),

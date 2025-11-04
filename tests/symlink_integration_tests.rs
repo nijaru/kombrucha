@@ -340,3 +340,131 @@ fn test_skip_already_correct_symlink() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+#[ignore] // Requires setting HOMEBREW_PREFIX which conflicts with parallel test execution
+fn test_optlink_creates_version_agnostic_symlinks() -> Result<()> {
+    let temp_dir = TempDir::new()?;
+    let prefix = temp_dir.path();
+
+    // Set HOMEBREW_PREFIX to temp directory for testing
+    unsafe {
+        std::env::set_var("HOMEBREW_PREFIX", prefix);
+    }
+
+    create_mock_cellar(prefix, "testpkg", "1.0.0")?;
+
+    // Create opt and linked directories
+    fs::create_dir_all(prefix.join("opt"))?;
+    fs::create_dir_all(prefix.join("var").join("homebrew").join("linked"))?;
+
+    // Call optlink
+    kombrucha::optlink("testpkg", "1.0.0")?;
+
+    // Verify opt/ symlink
+    let opt_symlink = prefix.join("opt").join("testpkg");
+    assert!(opt_symlink.symlink_metadata()?.is_symlink());
+    let opt_target = fs::read_link(&opt_symlink)?;
+    assert_eq!(opt_target, PathBuf::from("../Cellar/testpkg/1.0.0"));
+
+    // Verify linked/ symlink
+    let linked_symlink = prefix
+        .join("var")
+        .join("homebrew")
+        .join("linked")
+        .join("testpkg");
+    assert!(linked_symlink.symlink_metadata()?.is_symlink());
+    let linked_target = fs::read_link(&linked_symlink)?;
+    assert_eq!(
+        linked_target,
+        PathBuf::from("../../../Cellar/testpkg/1.0.0")
+    );
+
+    Ok(())
+}
+
+#[test]
+#[ignore] // Requires setting HOMEBREW_PREFIX which conflicts with parallel test execution
+fn test_optlink_updates_existing_symlinks() -> Result<()> {
+    let temp_dir = TempDir::new()?;
+    let prefix = temp_dir.path();
+
+    // Set HOMEBREW_PREFIX to temp directory for testing
+    unsafe {
+        std::env::set_var("HOMEBREW_PREFIX", prefix);
+    }
+
+    create_mock_cellar(prefix, "testpkg", "1.0.0")?;
+    create_mock_cellar(prefix, "testpkg", "2.0.0")?;
+
+    fs::create_dir_all(prefix.join("opt"))?;
+    fs::create_dir_all(prefix.join("var").join("homebrew").join("linked"))?;
+
+    // Create opt/ symlink to v1.0.0
+    kombrucha::optlink("testpkg", "1.0.0")?;
+
+    // Verify it points to v1.0.0
+    let opt_symlink = prefix.join("opt").join("testpkg");
+    let opt_target = fs::read_link(&opt_symlink)?;
+    assert_eq!(opt_target, PathBuf::from("../Cellar/testpkg/1.0.0"));
+
+    // Update to v2.0.0
+    kombrucha::optlink("testpkg", "2.0.0")?;
+
+    // Verify it now points to v2.0.0
+    let opt_target = fs::read_link(&opt_symlink)?;
+    assert_eq!(opt_target, PathBuf::from("../Cellar/testpkg/2.0.0"));
+
+    // Verify linked/ also points to v2.0.0
+    let linked_symlink = prefix
+        .join("var")
+        .join("homebrew")
+        .join("linked")
+        .join("testpkg");
+    let linked_target = fs::read_link(&linked_symlink)?;
+    assert_eq!(
+        linked_target,
+        PathBuf::from("../../../Cellar/testpkg/2.0.0")
+    );
+
+    Ok(())
+}
+
+#[test]
+#[ignore] // Requires setting HOMEBREW_PREFIX which conflicts with parallel test execution
+fn test_unoptlink_removes_symlinks() -> Result<()> {
+    let temp_dir = TempDir::new()?;
+    let prefix = temp_dir.path();
+
+    // Set HOMEBREW_PREFIX to temp directory for testing
+    unsafe {
+        std::env::set_var("HOMEBREW_PREFIX", prefix);
+    }
+
+    create_mock_cellar(prefix, "testpkg", "1.0.0")?;
+
+    fs::create_dir_all(prefix.join("opt"))?;
+    fs::create_dir_all(prefix.join("var").join("homebrew").join("linked"))?;
+
+    // Create symlinks
+    kombrucha::optlink("testpkg", "1.0.0")?;
+
+    // Verify they exist
+    let opt_symlink = prefix.join("opt").join("testpkg");
+    let linked_symlink = prefix
+        .join("var")
+        .join("homebrew")
+        .join("linked")
+        .join("testpkg");
+    assert!(opt_symlink.exists());
+    assert!(linked_symlink.exists());
+
+    // Remove symlinks
+    kombrucha::unoptlink("testpkg")?;
+
+    // Verify they're gone
+    assert!(!opt_symlink.exists());
+    assert!(!linked_symlink.exists());
+
+    Ok(())
+}

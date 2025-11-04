@@ -269,3 +269,125 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     }
     components.iter().collect()
 }
+
+/// Create version-agnostic symlinks for a formula in opt/ and var/homebrew/linked/
+///
+/// This matches Homebrew's `optlink` behavior by creating:
+/// - /opt/homebrew/opt/<formula> -> ../Cellar/<formula>/<version>
+/// - /opt/homebrew/var/homebrew/linked/<formula> -> ../../../Cellar/<formula>/<version>
+pub fn optlink(formula_name: &str, version: &str) -> Result<()> {
+    let prefix = cellar::detect_prefix();
+
+    // Create opt/ symlink: /opt/homebrew/opt/<formula> -> ../Cellar/<formula>/<version>
+    let opt_record = prefix.join("opt").join(formula_name);
+
+    // Ensure opt directory exists
+    if let Some(opt_dir) = opt_record.parent() {
+        fs::create_dir_all(opt_dir)
+            .with_context(|| format!("Failed to create opt directory: {}", opt_dir.display()))?;
+    }
+
+    // Remove existing symlink if present
+    if opt_record.symlink_metadata().is_ok() {
+        fs::remove_file(&opt_record).with_context(|| {
+            format!(
+                "Failed to remove existing opt symlink: {}",
+                opt_record.display()
+            )
+        })?;
+    }
+
+    // Calculate relative path from opt_record to formula_path
+    // opt/<formula> is 1 level deep, so need 1 ".."
+    let relative_path = PathBuf::from("../Cellar").join(formula_name).join(version);
+
+    // Create the symlink
+    unix_fs::symlink(&relative_path, &opt_record).with_context(|| {
+        format!(
+            "Failed to create opt symlink: {} -> {}",
+            opt_record.display(),
+            relative_path.display()
+        )
+    })?;
+
+    // Create linked/ symlink: /opt/homebrew/var/homebrew/linked/<formula> -> ../../../Cellar/<formula>/<version>
+    let linked_record = prefix
+        .join("var")
+        .join("homebrew")
+        .join("linked")
+        .join(formula_name);
+
+    // Ensure linked directory exists
+    if let Some(linked_dir) = linked_record.parent() {
+        fs::create_dir_all(linked_dir).with_context(|| {
+            format!(
+                "Failed to create linked directory: {}",
+                linked_dir.display()
+            )
+        })?;
+    }
+
+    // Remove existing symlink if present
+    if linked_record.symlink_metadata().is_ok() {
+        fs::remove_file(&linked_record).with_context(|| {
+            format!(
+                "Failed to remove existing linked symlink: {}",
+                linked_record.display()
+            )
+        })?;
+    }
+
+    // Calculate relative path from linked_record to formula_path
+    // var/homebrew/linked/<formula> is 3 levels deep, so need 3 ".."
+    let relative_path = PathBuf::from("../../../Cellar")
+        .join(formula_name)
+        .join(version);
+
+    // Create the symlink
+    unix_fs::symlink(&relative_path, &linked_record).with_context(|| {
+        format!(
+            "Failed to create linked symlink: {} -> {}",
+            linked_record.display(),
+            relative_path.display()
+        )
+    })?;
+
+    Ok(())
+}
+
+/// Remove version-agnostic symlinks for a formula
+///
+/// This removes:
+/// - /opt/homebrew/opt/<formula>
+/// - /opt/homebrew/var/homebrew/linked/<formula>
+pub fn unoptlink(formula_name: &str) -> Result<()> {
+    let prefix = cellar::detect_prefix();
+
+    // Remove opt/ symlink
+    let opt_record = prefix.join("opt").join(formula_name);
+    if opt_record.symlink_metadata().is_ok() {
+        fs::remove_file(&opt_record).with_context(|| {
+            format!(
+                "Failed to remove opt symlink: {}",
+                opt_record.display()
+            )
+        })?;
+    }
+
+    // Remove linked/ symlink
+    let linked_record = prefix
+        .join("var")
+        .join("homebrew")
+        .join("linked")
+        .join(formula_name);
+    if linked_record.symlink_metadata().is_ok() {
+        fs::remove_file(&linked_record).with_context(|| {
+            format!(
+                "Failed to remove linked symlink: {}",
+                linked_record.display()
+            )
+        })?;
+    }
+
+    Ok(())
+}
