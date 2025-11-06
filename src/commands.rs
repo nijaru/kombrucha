@@ -1813,13 +1813,20 @@ pub async fn upgrade(
 
     // Show what will be upgraded
     for candidate in &candidates {
-        let new_version = candidate.formula.versions.stable.as_ref().unwrap();
-        println!(
-            "Upgrading {} {} -> {}",
-            candidate.name.cyan(),
-            candidate.old_version.dimmed(),
-            new_version.cyan()
-        );
+        if let Some(new_version) = candidate.formula.versions.stable.as_ref() {
+            println!(
+                "Upgrading {} {} -> {}",
+                candidate.name.cyan(),
+                candidate.old_version.dimmed(),
+                new_version.cyan()
+            );
+        } else {
+            println!(
+                "Skipping {} {} (no stable version)",
+                candidate.name.cyan(),
+                candidate.old_version.dimmed()
+            );
+        }
     }
 
     // Phase 2: Download all bottles in parallel
@@ -1879,13 +1886,23 @@ pub async fn upgrade(
         // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
         symlink::optlink(formula_name, new_version)?;
 
-        // Generate receipt
+        // Generate receipt - preserve original installed_on_request status
         let runtime_deps = build_runtime_deps(&formula.dependencies, &{
             let mut map = HashMap::new();
             map.insert(formula.name.clone(), formula.clone());
             map
         });
-        let receipt_data = receipt::InstallReceipt::new_bottle(formula, runtime_deps, true);
+
+        // Read old receipt to preserve installed_on_request status
+        let old_path = cellar::cellar_path().join(formula_name).join(old_version);
+        let installed_on_request = if let Ok(old_receipt) = receipt::InstallReceipt::read(&old_path) {
+            old_receipt.installed_on_request
+        } else {
+            // Fallback: assume it was installed on request if we can't read old receipt
+            true
+        };
+
+        let receipt_data = receipt::InstallReceipt::new_bottle(formula, runtime_deps, installed_on_request);
         receipt_data.write(&extracted_path)?;
 
         spinner.finish_and_clear();
@@ -2220,7 +2237,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
     Ok(())
 }
 
-pub fn autoremove(dry_run: bool) -> Result<()> {
+pub async fn autoremove(api: &BrewApi, dry_run: bool) -> Result<()> {
     if dry_run {
         println!("Dry run - no packages will be removed");
     } else {
@@ -2242,18 +2259,47 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     let mut to_check: Vec<String> = on_request.iter().cloned().collect();
     let mut checked = HashSet::new();
 
-    while let Some(name) = to_check.pop() {
-        if checked.contains(&name) {
-            continue;
-        }
-        checked.insert(name.clone());
+    // Process packages in batches to parallelize API calls
+    const BATCH_SIZE: usize = 10;
 
-        // Find the package and get its dependencies
-        if let Some(pkg) = all_packages.iter().find(|p| p.name == name) {
-            for dep in pkg.runtime_dependencies() {
-                required.insert(dep.full_name.clone());
-                if !checked.contains(&dep.full_name) {
-                    to_check.push(dep.full_name.clone());
+    while !to_check.is_empty() {
+        // Take a batch of packages to process in parallel
+        let batch: Vec<String> = to_check.drain(to_check.len().saturating_sub(BATCH_SIZE)..).collect();
+
+        // Fetch all formulae in this batch in parallel
+        let formula_futures: Vec<_> = batch.iter().map(|name| api.fetch_formula(name)).collect();
+        let formula_results = futures::future::join_all(formula_futures).await;
+
+        // Process each formula result
+        for (i, result) in formula_results.into_iter().enumerate() {
+            let name = &batch[i];
+
+            // Skip if already checked
+            if checked.contains(name) {
+                continue;
+            }
+            checked.insert(name.clone());
+
+            match result {
+                Ok(formula) => {
+                    // Add dependencies from API
+                    for dep in &formula.dependencies {
+                        required.insert(dep.clone());
+                        if !checked.contains(dep) && !to_check.contains(dep) {
+                            to_check.push(dep.clone());
+                        }
+                    }
+                }
+                Err(_) => {
+                    // Fallback to receipt if API fails
+                    if let Some(pkg) = all_packages.iter().find(|p| p.name == *name) {
+                        for dep in pkg.runtime_dependencies() {
+                            required.insert(dep.full_name.clone());
+                            if !checked.contains(&dep.full_name) && !to_check.contains(&dep.full_name) {
+                                to_check.push(dep.full_name.clone());
+                            }
+                        }
+                    }
                 }
             }
         }

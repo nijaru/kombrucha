@@ -2,6 +2,7 @@
 
 use crate::cellar;
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 use std::fs;
 use std::os::unix::fs as unix_fs;
 use std::path::{Path, PathBuf};
@@ -57,6 +58,59 @@ fn link_directory(
     cellar_root: &Path,
     linked_files: &mut Vec<PathBuf>,
 ) -> Result<()> {
+    // Collect all files and directories that need linking
+    let mut operations = Vec::new();
+    collect_link_operations(source, target, cellar_root, &mut operations)?;
+
+    // Create all target directories first (can be done in parallel)
+    let dir_results: Vec<Result<()>> = operations
+        .iter()
+        .filter_map(|op| {
+            if let LinkOperation::CreateDirectory { target_dir } = op {
+                Some(create_directory_if_needed(target_dir))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    for result in dir_results {
+        result?;
+    }
+
+    // Create symlinks in parallel
+    let symlink_results: Vec<Result<PathBuf>> = operations
+        .into_par_iter()
+        .filter_map(|op| {
+            if let LinkOperation::CreateSymlink { source_path, target_path } = op {
+                Some(create_symlink_operation(source_path, target_path, cellar_root))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Collect results
+    for result in symlink_results {
+        linked_files.push(result?);
+    }
+
+    Ok(())
+}
+
+/// Types of linking operations needed
+enum LinkOperation {
+    CreateDirectory { target_dir: PathBuf },
+    CreateSymlink { source_path: PathBuf, target_path: PathBuf },
+}
+
+/// Collect all linking operations needed (files and directories)
+fn collect_link_operations(
+    source: &Path,
+    target: &Path,
+    cellar_root: &Path,
+    operations: &mut Vec<LinkOperation>,
+) -> Result<()> {
     for entry in fs::read_dir(source)? {
         let entry = entry?;
         let source_path = entry.path();
@@ -64,20 +118,41 @@ fn link_directory(
         let target_path = target.join(&file_name);
 
         if source_path.is_dir() {
-            // Create target directory if needed
-            if !target_path.exists() {
-                fs::create_dir_all(&target_path)?;
-            }
-            // Recursively link contents
-            link_directory(&source_path, &target_path, cellar_root, linked_files)?;
+            // Need to create target directory
+            operations.push(LinkOperation::CreateDirectory {
+                target_dir: target_path.clone(),
+            });
+            // Recursively collect operations for contents
+            collect_link_operations(&source_path, &target_path, cellar_root, operations)?;
         } else {
-            // Create relative symlink
-            create_relative_symlink(&source_path, &target_path, cellar_root)?;
-            linked_files.push(target_path);
+            // Need to create symlink
+            operations.push(LinkOperation::CreateSymlink {
+                source_path,
+                target_path,
+            });
         }
     }
 
     Ok(())
+}
+
+/// Create a directory if it doesn't exist
+fn create_directory_if_needed(target_dir: &Path) -> Result<()> {
+    if !target_dir.exists() {
+        fs::create_dir_all(target_dir)
+            .with_context(|| format!("Failed to create directory: {}", target_dir.display()))?;
+    }
+    Ok(())
+}
+
+/// Create a symlink and return the target path
+fn create_symlink_operation(
+    source_path: PathBuf,
+    target_path: PathBuf,
+    cellar_root: &Path,
+) -> Result<PathBuf> {
+    create_relative_symlink(&source_path, &target_path, cellar_root)?;
+    Ok(target_path)
 }
 
 /// Create a relative symlink from source to target
