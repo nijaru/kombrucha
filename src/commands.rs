@@ -1414,7 +1414,9 @@ pub async fn install(
         let actual_version = extracted_path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display())
+            })?;
 
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
@@ -1891,7 +1893,9 @@ pub async fn upgrade(
         let actual_new_version = extracted_path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display())
+            })?;
 
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
@@ -2107,7 +2111,9 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         let actual_new_version = extracted_path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display())
+            })?;
 
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
