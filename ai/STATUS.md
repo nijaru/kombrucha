@@ -4,8 +4,100 @@ Last updated: 2025-11-06
 
 ## Current State
 
-**Version**: 0.1.30 (ready for release)
-**Status**: CRITICAL FIX - Autoremove bug root cause fixed
+**Version**: 0.1.31 (ready for release)
+**Status**: CRITICAL FIX - Codesign retry workaround + Benchmarking infrastructure
+
+### v0.1.31 (2025-11-06) - CRITICAL FIX: Apple Codesign Bug Workaround
+
+**Critical Bug Fixed:** Codesigning failures causing SIGKILL (exit 137) crashes on binaries
+
+**Problem:**
+- Apple's codesign utility has a known bug where signing randomly fails
+- Our `codesign_file()` function (added in v0.1.21) always returned `Ok()` even on failures
+- Silent failures left binaries unsigned → macOS killed them with SIGKILL (exit 137)
+- **Impact**: git and other binaries crashed after `bru reinstall`, breaking Claude Code instances
+
+**Example failure:**
+```bash
+bru reinstall git
+git --version  # Exit code 137 (SIGKILL)
+file /opt/homebrew/Cellar/git/2.51.2/bin/git  # "data" (corrupted)
+```
+
+**Root Cause:** (src/relocate.rs:408-418, prior to fix)
+```rust
+// BUGGY CODE (v0.1.21 - v0.1.30)
+if !output.status.success() {
+    tracing::debug!("Codesign note...");  // Only debug log
+}
+Ok(())  // ← ALWAYS returns Ok, even when signing fails!
+```
+
+**Homebrew Solution:** (Library/Homebrew/extend/os/mac/keg.rb:48-65)
+- Copy file to temp location (creates new inode)
+- Move back to original location
+- Retry codesigning on new inode
+- This works around Apple's codesign bug
+
+**Our Fix:** (src/relocate.rs:405-468)
+```rust
+// If signing failed, try Homebrew's workaround
+if !success {
+    let temp_path = parent.join(format!(".{}.tmp_codesign", file_name));
+    fs::copy(path, &temp_path)?;
+    fs::rename(&temp_path, path)?;  // Creates new inode
+    // Retry codesigning...
+}
+```
+
+**Changes:**
+- ✅ Implemented Homebrew's copy→rename→retry workaround
+- ✅ Improved error logging: `debug!` → `warn!` for failures
+- ✅ Proper temp file naming: `.{filename}.tmp_codesign`
+- ✅ Cleanup: Remove temp file on errors
+
+**Testing:**
+- ✅ All 76 unit tests pass
+- ✅ `bru reinstall git` - No warnings, git works
+- ✅ `bru reinstall jq` - No warnings, jq works
+- ✅ `/opt/homebrew/bin/git --version` - Works (git version 2.51.2)
+- ✅ `codesign -dvvv .../git` - Properly signed with adhoc signature
+- ✅ `file .../git` - Mach-O 64-bit executable (not "data")
+
+**Impact:**
+- ✅ Fixes SIGKILL crashes on git, preventing breakage of other Claude Code instances
+- ✅ Matches Homebrew's production-tested workaround
+- ✅ Better error visibility (warnings vs debug logs)
+
+**Benchmarking Infrastructure Added:**
+
+**Criterion Benchmarks:** (benches/core_operations.rs)
+- `normalize_path`: 386.81 ns (5 paths), 120.30 ns (single)
+- `normalize_path_complexity`: 82ns (simple) to 185ns (complex)
+- `list_installed`: 7.77ms (339 packages)
+
+**Expanded Benchmark Script:** (scripts/benchmark.sh)
+- 8 commands: search, info, deps, list, outdated, upgrade, autoremove
+- 5 runs per command (was 3)
+- Markdown table output for README
+- Average speedup calculation
+
+**Profiling:** (ai/profiles/)
+- `2025-11-06-upgrade-dry-run.svg` (219 KB) - Parallelization patterns
+- `2025-11-06-autoremove-dry-run.svg` (42 KB) - Confirms <20ms execution
+- `2025-11-06-deps-ffmpeg.svg` (154 KB) - Dependency resolution (100+ deps)
+
+**Documentation:**
+- ai/BENCHMARKING_STRATEGY.md: Comprehensive strategy (criterion, CI tracking, profiling)
+- ai/HOMEBREW_WORKAROUNDS.md: Analysis of all Homebrew bugs/workarounds
+- ai/profiles/: Flamegraph storage
+
+**Files Changed:**
+- src/relocate.rs: Codesign retry workaround (lines 405-468)
+- Cargo.toml: Added criterion benchmark dependency
+- benches/core_operations.rs: Created with 4 benchmark groups
+- scripts/benchmark.sh: Expanded from 1 to 8 commands
+- ai/: Added comprehensive documentation
 
 ### v0.1.30 (2025-11-06) - CRITICAL FIX: Autoremove Root Cause
 

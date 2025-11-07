@@ -390,7 +390,7 @@ fn codesign_file(path: &Path) -> Result<()> {
     perms.set_mode(original_mode | 0o600);
     fs::set_permissions(path, perms)?;
 
-    // Sign with adhoc signature using Homebrew's exact flags
+    // Try to sign with adhoc signature using Homebrew's exact flags
     let output = Command::new("codesign")
         .arg("--sign")
         .arg("-")
@@ -400,16 +400,88 @@ fn codesign_file(path: &Path) -> Result<()> {
         .output()
         .context("Failed to run codesign")?;
 
+    let mut success = output.status.success();
+
+    // If signing failed, try Homebrew's workaround for Apple codesign bug
+    // Copy file to temp location, move back, and retry
+    // This works around a known Apple codesign bug by creating a new inode
+    if !success {
+        tracing::debug!(
+            "Initial codesign failed for {}, attempting workaround",
+            path.display()
+        );
+
+        // Get parent directory for temp file (same filesystem for atomic move)
+        if let Some(parent) = path.parent() {
+            // Create temp file with unique name in same directory
+            let file_name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("tmp");
+            let temp_path = parent.join(format!(".{}.tmp_codesign", file_name));
+
+            // Copy file to temp location, then move back
+            // The copy + move creates a new inode, working around the codesign bug
+            match fs::copy(path, &temp_path) {
+                Ok(_) => {
+                    // Use std::fs::rename for atomic replace (like Ruby's FileUtils.mv force: true)
+                    match fs::rename(&temp_path, path) {
+                        Ok(_) => {
+                            // Retry codesigning on the new inode
+                            let retry_output = Command::new("codesign")
+                                .arg("--sign")
+                                .arg("-")
+                                .arg("--force")
+                                .arg("--preserve-metadata=entitlements,requirements,flags,runtime")
+                                .arg(path)
+                                .output();
+
+                            if let Ok(output) = retry_output {
+                                success = output.status.success();
+                                if !success {
+                                    let stderr = String::from_utf8_lossy(&output.stderr);
+                                    tracing::warn!(
+                                        "Failed applying ad-hoc signature to {} (after workaround): {}",
+                                        path.display(),
+                                        stderr.trim()
+                                    );
+                                } else {
+                                    tracing::debug!(
+                                        "Workaround succeeded, signed {} after retry",
+                                        path.display()
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::debug!("Failed to move temp file back: {}", e);
+                            // Clean up temp file
+                            let _ = fs::remove_file(&temp_path);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::debug!("Failed to copy file for workaround: {}", e);
+                }
+            }
+        }
+    }
+
     // Restore original permissions
     let mut perms = fs::metadata(path)?.permissions();
     perms.set_mode(original_mode);
     fs::set_permissions(path, perms)?;
 
-    // Log errors but don't fail - some files legitimately can't be signed
-    if !output.status.success() {
+    if !success {
+        // Log warning but don't fail - some files legitimately can't be signed
+        // However, we now tried the workaround, so this is more serious
         let stderr = String::from_utf8_lossy(&output.stderr);
-        if !stderr.is_empty() {
-            tracing::debug!("Codesign note for {}: {}", path.display(), stderr.trim());
+        if !stderr.is_empty() && !stderr.contains("is already signed") {
+            tracing::warn!(
+                "Failed to sign {} after retry: {}",
+                path.display(),
+                stderr.trim()
+            );
         }
     } else {
         tracing::debug!("Signed {} successfully", path.display());

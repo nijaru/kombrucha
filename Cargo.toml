@@ -1,6 +1,6 @@
 [package]
 name = "kombrucha"
-version = "0.1.30"
+version = "0.1.31"
 edition = "2024"
 authors = ["Nick <nijaru@users.noreply.github.com>"]
 description = "Fast, parallel package manager compatible with Homebrew formulae"
@@ -66,9 +66,16 @@ moka = { version = "0.12", features = ["future"] }
 tempfile = "3"
 testcontainers = "0.23"
 
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
 debug = true  # Enable debug symbols for profiling (doesn't affect performance)
+
+[[bench]]
+name = "core_operations"
+harness = false

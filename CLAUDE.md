@@ -4,7 +4,7 @@
 Kombrucha (bru) is a fast, parallel Homebrew-compatible package manager written in Rust. It aims for 100% compatibility with Homebrew while providing significant performance improvements through parallelization.
 
 **Status**: Experimental / Unstable - Use alongside Homebrew, not as a replacement.
-**Current Version**: 0.1.30
+**Current Version**: 0.1.31
 
 ## ⚠️ CRITICAL: Always Match Homebrew's Behavior
 
