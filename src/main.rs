@@ -1053,7 +1053,7 @@ async fn run() -> anyhow::Result<()> {
             }
         }
         Some(Commands::Autoremove { dry_run }) => {
-            commands::autoremove(&api, dry_run).await?;
+            commands::autoremove(dry_run)?;
         }
         Some(Commands::Tap { tap }) => {
             commands::tap(tap.as_deref())?;

@@ -29,15 +29,21 @@ bru install wget    # works exactly like brew
 
 **Bottom line:** Same formulae, same ecosystem, dramatically faster.
 
-## Status: Production-Ready (v0.1.25)
+## Status: Experimental / Unstable (v0.1.30)
 
-- ✅ **Core Commands**: Fully functional (install, upgrade, uninstall, etc.)
+⚠️ **WARNING**: This is experimental software under active development. While core functionality works, there may be bugs that could affect your system.
+
+**Use at your own risk. Always keep Homebrew (`brew`) installed as a fallback.**
+
+- ✅ **Core Commands**: Functional (install, upgrade, uninstall, cleanup, etc.)
 - ✅ **100% Formula Coverage**: Bottles (95%) + automatic brew fallback (5%)
 - ✅ **Custom Tap Support**: Works with third-party taps (delegated to brew)
-- ✅ **Well-Tested**: 90 automated tests (76 unit + 14 regression), CI verification
-- ✅ **Production-Ready**: Usable for daily workflows
+- ✅ **Tested**: 76 unit tests + 14 regression tests, CI verification
+- ⚠️ **Experimental**: Use alongside Homebrew, report issues
 - ✅ **Modern CLI**: Clean output matching cargo/uv, live progress updates
-- ✅ **Optimized**: HTTP/2 connection pooling, parallel resolution
+- ✅ **Optimized**: Parallel operations, HTTP/2 connection pooling
+
+**Recent critical fix (v0.1.30)**: Fixed autoremove bug that could incorrectly remove required dependencies. Receipts now correctly track runtime dependencies after upgrade/reinstall.
 
 ## Installation
 

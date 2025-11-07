@@ -1829,13 +1829,22 @@ pub async fn upgrade(
         }
     }
 
-    // Phase 2: Download all bottles in parallel
+    // Phase 2: Resolve dependencies for all candidates to build complete formula map
+    // This is critical for generating correct receipts with runtime_dependencies
+    let candidate_names: Vec<String> = candidates.iter().map(|c| c.name.clone()).collect();
+    let (all_formulae, _) = if !candidate_names.is_empty() {
+        resolve_dependencies(api, &candidate_names).await?
+    } else {
+        (HashMap::new(), vec![])
+    };
+
+    // Phase 3: Download all bottles in parallel
     println!("Downloading {} bottles...", candidates.len());
     let formulae: Vec<_> = candidates.iter().map(|c| c.formula.clone()).collect();
     let downloaded = download::download_bottles(api, &formulae).await?;
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
-    // Phase 3: Install sequentially
+    // Phase 4: Install sequentially
     for candidate in &candidates {
         let formula_name = &candidate.name;
         let old_version = &candidate.old_version;
@@ -1887,11 +1896,8 @@ pub async fn upgrade(
         symlink::optlink(formula_name, new_version)?;
 
         // Generate receipt - preserve original installed_on_request status
-        let runtime_deps = build_runtime_deps(&formula.dependencies, &{
-            let mut map = HashMap::new();
-            map.insert(formula.name.clone(), formula.clone());
-            map
-        });
+        // Use complete all_formulae map so runtime_dependencies are populated correctly
+        let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
 
         // Read old receipt to preserve installed_on_request status
         let old_path = cellar::cellar_path().join(formula_name).join(old_version);
@@ -1989,6 +1995,10 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         "Reinstalling {} formulae...",
         formula_names.len().to_string().bold()
     );
+
+    // Resolve dependencies for all formulas to build complete formula map
+    // This is critical for generating correct receipts with runtime_dependencies
+    let (all_formulae, _) = resolve_dependencies(api, formula_names).await?;
 
     let mut actually_reinstalled = 0;
 
@@ -2094,11 +2104,8 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         symlink::optlink(formula_name, new_version)?;
 
         // Generate receipt
-        let runtime_deps = build_runtime_deps(&formula.dependencies, &{
-            let mut map = HashMap::new();
-            map.insert(formula.name.clone(), formula.clone());
-            map
-        });
+        // Use complete all_formulae map so runtime_dependencies are populated correctly
+        let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
         let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
         receipt_data.write(&extracted_path)?;
 
@@ -2237,7 +2244,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
     Ok(())
 }
 
-pub async fn autoremove(api: &BrewApi, dry_run: bool) -> Result<()> {
+pub fn autoremove(dry_run: bool) -> Result<()> {
     if dry_run {
         println!("Dry run - no packages will be removed");
     } else {
@@ -2247,60 +2254,30 @@ pub async fn autoremove(api: &BrewApi, dry_run: bool) -> Result<()> {
     let all_packages = cellar::list_installed()?;
 
     // Build a set of all packages installed on request
-    let mut on_request: HashSet<String> = HashSet::new();
-    for pkg in &all_packages {
-        if pkg.installed_on_request() {
-            on_request.insert(pkg.name.clone());
-        }
-    }
+    let on_request: HashSet<String> = all_packages
+        .iter()
+        .filter(|p| p.installed_on_request())
+        .map(|p| p.name.clone())
+        .collect();
 
     // Build a set of all dependencies required by packages installed on request
+    // This uses a breadth-first traversal of the dependency graph from receipts
     let mut required = HashSet::new();
-    let mut to_check: Vec<String> = on_request.iter().cloned().collect();
+    let mut to_check: std::collections::VecDeque<String> = on_request.iter().cloned().collect();
     let mut checked = HashSet::new();
 
-    // Process packages in batches to parallelize API calls
-    const BATCH_SIZE: usize = 10;
+    // Traverse dependency graph using receipts only (matches Homebrew behavior)
+    // NO network calls - instant operation
+    while let Some(name) = to_check.pop_front() {
+        if !checked.insert(name.clone()) {
+            continue; // Already processed
+        }
 
-    while !to_check.is_empty() {
-        // Take a batch of packages to process in parallel
-        let batch: Vec<String> = to_check.drain(to_check.len().saturating_sub(BATCH_SIZE)..).collect();
-
-        // Fetch all formulae in this batch in parallel
-        let formula_futures: Vec<_> = batch.iter().map(|name| api.fetch_formula(name)).collect();
-        let formula_results = futures::future::join_all(formula_futures).await;
-
-        // Process each formula result
-        for (i, result) in formula_results.into_iter().enumerate() {
-            let name = &batch[i];
-
-            // Skip if already checked
-            if checked.contains(name) {
-                continue;
-            }
-            checked.insert(name.clone());
-
-            match result {
-                Ok(formula) => {
-                    // Add dependencies from API
-                    for dep in &formula.dependencies {
-                        required.insert(dep.clone());
-                        if !checked.contains(dep) && !to_check.contains(dep) {
-                            to_check.push(dep.clone());
-                        }
-                    }
-                }
-                Err(_) => {
-                    // Fallback to receipt if API fails
-                    if let Some(pkg) = all_packages.iter().find(|p| p.name == *name) {
-                        for dep in pkg.runtime_dependencies() {
-                            required.insert(dep.full_name.clone());
-                            if !checked.contains(&dep.full_name) && !to_check.contains(&dep.full_name) {
-                                to_check.push(dep.full_name.clone());
-                            }
-                        }
-                    }
-                }
+        // Find package and add its runtime dependencies from receipt
+        if let Some(pkg) = all_packages.iter().find(|p| p.name == name) {
+            for dep in pkg.runtime_dependencies() {
+                required.insert(dep.full_name.clone());
+                to_check.push_back(dep.full_name.clone());
             }
         }
     }
