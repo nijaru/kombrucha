@@ -189,9 +189,9 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     };
 
     // Check if this is an installed tap formula
-    if let Ok(versions) = cellar::get_installed_versions(formula) {
-        if let Some(installed_version) = versions.first() {
-            if let Ok(Some((tap_name, formula_path, _))) =
+    if let Ok(versions) = cellar::get_installed_versions(formula)
+        && let Some(installed_version) = versions.first()
+            && let Ok(Some((tap_name, formula_path, _))) =
                 crate::tap::get_package_tap_info(&installed_version.path)
             {
                 // For tap formulae, parse the Ruby file natively
@@ -250,8 +250,6 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                     }
                 }
             }
-        }
-    }
 
     // Try formula first, then cask
     match api.fetch_formula(formula).await {
@@ -1791,17 +1789,13 @@ pub async fn upgrade(
             // Extract actual formula name (strip tap prefix if present)
             let pkg_name = crate::tap::extract_formula_name(name);
 
-            if let Ok(versions) = cellar::get_installed_versions(&pkg_name) {
-                if let Some(version) = versions.first() {
-                    if let Ok(Some((tap_name, _, _))) =
+            if let Ok(versions) = cellar::get_installed_versions(&pkg_name)
+                && let Some(version) = versions.first()
+                    && let Ok(Some((tap_name, _, _))) =
                         crate::tap::get_package_tap_info(&version.path)
-                    {
-                        if !pinned.contains(&pkg_name) {
+                        && !pinned.contains(&pkg_name) {
                             return Some((pkg_name, tap_name));
                         }
-                    }
-                }
-            }
             None
         })
         .collect();

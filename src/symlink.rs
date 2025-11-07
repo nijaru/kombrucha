@@ -121,7 +121,7 @@ enum LinkOperation {
 fn collect_link_operations(
     source: &Path,
     target: &Path,
-    cellar_root: &Path,
+    _cellar_root: &Path,
     operations: &mut Vec<LinkOperation>,
 ) -> Result<()> {
     for entry in fs::read_dir(source)? {
@@ -136,7 +136,7 @@ fn collect_link_operations(
                 target_dir: target_path.clone(),
             });
             // Recursively collect operations for contents
-            collect_link_operations(&source_path, &target_path, cellar_root, operations)?;
+            collect_link_operations(&source_path, &target_path, _cellar_root, operations)?;
         } else {
             // Need to create symlink
             operations.push(LinkOperation::CreateSymlink {

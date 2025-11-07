@@ -20,7 +20,7 @@ pub fn extract_formula_name(tap_formula: &str) -> String {
         // Split and take the last part
         tap_formula
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or(tap_formula)
             .to_string()
     } else {
@@ -185,12 +185,11 @@ pub fn parse_formula_version(formula_path: &Path) -> Result<Option<String>> {
         // Look for: version "X.Y.Z"
         if line.starts_with("version ") && line.contains('"') {
             // Extract version string between quotes
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start + 1..].find('"') {
+            if let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].find('"') {
                     let version = &line[start + 1..start + 1 + end];
                     return Ok(Some(version.to_string()));
                 }
-            }
         }
     }
 
@@ -233,31 +232,25 @@ pub fn parse_formula_info(formula_path: &Path, formula_name: &str) -> Result<Tap
         let line = line.trim();
 
         // Parse: desc "Description text"
-        if line.starts_with("desc ") && line.contains('"') {
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start + 1..].rfind('"') {
+        if line.starts_with("desc ") && line.contains('"')
+            && let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].rfind('"') {
                     desc = Some(line[start + 1..start + 1 + end].to_string());
                 }
-            }
-        }
 
         // Parse: homepage "https://..."
-        if line.starts_with("homepage ") && line.contains('"') {
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start + 1..].rfind('"') {
+        if line.starts_with("homepage ") && line.contains('"')
+            && let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].rfind('"') {
                     homepage = Some(line[start + 1..start + 1 + end].to_string());
                 }
-            }
-        }
 
         // Parse: version "X.Y.Z"
-        if line.starts_with("version ") && line.contains('"') {
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start + 1..].find('"') {
+        if line.starts_with("version ") && line.contains('"')
+            && let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].find('"') {
                     version = Some(line[start + 1..start + 1 + end].to_string());
                 }
-            }
-        }
     }
 
     Ok(TapFormulaInfo {
