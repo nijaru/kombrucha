@@ -4,8 +4,57 @@ Last updated: 2025-11-06
 
 ## Current State
 
-**Version**: 0.1.31 (ready for release)
-**Status**: CRITICAL FIX - Codesign retry workaround + Benchmarking infrastructure
+**Version**: 0.1.32 (ready for release)
+**Status**: CRITICAL FIX - Bottle revision suffix symlinks
+
+### v0.1.32 (2025-11-06) - CRITICAL FIX: Bottle Revision Suffix Symlinks
+
+**Critical Bug Fixed:** Symlinks pointing to wrong version when bottle has revision suffix
+
+**Problem:**
+- When bottles have revision suffixes (e.g., `25.1.0_1`), symlinks were created with base version
+- `/opt/homebrew/opt/node` → `../Cellar/node/25.1.0` (wrong!)
+- Should be: `/opt/homebrew/opt/node` → `../Cellar/node/25.1.0_1` (correct)
+- **Impact**: Packages depending on node (gemini-cli) failed with "bad interpreter" error
+
+**Example failure:**
+```bash
+bru install gemini-cli  # Installs node 25.1.0_1 as dependency
+gemini --version  # Error: bad interpreter: /opt/homebrew/opt/node/bin/node: no such file or directory
+ls -la /opt/homebrew/opt/node  # Points to 25.1.0 (doesn't exist)
+ls /opt/homebrew/Cellar/node/  # Only 25.1.0_1 exists
+```
+
+**Root Cause:** (src/commands.rs, prior to fix)
+- `extract_bottle()` correctly returned path with suffix: `/opt/homebrew/Cellar/node/25.1.0_1`
+- But we passed original version `"25.1.0"` to `link_formula()` and `optlink()`
+- Symlinks created with wrong version, pointing to non-existent directory
+
+**Fix:** (src/commands.rs:1413-1431, 1890-1902, 2106-2118)
+```rust
+// Extract the actual installed version from the returned path
+let extracted_path = extract::extract_bottle(bottle_path, &formula.name, version)?;
+let actual_version = extracted_path
+    .file_name()
+    .and_then(|n| n.to_str())
+    .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+
+// Use actual_version (with suffix) for symlinks
+symlink::link_formula(&formula.name, actual_version)?;
+symlink::optlink(&formula.name, actual_version)?;
+```
+
+**Affected Commands:**
+- `bru install` - Fixed (src/commands.rs:1413-1431)
+- `bru upgrade` - Fixed (src/commands.rs:1890-1902)
+- `bru reinstall` - Fixed (src/commands.rs:2106-2118)
+- `bru link` - Already correct (uses versions from `get_installed_versions`)
+
+**Testing:**
+- Reinstalled node with `bru reinstall node`
+- Verified symlink: `ls -la /opt/homebrew/opt/node` → `../Cellar/node/25.1.0_1` ✓
+- Tested gemini-cli: `gemini --version` → `0.13.0` ✓
+- All 76 unit tests pass ✓
 
 ### v0.1.31 (2025-11-06) - CRITICAL FIX: Apple Codesign Bug Workaround
 

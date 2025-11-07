@@ -1410,11 +1410,17 @@ pub async fn install(
         // Extract bottle
         let extracted_path = extract::extract_bottle(bottle_path, &formula.name, version)?;
 
+        // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
+        let actual_version = extracted_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        // Create symlinks
-        let linked = symlink::link_formula(&formula.name, version)?;
+        // Create symlinks (use actual_version which includes bottle revision if present)
+        let linked = symlink::link_formula(&formula.name, actual_version)?;
         println!(
             "    ├ {} Linked {} files",
             "✓".green(),
@@ -1422,7 +1428,7 @@ pub async fn install(
         );
 
         // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(&formula.name, version)?;
+        symlink::optlink(&formula.name, actual_version)?;
 
         // Generate install receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
@@ -1881,13 +1887,19 @@ pub async fn upgrade(
         // Install new version
         let extracted_path = extract::extract_bottle(bottle_path, formula_name, new_version)?;
 
+        // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
+        let actual_new_version = extracted_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        let linked = symlink::link_formula(formula_name, new_version)?;
+        let linked = symlink::link_formula(formula_name, actual_new_version)?;
 
         // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(formula_name, new_version)?;
+        symlink::optlink(formula_name, actual_new_version)?;
 
         // Generate receipt - preserve original installed_on_request status
         // Use complete all_formulae map so runtime_dependencies are populated correctly
@@ -2091,13 +2103,19 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         // Install with NEW version
         let extracted_path = extract::extract_bottle(&bottle_path, formula_name, new_version)?;
 
+        // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
+        let actual_new_version = extracted_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid extracted path: {}", extracted_path.display()))?;
+
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        let linked = symlink::link_formula(formula_name, new_version)?;
+        let linked = symlink::link_formula(formula_name, actual_new_version)?;
 
         // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(formula_name, new_version)?;
+        symlink::optlink(formula_name, actual_new_version)?;
 
         // Generate receipt
         // Use complete all_formulae map so runtime_dependencies are populated correctly
