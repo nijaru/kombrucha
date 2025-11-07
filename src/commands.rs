@@ -1422,15 +1422,24 @@ pub async fn install(
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
         // Create symlinks (use actual_version which includes bottle revision if present)
-        let linked = symlink::link_formula(&formula.name, actual_version)?;
-        println!(
-            "    ├ {} Linked {} files",
-            "✓".green(),
-            linked.len().to_string().dimmed()
-        );
+        // Skip linking if formula is keg-only (matches Homebrew behavior)
+        if !formula.keg_only {
+            let linked = symlink::link_formula(&formula.name, actual_version)?;
+            println!(
+                "    ├ {} Linked {} files",
+                "✓".green(),
+                linked.len().to_string().dimmed()
+            );
 
-        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(&formula.name, actual_version)?;
+            // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+            symlink::optlink(&formula.name, actual_version)?;
+        } else {
+            println!(
+                "    ├ {} {} is keg-only (not linked to prefix)",
+                "ℹ".cyan(),
+                formula.name
+            );
+        }
 
         // Generate install receipt
         let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
@@ -1593,6 +1602,7 @@ fn build_runtime_deps(
                     full_name: f.name.clone(),
                     version: v.clone(),
                     revision: 0,
+                    bottle_rebuild: 0,
                     pkg_version: v.clone(),
                     declared_directly: true,
                 })
@@ -1900,10 +1910,29 @@ pub async fn upgrade(
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        let linked = symlink::link_formula(formula_name, actual_new_version)?;
+        // Create symlinks - skip if formula is keg-only (matches Homebrew behavior)
+        if !formula.keg_only {
+            let linked = symlink::link_formula(formula_name, actual_new_version)?;
 
-        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(formula_name, actual_new_version)?;
+            // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+            symlink::optlink(formula_name, actual_new_version)?;
+
+            spinner.finish_and_clear();
+
+            println!(
+                "    ├ {} Linked {} files",
+                "✓".green(),
+                linked.len().to_string().dimmed()
+            );
+        } else {
+            spinner.finish_and_clear();
+
+            println!(
+                "    ├ {} {} is keg-only (not linked to prefix)",
+                "ℹ".cyan(),
+                formula_name
+            );
+        }
 
         // Generate receipt - preserve original installed_on_request status
         // Use complete all_formulae map so runtime_dependencies are populated correctly
@@ -1922,14 +1951,6 @@ pub async fn upgrade(
         let receipt_data =
             receipt::InstallReceipt::new_bottle(formula, runtime_deps, installed_on_request);
         receipt_data.write(&extracted_path)?;
-
-        spinner.finish_and_clear();
-
-        println!(
-            "    ├ {} Linked {} files",
-            "✓".green(),
-            linked.len().to_string().dimmed()
-        );
 
         // Remove old version
         let old_path = cellar::cellar_path().join(formula_name).join(old_version);
@@ -2008,6 +2029,9 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         formula_names.len().to_string().bold()
     );
 
+    // Check for pinned formulae
+    let pinned = read_pinned()?;
+
     // Resolve dependencies for all formulas to build complete formula map
     // This is critical for generating correct receipts with runtime_dependencies
     let (all_formulae, _) = resolve_dependencies(api, formula_names).await?;
@@ -2018,6 +2042,15 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
     let client = reqwest::Client::new();
 
     for formula_name in formula_names {
+        // Skip pinned packages
+        if pinned.contains(formula_name) {
+            println!(
+                "  {} {} is pinned (cannot reinstall pinned formulae)",
+                "⚠".yellow(),
+                formula_name.bold()
+            );
+            continue;
+        }
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
         if installed_versions.is_empty() {
@@ -2118,22 +2151,31 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         // Relocate bottle (fix install names)
         crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())?;
 
-        let linked = symlink::link_formula(formula_name, actual_new_version)?;
+        // Create symlinks - skip if formula is keg-only (matches Homebrew behavior)
+        if !formula.keg_only {
+            let linked = symlink::link_formula(formula_name, actual_new_version)?;
 
-        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-        symlink::optlink(formula_name, actual_new_version)?;
+            // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+            symlink::optlink(formula_name, actual_new_version)?;
+
+            println!(
+                "    ├ {} Linked {} files",
+                "✓".green(),
+                linked.len().to_string().dimmed()
+            );
+        } else {
+            println!(
+                "    ├ {} {} is keg-only (not linked to prefix)",
+                "ℹ".cyan(),
+                formula_name
+            );
+        }
 
         // Generate receipt
         // Use complete all_formulae map so runtime_dependencies are populated correctly
         let runtime_deps = build_runtime_deps(&formula.dependencies, &all_formulae);
         let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
         receipt_data.write(&extracted_path)?;
-
-        println!(
-            "    ├ {} Linked {} files",
-            "✓".green(),
-            linked.len().to_string().dimmed()
-        );
         println!(
             "    └ {} Reinstalled {} {}",
             "✓".green(),
@@ -3378,7 +3420,7 @@ pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     Ok(())
 }
 
-pub fn link(formula_names: &[String]) -> Result<()> {
+pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
         println!("{} No formulae specified", "✗".red());
         return Ok(());
@@ -3394,6 +3436,32 @@ pub fn link(formula_names: &[String]) -> Result<()> {
                 "⚠".yellow(),
                 formula_name.bold()
             );
+            continue;
+        }
+
+        // Fetch formula metadata to check if it's keg-only
+        let formula = match api.fetch_formula(formula_name).await {
+            Ok(f) => f,
+            Err(_) => {
+                println!(
+                    "  {} Failed to fetch metadata for {}",
+                    "✗".red(),
+                    formula_name.bold()
+                );
+                continue;
+            }
+        };
+
+        // Homebrew doesn't allow linking keg-only formulas
+        if formula.keg_only {
+            println!(
+                "  {} {} is keg-only and cannot be linked",
+                "⚠".yellow(),
+                formula_name.bold()
+            );
+            if let Some(reason) = &formula.keg_only_reason {
+                println!("    {} {}", "ℹ".cyan(), reason.explanation);
+            }
             continue;
         }
 

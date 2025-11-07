@@ -93,7 +93,7 @@ impl InstallReceipt {
 
     /// Create a new receipt for a bottle installation
     pub fn new_bottle(
-        _formula: &Formula,
+        formula: &Formula,
         runtime_deps: Vec<RuntimeDependency>,
         installed_on_request: bool,
     ) -> Self {
@@ -111,18 +111,26 @@ impl InstallReceipt {
             loaded_from_api: true,
             installed_as_dependency: !installed_on_request,
             installed_on_request,
-            changed_files: None,
+            changed_files: Some(vec![]),
             time: now,
             source_modified_time: now,
             compiler: Some("clang".to_string()),
             aliases: vec![],
             runtime_dependencies: runtime_deps,
             source: Some(SourceInfo {
-                path: None,
+                path: Some(format!(
+                    "{}/Library/Caches/Homebrew/api/formula.jws.json",
+                    std::env::var("HOME").unwrap_or_else(|_| "/Users/USER".to_string())
+                )),
                 tap: "homebrew/core".to_string(),
                 tap_git_head: None,
                 spec: "stable".to_string(),
-                versions: None,
+                versions: Some(SourceVersions {
+                    stable: formula.versions.stable.clone(),
+                    head: None,
+                    version_scheme: 0,
+                    compatibility_version: None,
+                }),
             }),
             arch: Some(homebrew_arch().to_string()),
             built_on: detect_build_environment(),

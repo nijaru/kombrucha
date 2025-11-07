@@ -1114,7 +1114,7 @@ async fn run() -> anyhow::Result<()> {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru link [FORMULAE]...");
             }
-            commands::link(&formulae)?;
+            commands::link(&api, &formulae).await?;
         }
         Some(Commands::Unlink { formulae }) => {
             if formulae.is_empty() {

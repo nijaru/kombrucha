@@ -38,6 +38,8 @@ pub struct RuntimeDependency {
     pub full_name: String,
     pub version: String,
     pub revision: u32,
+    #[serde(default)]
+    pub bottle_rebuild: u32,
     pub pkg_version: String,
     #[serde(default)]
     pub declared_directly: bool,
