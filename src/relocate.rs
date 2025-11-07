@@ -414,10 +414,7 @@ fn codesign_file(path: &Path) -> Result<()> {
         // Get parent directory for temp file (same filesystem for atomic move)
         if let Some(parent) = path.parent() {
             // Create temp file with unique name in same directory
-            let file_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("tmp");
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("tmp");
             let temp_path = parent.join(format!(".{}.tmp_codesign", file_name));
 
             // Copy file to temp location, then move back

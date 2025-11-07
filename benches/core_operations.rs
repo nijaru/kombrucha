@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 use kombrucha::normalize_path;
 use std::path::Path;
 
@@ -22,9 +22,7 @@ fn bench_normalize_path(c: &mut Criterion) {
 
 fn bench_normalize_path_single(c: &mut Criterion) {
     c.bench_function("normalize_path single", |b| {
-        b.iter(|| {
-            normalize_path(black_box(Path::new("foo/bar/../baz/./qux")))
-        })
+        b.iter(|| normalize_path(black_box(Path::new("foo/bar/../baz/./qux"))))
     });
 }
 

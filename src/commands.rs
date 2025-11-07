@@ -1901,14 +1901,16 @@ pub async fn upgrade(
 
         // Read old receipt to preserve installed_on_request status
         let old_path = cellar::cellar_path().join(formula_name).join(old_version);
-        let installed_on_request = if let Ok(old_receipt) = receipt::InstallReceipt::read(&old_path) {
+        let installed_on_request = if let Ok(old_receipt) = receipt::InstallReceipt::read(&old_path)
+        {
             old_receipt.installed_on_request
         } else {
             // Fallback: assume it was installed on request if we can't read old receipt
             true
         };
 
-        let receipt_data = receipt::InstallReceipt::new_bottle(formula, runtime_deps, installed_on_request);
+        let receipt_data =
+            receipt::InstallReceipt::new_bottle(formula, runtime_deps, installed_on_request);
         receipt_data.write(&extracted_path)?;
 
         spinner.finish_and_clear();

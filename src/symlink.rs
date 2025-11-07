@@ -82,8 +82,16 @@ fn link_directory(
     let symlink_results: Vec<Result<PathBuf>> = operations
         .into_par_iter()
         .filter_map(|op| {
-            if let LinkOperation::CreateSymlink { source_path, target_path } = op {
-                Some(create_symlink_operation(source_path, target_path, cellar_root))
+            if let LinkOperation::CreateSymlink {
+                source_path,
+                target_path,
+            } = op
+            {
+                Some(create_symlink_operation(
+                    source_path,
+                    target_path,
+                    cellar_root,
+                ))
             } else {
                 None
             }
@@ -100,8 +108,13 @@ fn link_directory(
 
 /// Types of linking operations needed
 enum LinkOperation {
-    CreateDirectory { target_dir: PathBuf },
-    CreateSymlink { source_path: PathBuf, target_path: PathBuf },
+    CreateDirectory {
+        target_dir: PathBuf,
+    },
+    CreateSymlink {
+        source_path: PathBuf,
+        target_path: PathBuf,
+    },
 }
 
 /// Collect all linking operations needed (files and directories)
