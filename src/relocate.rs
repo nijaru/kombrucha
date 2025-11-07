@@ -311,11 +311,12 @@ fn find_scripts_with_placeholders(dir: &Path) -> Result<Vec<PathBuf>> {
 
             // Check if starts with shebang and contains placeholders
             if let Ok(content) = std::str::from_utf8(&buffer[..bytes_read])
-                && let Some(first_line) = content.lines().next() {
-                    return first_line.starts_with("#!")
-                        && (first_line.contains("@@HOMEBREW_PREFIX@@")
-                            || first_line.contains("@@HOMEBREW_CELLAR@@"));
-                }
+                && let Some(first_line) = content.lines().next()
+            {
+                return first_line.starts_with("#!")
+                    && (first_line.contains("@@HOMEBREW_PREFIX@@")
+                        || first_line.contains("@@HOMEBREW_CELLAR@@"));
+            }
 
             false
         })

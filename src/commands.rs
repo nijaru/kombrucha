@@ -191,65 +191,65 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
     // Check if this is an installed tap formula
     if let Ok(versions) = cellar::get_installed_versions(formula)
         && let Some(installed_version) = versions.first()
-            && let Ok(Some((tap_name, formula_path, _))) =
-                crate::tap::get_package_tap_info(&installed_version.path)
-            {
-                // For tap formulae, parse the Ruby file natively
-                match crate::tap::parse_formula_info(&formula_path, formula) {
-                    Ok(tap_info) => {
-                        // Display tap formula info in native format
-                        println!(
-                            "{}",
-                            format!("==> {}/{}", tap_name, tap_info.name).bold().green()
-                        );
-                        if let Some(desc) = &tap_info.desc {
-                            println!("{}", desc);
-                        }
-                        if let Some(homepage) = &tap_info.homepage {
-                            println!("{}: {}", "Homepage".bold(), homepage);
-                        }
-                        if let Some(version) = &tap_info.version {
-                            println!("{}: {}", "Version".bold(), version);
-                        }
-
-                        // Show installed versions
-                        println!(
-                            "{}: {} versions installed",
-                            "Installed".bold(),
-                            versions.len()
-                        );
-                        for v in &versions {
-                            let marker = if v.version == installed_version.version {
-                                "*"
-                            } else {
-                                ""
-                            };
-                            println!("  {} {}", v.version.dimmed(), marker);
-                        }
-
-                        println!(
-                            "{}: {}",
-                            "From".bold(),
-                            formula_path.display().to_string().dimmed()
-                        );
-                        spinner.finish_and_clear();
-                        return Ok(());
-                    }
-                    Err(e) => {
-                        spinner.finish_and_clear();
-                        // If parsing fails, fall back to brew (shouldn't normally happen)
-                        eprintln!(
-                            "Warning: Failed to parse tap formula ({}), falling back to brew",
-                            e
-                        );
-                        let full_name = format!("{}/{}", tap_name, formula);
-                        if check_brew_available() {
-                            let _ = Command::new("brew").arg("info").arg(&full_name).status();
-                        }
-                        return Err(e.into());
-                    }
+        && let Ok(Some((tap_name, formula_path, _))) =
+            crate::tap::get_package_tap_info(&installed_version.path)
+    {
+        // For tap formulae, parse the Ruby file natively
+        match crate::tap::parse_formula_info(&formula_path, formula) {
+            Ok(tap_info) => {
+                // Display tap formula info in native format
+                println!(
+                    "{}",
+                    format!("==> {}/{}", tap_name, tap_info.name).bold().green()
+                );
+                if let Some(desc) = &tap_info.desc {
+                    println!("{}", desc);
                 }
+                if let Some(homepage) = &tap_info.homepage {
+                    println!("{}: {}", "Homepage".bold(), homepage);
+                }
+                if let Some(version) = &tap_info.version {
+                    println!("{}: {}", "Version".bold(), version);
+                }
+
+                // Show installed versions
+                println!(
+                    "{}: {} versions installed",
+                    "Installed".bold(),
+                    versions.len()
+                );
+                for v in &versions {
+                    let marker = if v.version == installed_version.version {
+                        "*"
+                    } else {
+                        ""
+                    };
+                    println!("  {} {}", v.version.dimmed(), marker);
+                }
+
+                println!(
+                    "{}: {}",
+                    "From".bold(),
+                    formula_path.display().to_string().dimmed()
+                );
+                spinner.finish_and_clear();
+                return Ok(());
             }
+            Err(e) => {
+                spinner.finish_and_clear();
+                // If parsing fails, fall back to brew (shouldn't normally happen)
+                eprintln!(
+                    "Warning: Failed to parse tap formula ({}), falling back to brew",
+                    e
+                );
+                let full_name = format!("{}/{}", tap_name, formula);
+                if check_brew_available() {
+                    let _ = Command::new("brew").arg("info").arg(&full_name).status();
+                }
+                return Err(e.into());
+            }
+        }
+    }
 
     // Try formula first, then cask
     match api.fetch_formula(formula).await {
@@ -1791,11 +1791,11 @@ pub async fn upgrade(
 
             if let Ok(versions) = cellar::get_installed_versions(&pkg_name)
                 && let Some(version) = versions.first()
-                    && let Ok(Some((tap_name, _, _))) =
-                        crate::tap::get_package_tap_info(&version.path)
-                        && !pinned.contains(&pkg_name) {
-                            return Some((pkg_name, tap_name));
-                        }
+                && let Ok(Some((tap_name, _, _))) = crate::tap::get_package_tap_info(&version.path)
+                && !pinned.contains(&pkg_name)
+            {
+                return Some((pkg_name, tap_name));
+            }
             None
         })
         .collect();
