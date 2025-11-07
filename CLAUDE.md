@@ -4,7 +4,7 @@
 Kombrucha (bru) is a fast, parallel Homebrew-compatible package manager written in Rust. It aims for 100% compatibility with Homebrew while providing significant performance improvements through parallelization.
 
 **Status**: Experimental / Unstable - Use alongside Homebrew, not as a replacement.
-**Current Version**: 0.1.31
+**Current Version**: 0.1.32
 
 ## ⚠️ CRITICAL: Always Match Homebrew's Behavior
 
@@ -136,6 +136,35 @@ When implementing any of these features, **ALWAYS check Homebrew source first**:
 6. Test locally before pushing
 7. NEVER release without CI passing
 8. See global `~/.claude/CLAUDE.md` for complete release workflow
+
+## Distribution & Publishing
+
+**CRITICAL**: Kombrucha is distributed via the **nijaru/tap** Homebrew tap.
+
+### Official Tap: nijaru/tap
+- **Repository**: https://github.com/nijaru/homebrew-tap
+- **Formula location**: `Formula/bru.rb`
+- **Local repo**: `~/github/nijaru/homebrew-tap`
+
+### Publishing to Tap
+When releasing a new version:
+1. **Update the formula** in `~/github/nijaru/homebrew-tap/Formula/bru.rb`
+   - For prebuilt binaries: Update URLs and SHA256 hashes for both arm64 and x86_64
+   - For source install: Update URL and SHA256 for tarball
+2. **Commit and push** to nijaru/homebrew-tap
+3. **DO NOT create a new tap** - always use the existing nijaru/tap
+
+### Publishing to Crates.io
+```bash
+cargo publish
+```
+
+### NEVER Do This
+- ❌ Create a new dedicated tap (e.g., nijaru/homebrew-bru)
+- ❌ Duplicate formulas across multiple taps
+- ❌ Forget to check if a tap already exists
+
+**Why**: Having the same formula in multiple taps causes "found in multiple taps" errors and confuses users.
 
 ## Performance Expectations
 - **Parallelization**: Core operations should use parallel processing
