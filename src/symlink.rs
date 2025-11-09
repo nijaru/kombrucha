@@ -475,3 +475,34 @@ pub fn unoptlink(formula_name: &str) -> Result<()> {
 
     Ok(())
 }
+
+/// Get the currently linked version of a formula
+///
+/// Returns the version that is currently linked via /opt/homebrew/opt/<formula>
+/// This matches Homebrew's linked_keg behavior and is critical for handling
+/// interrupted upgrades correctly.
+///
+/// Returns None if the formula is not currently linked.
+pub fn get_linked_version(formula_name: &str) -> Result<Option<String>> {
+    let prefix = cellar::detect_prefix();
+    let opt_link = prefix.join("opt").join(formula_name);
+
+    // Check if opt symlink exists
+    if !opt_link.symlink_metadata().is_ok() {
+        return Ok(None);
+    }
+
+    // Read the symlink target
+    let link_target = fs::read_link(&opt_link)
+        .with_context(|| format!("Failed to read opt symlink: {}", opt_link.display()))?;
+
+    // The symlink points to ../Cellar/<formula>/<version>
+    // Extract the version from the last component of the path
+    if let Some(version) = link_target.file_name() {
+        if let Some(version_str) = version.to_str() {
+            return Ok(Some(version_str.to_string()));
+        }
+    }
+
+    Ok(None)
+}

@@ -1764,8 +1764,27 @@ pub async fn upgrade(
                 return None; // Will install separately
             }
 
-            let old_version = installed_versions[0].version.clone();
-            let cellar_path = &installed_versions[0].path;
+            // Use the linked version as the "old" version (matches Homebrew's linked_keg behavior)
+            // This correctly handles interrupted upgrades where multiple versions may exist
+            let old_version = if let Ok(Some(linked_ver)) = symlink::get_linked_version(&pkg_name) {
+                // Find the matching installed version to get its path
+                let matching = installed_versions.iter().find(|v| v.version == linked_ver);
+                if let Some(ver) = matching {
+                    ver.version.clone()
+                } else {
+                    // Linked version doesn't exist in Cellar (broken state), use newest
+                    installed_versions[0].version.clone()
+                }
+            } else {
+                // Not linked, use newest version
+                installed_versions[0].version.clone()
+            };
+
+            let cellar_path = installed_versions
+                .iter()
+                .find(|v| v.version == old_version)
+                .map(|v| &v.path)
+                .unwrap_or(&installed_versions[0].path);
 
             // Check if this is a tap formula - if so, we'll upgrade via brew
             if let Ok(Some(_tap_info)) = crate::tap::get_package_tap_info(cellar_path) {
@@ -2058,8 +2077,27 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             continue;
         }
 
-        let old_version = &installed_versions[0].version;
-        let cellar_path = &installed_versions[0].path;
+        // Use the linked version as the "old" version (matches Homebrew's linked_keg behavior)
+        // This correctly handles interrupted operations where multiple versions may exist
+        let old_version = if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
+            // Find the matching installed version
+            let matching = installed_versions.iter().find(|v| v.version == linked_ver);
+            if let Some(ver) = matching {
+                ver.version.clone()
+            } else {
+                // Linked version doesn't exist in Cellar (broken state), use newest
+                installed_versions[0].version.clone()
+            }
+        } else {
+            // Not linked, use newest version
+            installed_versions[0].version.clone()
+        };
+
+        let cellar_path = installed_versions
+            .iter()
+            .find(|v| v.version == old_version)
+            .map(|v| &v.path)
+            .unwrap_or(&installed_versions[0].path);
 
         // Check if this is a tap formula BEFORE uninstalling
         // Critical: We must check this before removing the package!
@@ -2097,7 +2135,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         );
 
         // Unlink
-        symlink::unlink_formula(formula_name, old_version)?;
+        symlink::unlink_formula(formula_name, &old_version)?;
 
         // Remove from Cellar
         let cellar_path = cellar::cellar_path().join(formula_name).join(old_version);
@@ -2217,6 +2255,15 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             continue;
         }
 
+        // Use the linked version as the version to uninstall (matches Homebrew's behavior)
+        // This correctly handles cases where multiple versions exist
+        let version = if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
+            linked_ver
+        } else {
+            // Not linked, use newest version
+            installed_versions[0].version.clone()
+        };
+
         // Check if other packages depend on this one (unless --force)
         if !force {
             let dependents: Vec<_> = all_installed
@@ -2243,7 +2290,6 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
             }
         }
 
-        let version = &installed_versions[0].version;
         println!(
             "  Uninstalling {} {}",
             formula_name.cyan(),
@@ -2251,7 +2297,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         );
 
         // Unlink symlinks
-        let unlinked = symlink::unlink_formula(formula_name, version)?;
+        let unlinked = symlink::unlink_formula(formula_name, &version)?;
         if !unlinked.is_empty() {
             println!(
                 "    ├ {} Unlinked {} files",
@@ -2264,7 +2310,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         symlink::unoptlink(formula_name)?;
 
         // Remove from Cellar
-        let cellar_path = cellar::cellar_path().join(formula_name).join(version);
+        let cellar_path = cellar::cellar_path().join(formula_name).join(&version);
         if cellar_path.exists() {
             std::fs::remove_dir_all(&cellar_path)?;
         }
@@ -2742,9 +2788,14 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
             continue;
         }
 
-        // Sort by version string - lexicographic comparison works for most cases
-        // (e.g., "1.9.0" > "1.10.0" lexically is wrong, but "1.8.1" > "1.7.0" works)
-        // For proper semantic versioning, we'd need a dedicated parser
+        // Determine which versions to keep:
+        // 1. Always keep the linked version (active installation)
+        // 2. Keep the newest version (may be same as linked)
+        // This matches Homebrew's behavior of preserving the installed version
+
+        let linked_version = symlink::get_linked_version(formula).ok().flatten();
+
+        // Sort by version to find the newest
         let mut sorted_versions = versions.to_vec();
         sorted_versions.sort_by(|a, b| {
             // Try to parse as semantic version numbers
@@ -2774,16 +2825,49 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
         });
         sorted_versions.reverse(); // Highest version first
 
-        let latest = sorted_versions[0];
-        let old_versions = &sorted_versions[1..];
+        let newest_version = sorted_versions[0];
 
-        // Show which version we're keeping (only once before removing old versions)
+        // Collect versions to keep
+        let mut versions_to_keep = vec![newest_version];
+        if let Some(ref linked_ver) = linked_version {
+            if let Some(linked_pkg) = sorted_versions.iter().find(|v| &v.version == linked_ver) {
+                if linked_pkg.version != newest_version.version {
+                    versions_to_keep.push(linked_pkg);
+                }
+            }
+        }
+
+        // Everything else can be removed
+        let old_versions: Vec<_> = sorted_versions
+            .iter()
+            .filter(|v| {
+                !versions_to_keep
+                    .iter()
+                    .any(|keep| keep.version == v.version)
+            })
+            .copied()
+            .collect();
+
+        // Skip if no old versions to remove
+        if old_versions.is_empty() {
+            continue;
+        }
+
+        // Show which versions we're keeping
         if dry_run {
-            println!(
-                "  Keeping {} {}",
-                latest.name.cyan().bold(),
-                latest.version.green()
-            );
+            for keep in &versions_to_keep {
+                let marker = if Some(&keep.version) == linked_version.as_ref() {
+                    "(linked)"
+                } else {
+                    "(newest)"
+                };
+                println!(
+                    "  Keeping {} {} {}",
+                    keep.name.cyan().bold(),
+                    keep.version.green(),
+                    marker.dimmed()
+                );
+            }
         }
 
         for old in old_versions {
@@ -3502,10 +3586,18 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
             continue;
         }
 
-        let version = &versions[0].version;
+        // Use the linked version as the version to unlink
+        // This is correct even if multiple versions exist
+        let version = if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
+            linked_ver
+        } else {
+            println!("  {} {} is not linked", "⚠".yellow(), formula_name.bold());
+            continue;
+        };
+
         println!("  Unlinking {} {}", formula_name.cyan(), version.dimmed());
 
-        let unlinked = symlink::unlink_formula(formula_name, version)?;
+        let unlinked = symlink::unlink_formula(formula_name, &version)?;
 
         // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
         symlink::unoptlink(formula_name)?;

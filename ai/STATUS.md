@@ -1,11 +1,75 @@
 # Project Status
 
-Last updated: 2025-01-07
+Last updated: 2025-01-08
 
 ## Current State
 
-**Version**: 0.1.33 (ready for release)
-**Status**: CRITICAL FIXES - Keg-only + Homebrew Compatibility
+**Version**: 0.1.34 (in development)
+**Status**: CRITICAL FIX - Interrupted Operations & Linked Version Handling
+
+### v0.1.34 (2025-01-08) - CRITICAL FIX: Interrupted Operations & Linked Version
+
+**Critical Bug Fixed:** Commands used newest version in Cellar instead of linked (active) version
+
+**Problem:**
+- upgrade/reinstall/cleanup/uninstall/unlink used `versions[0]` (newest by semantic versioning)
+- Should use linked version (like Homebrew's `linked_keg`) to determine active installation
+- **Impact**: Interrupted upgrades would fail, cleanup could delete active version, commands operated on wrong version
+
+**Example Failure:**
+```bash
+# Interrupt upgrade during extraction
+bru upgrade wget  # Ctrl+C mid-upgrade
+# Cellar has: wget/1.25.0 (linked), wget/1.26.0 (partial)
+
+# Next upgrade attempt (OLD BEHAVIOR)
+bru upgrade wget  # Sees 1.26.0 is newest, thinks up-to-date, skips
+# System broken: partial 1.26.0 + old 1.25.0 still linked
+
+# NEW BEHAVIOR
+bru upgrade wget  # Sees 1.25.0 is linked, upgrades to 1.26.0 correctly
+```
+
+**Fix Applied:**
+1. **Added `symlink::get_linked_version()`** (src/symlink.rs:486-508):
+   - Reads `/opt/homebrew/opt/<formula>` symlink to determine linked version
+   - Matches Homebrew's `linked_keg` behavior
+   - Returns `Option<String>` (None if not linked)
+
+2. **Updated 5 commands to use linked version**:
+   - **upgrade** (src/commands.rs:1769-1787): Use linked version as "old_version"
+   - **reinstall** (src/commands.rs:2082-2100): Use linked version as "old_version"
+   - **cleanup** (src/commands.rs:2783-2837): Keep both linked AND newest versions
+   - **uninstall** (src/commands.rs:2258-2265): Uninstall linked version
+   - **unlink** (src/commands.rs:3585-3600): Unlink linked version, skip if not linked
+
+**Edge Cases Fixed:**
+- ✅ Interrupted upgrade: Linked version used, operation completes correctly
+- ✅ Multiple versions in Cellar: Commands operate on linked version, not newest
+- ✅ User downgrade: Cleanup preserves both linked and newest versions
+- ✅ Unlink when not linked: Clear error message
+- ✅ No linked version: Falls back to newest (backward compatible)
+
+**Testing:**
+- ✅ All 76 unit tests pass
+- ✅ Backward compatible: Falls back to newest if no linked version
+
+**Homebrew Compatibility:**
+- Matches `Library/Homebrew/upgrade.rb` (uses `linked_keg`)
+- Matches `Library/Homebrew/cleanup.rb` (uses `latest_version_installed?`)
+- Documented in: ai/LINKED_VERSION_FIX.md
+
+**Impact:**
+- ✅ Interrupted operations now handled correctly
+- ✅ Commands always operate on active/linked version
+- ✅ Cleanup never deletes linked version
+- ✅ Matches Homebrew behavior exactly
+- ✅ No breaking changes
+
+**Files Changed:**
+- src/symlink.rs: Added `get_linked_version()` function
+- src/commands.rs: Updated 5 commands
+- ai/LINKED_VERSION_FIX.md: Comprehensive documentation
 
 ### v0.1.33 (2025-01-07) - CRITICAL FIXES: Keg-only + Receipt Compatibility
 
