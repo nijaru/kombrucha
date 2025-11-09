@@ -315,7 +315,7 @@ mod api_parsing_tests {
             }
         });
 
-        assert_eq!(json.get("keg_only").unwrap().as_bool().unwrap(), true);
+        assert!(json.get("keg_only").unwrap().as_bool().unwrap());
         assert!(json.get("keg_only_reason").is_some());
         assert_eq!(
             json.get("keg_only_reason")
@@ -634,22 +634,15 @@ mod receipt_tests {
             receipt.get("homebrew_version").unwrap().as_str().unwrap(),
             "bru/0.1.8"
         );
-        assert_eq!(
-            receipt.get("built_as_bottle").unwrap().as_bool().unwrap(),
-            true
-        );
-        assert_eq!(
+        assert!(receipt.get("built_as_bottle").unwrap().as_bool().unwrap());
+        assert!(
             receipt
                 .get("poured_from_bottle")
                 .unwrap()
                 .as_bool()
-                .unwrap(),
-            true
+                .unwrap()
         );
-        assert_eq!(
-            receipt.get("loaded_from_api").unwrap().as_bool().unwrap(),
-            true
-        );
+        assert!(receipt.get("loaded_from_api").unwrap().as_bool().unwrap());
     }
 
     #[test]
@@ -657,12 +650,12 @@ mod receipt_tests {
         let installed_on_request = true;
         let installed_as_dependency = !installed_on_request;
 
-        assert_eq!(installed_as_dependency, false);
+        assert!(!installed_as_dependency);
 
         let installed_on_request = false;
         let installed_as_dependency = !installed_on_request;
 
-        assert_eq!(installed_as_dependency, true);
+        assert!(installed_as_dependency);
     }
 
     #[test]
@@ -921,7 +914,7 @@ mod tap_tests {
 
     #[test]
     fn test_dot_file_filtering() {
-        let filenames = vec![".DS_Store", ".git", "homebrew-core", ".hidden"];
+        let filenames = [".DS_Store", ".git", "homebrew-core", ".hidden"];
         let visible: Vec<&str> = filenames
             .iter()
             .filter(|name| !name.starts_with('.'))
@@ -947,7 +940,7 @@ mod progress_tests {
     #[test]
     fn test_terminal_capabilities_enum() {
         // Just verify enum values compile and can be compared
-        let caps = vec!["ghostty", "WezTerm"];
+        let caps = ["ghostty", "WezTerm"];
         assert!(caps.contains(&"ghostty"));
     }
 
@@ -969,11 +962,11 @@ mod progress_tests {
 
     #[test]
     fn test_terminal_env_vars() {
-        let known_terminals = vec!["ghostty", "WezTerm"];
+        let known_terminals = ["ghostty", "WezTerm"];
         assert!(known_terminals.contains(&"ghostty"));
         assert!(known_terminals.contains(&"WezTerm"));
 
-        let known_env_vars = vec!["TERM_PROGRAM", "WT_SESSION", "ConEmuPID"];
+        let known_env_vars = ["TERM_PROGRAM", "WT_SESSION", "ConEmuPID"];
         assert_eq!(known_env_vars.len(), 3);
     }
 
@@ -1140,16 +1133,10 @@ mod edge_case_tests {
         let none_value: Option<String> = None;
 
         // Pattern 1: Single option
-        let result1 = match some_value {
-            Some(v) => Some(v),
-            None => None,
-        };
+        let result1 = some_value;
         assert!(result1.is_some());
 
-        let result2 = match none_value {
-            Some(v) => Some(v),
-            None => None,
-        };
+        let result2 = none_value;
         assert!(result2.is_none());
 
         // Pattern 2: Tuple match

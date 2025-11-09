@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 
 /// Mock package structure for testing
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct MockPackage {
     name: String,
     version: String,
@@ -76,7 +77,7 @@ mod tests {
     #[test]
     fn test_cleanup_keeps_newest_version() {
         // Simulate cleanup scenario
-        let mut versions = vec![
+        let mut versions = [
             MockPackage {
                 name: "jq".to_string(),
                 version: "1.7.0".to_string(),
@@ -107,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_cleanup_with_complex_versions() {
-        let mut versions = vec![
+        let mut versions = [
             MockPackage {
                 name: "llvm".to_string(),
                 version: "21.1.3".to_string(),

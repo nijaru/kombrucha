@@ -130,7 +130,7 @@ fn test_regression_broken_pipe_panic() {
 
     let output = Command::new("sh")
         .arg("-c")
-        .arg(&format!("{} list | head -1", bru_bin()))
+        .arg(format!("{} list | head -1", bru_bin()))
         .output()
         .expect("Failed to run piped command");
 

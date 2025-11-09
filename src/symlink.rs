@@ -488,7 +488,7 @@ pub fn get_linked_version(formula_name: &str) -> Result<Option<String>> {
     let opt_link = prefix.join("opt").join(formula_name);
 
     // Check if opt symlink exists
-    if !opt_link.symlink_metadata().is_ok() {
+    if opt_link.symlink_metadata().is_err() {
         return Ok(None);
     }
 
@@ -498,10 +498,10 @@ pub fn get_linked_version(formula_name: &str) -> Result<Option<String>> {
 
     // The symlink points to ../Cellar/<formula>/<version>
     // Extract the version from the last component of the path
-    if let Some(version) = link_target.file_name() {
-        if let Some(version_str) = version.to_str() {
-            return Ok(Some(version_str.to_string()));
-        }
+    if let Some(version) = link_target.file_name()
+        && let Some(version_str) = version.to_str()
+    {
+        return Ok(Some(version_str.to_string()));
     }
 
     Ok(None)

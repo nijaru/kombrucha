@@ -1,7 +1,6 @@
 // Test helpers for isolated testing
 // Provides safe test environments that don't modify the system
 
-use std::env;
 use std::path::PathBuf;
 use tempfile::TempDir;
 

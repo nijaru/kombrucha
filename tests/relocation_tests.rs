@@ -35,6 +35,7 @@ fn has_homebrew_placeholders(path: &Path) -> bool {
 }
 
 /// Check if a Mach-O binary has a code signature
+#[allow(dead_code)]
 fn has_code_signature(path: &Path) -> bool {
     let output = Command::new("codesign")
         .arg("-dv")
@@ -330,13 +331,13 @@ fn test_relocation_preserves_symlinks() {
     );
 
     // If it's a script, check for placeholders
-    if let Ok(content) = fs::read_to_string(&target_path) {
-        if content.starts_with("#!") {
-            assert!(
-                !content.contains("@@HOMEBREW"),
-                "Symlink target {} still has @@HOMEBREW placeholders",
-                target_path.display()
-            );
-        }
+    if let Ok(content) = fs::read_to_string(&target_path)
+        && content.starts_with("#!")
+    {
+        assert!(
+            !content.contains("@@HOMEBREW"),
+            "Symlink target {} still has @@HOMEBREW placeholders",
+            target_path.display()
+        );
     }
 }

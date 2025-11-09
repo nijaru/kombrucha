@@ -193,19 +193,18 @@ fn test_unlink_formula() -> Result<()> {
     for entry in fs::read_dir(prefix.join("bin"))? {
         let entry = entry?;
         let path = entry.path();
-        if let Ok(metadata) = path.symlink_metadata() {
-            if metadata.is_symlink() {
-                if let Ok(link_target) = fs::read_link(&path) {
-                    let resolved = if link_target.is_relative() {
-                        path.parent().unwrap().join(&link_target)
-                    } else {
-                        link_target
-                    };
-                    let normalized = kombrucha::symlink::normalize_path(&resolved);
-                    if normalized.starts_with(&formula_path) {
-                        fs::remove_file(&path)?;
-                    }
-                }
+        if let Ok(metadata) = path.symlink_metadata()
+            && metadata.is_symlink()
+            && let Ok(link_target) = fs::read_link(&path)
+        {
+            let resolved = if link_target.is_relative() {
+                path.parent().unwrap().join(&link_target)
+            } else {
+                link_target
+            };
+            let normalized = kombrucha::symlink::normalize_path(&resolved);
+            if normalized.starts_with(&formula_path) {
+                fs::remove_file(&path)?;
             }
         }
     }
@@ -276,14 +275,12 @@ fn test_directory_recursion() -> Result<()> {
     fn count_files(dir: &Path) -> usize {
         let mut count = 0;
         if let Ok(entries) = fs::read_dir(dir) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if path.is_file() {
-                        count += 1;
-                    } else if path.is_dir() {
-                        count += count_files(&path);
-                    }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    count += 1;
+                } else if path.is_dir() {
+                    count += count_files(&path);
                 }
             }
         }

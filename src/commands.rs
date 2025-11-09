@@ -2829,12 +2829,11 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
 
         // Collect versions to keep
         let mut versions_to_keep = vec![newest_version];
-        if let Some(ref linked_ver) = linked_version {
-            if let Some(linked_pkg) = sorted_versions.iter().find(|v| &v.version == linked_ver) {
-                if linked_pkg.version != newest_version.version {
-                    versions_to_keep.push(linked_pkg);
-                }
-            }
+        if let Some(ref linked_ver) = linked_version
+            && let Some(linked_pkg) = sorted_versions.iter().find(|v| &v.version == linked_ver)
+            && linked_pkg.version != newest_version.version
+        {
+            versions_to_keep.push(linked_pkg);
         }
 
         // Everything else can be removed
