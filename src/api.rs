@@ -1,3 +1,46 @@
+//! Homebrew JSON API client with in-memory caching.
+//!
+//! This module provides a [`BrewApi`] client for querying Homebrew's public JSON API.
+//! It handles all communication with the remote API, including timeout management,
+//! automatic retries, and in-memory caching to avoid redundant requests.
+//!
+//! # Features
+//!
+//! - **Fast lookups**: In-memory LRU cache (1000 formulae, 500 casks) per client instance
+//! - **Persistent cache**: Optional 24-hour disk cache in `~/.cache/bru/`
+//! - **Parallel operations**: Uses tokio for concurrent API requests
+//! - **Error handling**: Distinguishes between 404s and network errors
+//! - **Timeout protection**: 10-second default timeout per request
+//!
+//! # Architecture
+//!
+//! The `BrewApi` client is the primary way to query Homebrew package metadata. It handles:
+//! - Fetching individual formula/cask information
+//! - Bulk fetching all formulae/casks (for search operations)
+//! - Searching across all packages
+//! - Parsing and caching API responses
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::BrewApi;
+//!
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!     let api = BrewApi::new()?;
+//!
+//!     // Fetch a single formula
+//!     let formula = api.fetch_formula("ripgrep").await?;
+//!     println!("Latest version: {}", formula.versions.stable.unwrap_or_default());
+//!
+//!     // Search across all packages
+//!     let results = api.search("python").await?;
+//!     println!("Found {} formulae", results.formulae.len());
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;

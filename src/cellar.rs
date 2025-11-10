@@ -1,4 +1,56 @@
-//! Homebrew Cellar management - reading installed packages
+//! Homebrew Cellar inspection - reading and analyzing installed packages.
+//!
+//! This module provides functions to inspect the Homebrew Cellar directory, which is where
+//! Homebrew stores all installed packages. It allows you to:
+//! - List all installed packages and versions
+//! - Detect the system's Homebrew prefix
+//! - Read installation metadata from INSTALL_RECEIPT.json files
+//! - Query dependencies of installed packages
+//!
+//! # Architecture
+//!
+//! The Cellar is located at:
+//! - **macOS (Apple Silicon)**: `/opt/homebrew/Cellar/`
+//! - **macOS (Intel)**: `/usr/local/Cellar/`
+//! - **Linux**: Varies, usually `/opt/homebrew/Cellar/` or `/home/user/.linuxbrew/Cellar/`
+//!
+//! Each installed package has the structure:
+//! ```text
+//! /opt/homebrew/Cellar/
+//!   formula-name/
+//!     1.0.0/                    # Version directory
+//!       bin/                    # Executable files
+//!       lib/                    # Library files
+//!       INSTALL_RECEIPT.json    # Installation metadata
+//!     1.1.0/
+//!       ...
+//! ```
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::cellar;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     // List all installed packages
+//!     let installed = cellar::list_installed()?;
+//!     for pkg in installed {
+//!         println!("{} {}", pkg.name, pkg.version);
+//!     }
+//!
+//!     // Find a specific formula's versions
+//!     let versions = cellar::get_installed_versions("python")?;
+//!     for pkg in versions {
+//!         println!("  {}", pkg.version);
+//!     }
+//!
+//!     // Get system info
+//!     let prefix = cellar::detect_prefix();
+//!     println!("Homebrew prefix: {}", prefix.display());
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};

@@ -1,5 +1,56 @@
-//! Homebrew tap management - adding and removing third-party repositories
-//! Also handles reading and parsing tap formula files for upgrade detection
+//! Homebrew tap management - custom third-party repositories.
+//!
+//! This module manages Homebrew taps (third-party repositories) and provides functions to:
+//! - **List taps**: Find all installed custom taps
+//! - **Add taps**: Clone git repositories as new taps
+//! - **Remove taps**: Delete tap directories and cleanup
+//! - **Parse tap formulae**: Extract metadata from Ruby formula files
+//! - **Detect tap sources**: Identify which tap a package came from
+//!
+//! # What are Taps?
+//!
+//! Taps are third-party Homebrew repositories hosted on GitHub. Examples:
+//! - `homebrew/cask` - GUI applications
+//! - `beeftornado/rmtree` - Alternative formulas
+//! - Personal taps like `user/homebrew-mytoolkit`
+//!
+//! # Architecture
+//!
+//! Taps are stored as git repositories:
+//! ```text
+//! /opt/homebrew/Library/Taps/
+//!   user/
+//!     homebrew-repo/           # Cloned from github.com/user/homebrew-repo.git
+//!       .git/                  # Git metadata
+//!       Formula/
+//!         mypkg.rb             # Custom formula
+//!       Casks/
+//!         myapp.rb             # Custom cask
+//! ```
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::tap;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     // List all installed taps
+//!     let taps = tap::list_taps()?;
+//!     for tap in taps {
+//!         println!("{}", tap);
+//!     }
+//!
+//!     // Add a custom tap
+//!     tap::tap("user/repo")?;
+//!
+//!     // Parse a tap formula to get version
+//!     if let Some(version) = tap::get_tap_formula_version("user/repo", "mypkg")? {
+//!         println!("mypkg version: {}", version);
+//!     }
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use anyhow::{Context, Result, anyhow};
 use std::fs;

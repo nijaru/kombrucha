@@ -1,3 +1,46 @@
+//! Local disk caching of Homebrew API data.
+//!
+//! This module manages a persistent cache of Homebrew formula and cask lists on disk.
+//! This avoids repeated API requests for bulky data and provides fast startup times.
+//! The cache is stored in `~/.cache/bru/` with a 24-hour TTL.
+//!
+//! # Architecture
+//!
+//! Two main cache files:
+//! ```text
+//! ~/.cache/bru/
+//!   formulae.json    # All formula metadata from API
+//!   casks.json       # All cask metadata from API
+//! ```
+//!
+//! Each file is refreshed automatically when:
+//! - 24 hours have passed since last update
+//! - The file doesn't exist
+//! - The cache is explicitly cleared with [`clear_caches`]
+//!
+//! # Performance Impact
+//!
+//! - **First run**: Downloads ~25 MB of data, takes 2-3 seconds
+//! - **Cached runs**: Loads from disk cache, takes <100 ms
+//! - **API fallback**: If cache is stale, fetches fresh data and updates cache
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::cache;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     // Check if cached data exists
+//!     if let Some(formulae) = cache::get_cached_formulae() {
+//!         println!("Cache has {} formulae", formulae.len());
+//!     } else {
+//!         println!("Cache is stale or missing, will fetch from API");
+//!     }
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use crate::api::{Cask, Formula};
 use crate::error::Result;
 use std::path::PathBuf;

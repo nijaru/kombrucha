@@ -1,4 +1,46 @@
-//! Bottle download manager with parallel downloads and progress tracking
+//! Bottle download manager with parallel downloads and optional progress tracking.
+//!
+//! This module handles downloading precompiled Homebrew bottles from GitHub Container Registry (GHCR),
+//! with support for:
+//! - **Parallel downloads**: Up to 8 concurrent downloads with semaphore control
+//! - **Progress tracking**: Optional visual progress bars during downloads
+//! - **Checksum verification**: SHA256 validation of downloaded files
+//! - **Caching**: Avoids re-downloading bottles that already exist with correct checksum
+//! - **GHCR authentication**: Automatic bearer token acquisition for public packages
+//!
+//! # Architecture
+//!
+//! Bottles are downloaded from GHCR and stored in a local cache:
+//! ```text
+//! ~/.cache/bru/downloads/
+//!   formula-name--1.0.0.arm64_sonoma.bottle.tar.gz
+//!   other-package--2.1.0.x86_64_ventura.bottle.tar.gz
+//! ```
+//!
+//! The download process:
+//! 1. Check if bottle already cached and verified
+//! 2. Acquire GHCR bearer token for repository access
+//! 3. Download from GHCR blob endpoint with progress tracking
+//! 4. Verify SHA256 checksum matches expected value
+//! 5. Return path to cached bottle
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::{BrewApi, download};
+//!
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!     let api = BrewApi::new()?;
+//!     let formula = api.fetch_formula("ripgrep").await?;
+//!
+//!     // Download a single bottle
+//!     let cache_path = download::cache_dir();
+//!     println!("Cache location: {}", cache_path.display());
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use crate::api::{BrewApi, Formula};
 use crate::platform;

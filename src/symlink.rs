@@ -1,4 +1,49 @@
-//! Symlink management for installed formulae
+//! Symlink management for installed formulae.
+//!
+//! This module creates and removes symlinks that make installed packages accessible
+//! from standard system directories. It handles:
+//! - **Formula symlinks**: `bin/`, `lib/`, `share/`, etc. from Cellar to prefix
+//! - **Version-agnostic symlinks**: `/opt/homebrew/opt/<formula>` links to current version
+//! - **Relative symlinks**: Safe relocatable symlinks without absolute paths
+//! - **Conflict resolution**: Overwrites symlinks but preserves regular files
+//! - **Cleanup**: Removal of symlinks when packages are uninstalled
+//!
+//! # Architecture
+//!
+//! Homebrew manages two types of symlinks:
+//!
+//! ### Formula Symlinks (version-specific)
+//! ```text
+//! /opt/homebrew/bin/ripgrep -> ../Cellar/ripgrep/13.0.0/bin/ripgrep
+//! /opt/homebrew/lib/libfoo.a -> ../Cellar/foo/1.0.0/lib/libfoo.a
+//! ```
+//!
+//! ### Option Links (version-agnostic)
+//! ```text
+//! /opt/homebrew/opt/ripgrep -> ../Cellar/ripgrep/13.0.0
+//! /opt/homebrew/var/homebrew/linked/ripgrep -> ../../../Cellar/ripgrep/13.0.0
+//! ```
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::symlink;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     // Link all files from an installed formula
+//!     let linked = symlink::link_formula("ripgrep", "13.0.0")?;
+//!     println!("Linked {} files", linked.len());
+//!
+//!     // Create version-agnostic symlink
+//!     symlink::optlink("ripgrep", "13.0.0")?;
+//!
+//!     // Remove links when uninstalling
+//!     let unlinked = symlink::unlink_formula("ripgrep", "13.0.0")?;
+//!     symlink::unoptlink("ripgrep")?;
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use crate::cellar;
 use anyhow::{Context, Result};

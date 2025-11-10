@@ -1,4 +1,34 @@
-//! Platform detection for selecting the correct bottle
+//! Platform detection for selecting the correct bottle type.
+//!
+//! This module detects the current system's OS and architecture to determine which
+//! precompiled bottle to download. Homebrew maintains separate bottles for:
+//! - **macOS versions**: Sequoia (15), Sonoma (14), Ventura (13), etc.
+//! - **CPU architectures**: ARM64 (Apple Silicon), x86_64 (Intel)
+//! - **Linux variants**: x86_64, ARM64 variants
+//!
+//! # Bottle Tag Format
+//!
+//! Bottles are named with platform tags like `arm64_sequoia` or `x86_64_sonoma`:
+//! - `<arch>_<os_version>`
+//! - Examples: `arm64_sequoia`, `x86_64_ventura`, `arm64_linux`
+//!
+//! If an exact platform bottle isn't available, Homebrew falls back to universal
+//! bottles tagged as `all`.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::platform;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     let bottle_tag = platform::detect_bottle_tag()?;
+//!     println!("This system needs: {}", bottle_tag);
+//!     // Output: "arm64_sequoia" on M3 Mac with macOS 15
+//!     // Output: "x86_64_ventura" on Intel Mac with macOS 13
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use anyhow::{Context, Result};
 use std::process::Command;

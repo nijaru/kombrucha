@@ -1,4 +1,45 @@
-//! Install receipt generation
+//! Install receipt generation and metadata.
+//!
+//! This module creates and manages installation receipts - JSON files that Homebrew
+//! stores alongside each installed package. These receipts contain:
+//! - **Installation metadata**: When it was installed, Homebrew version, etc.
+//! - **Dependencies**: Runtime and build dependencies
+//! - **Source info**: Which tap it came from and the source formula
+//! - **Build info**: Architecture, compiler, build platform, etc.
+//!
+//! # Architecture
+//!
+//! Each installed package has an `INSTALL_RECEIPT.json` file:
+//! ```text
+//! /opt/homebrew/Cellar/ripgrep/13.0.0/
+//!   INSTALL_RECEIPT.json     # Metadata about this installation
+//!   bin/
+//!   lib/
+//! ```
+//!
+//! The receipt contains information that allows:
+//! - Detecting which packages were installed on request vs as dependencies
+//! - Reading runtime dependencies for uninstall operations
+//! - Determining the source tap for upgrades
+//! - Identifying the Homebrew version that performed the installation
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::receipt::InstallReceipt;
+//! use std::path::Path;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     let cellar_path = Path::new("/opt/homebrew/Cellar/ripgrep/13.0.0");
+//!     let receipt = InstallReceipt::read(cellar_path)?;
+//!
+//!     println!("Installed with: {}", receipt.homebrew_version);
+//!     println!("On request: {}", receipt.installed_on_request);
+//!     println!("Dependencies: {}", receipt.runtime_dependencies.len());
+//!
+//!     Ok(())
+//! }
+//! ```
 
 use crate::api::Formula;
 use crate::cellar::RuntimeDependency;
