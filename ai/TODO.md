@@ -1,37 +1,41 @@
 # TODO
 
-## High Priority
+## Phase 2 Completion (v0.2.0) - COMPLETE ✅
 
-- [x] Add more non-ignored regression tests
-- [x] Improve CI test coverage
-- [x] Add symlink module tests (path normalization)
-- [x] Add cache module tests (directory detection, TTL logic)
+- [x] Implement uninstall() operation
+- [x] Implement upgrade() operation  
+- [x] Implement reinstall() operation
+- [x] Implement cleanup() operation
+- [x] Create example programs (6 total)
+- [x] Compile and test all operations
+- [x] Document Phase 2 in STATUS.md
 
-## Testing
+## Phase 3: Integration Testing & Optimization
 
-- [x] Add test for install command (--dry-run based)
-- [x] Add tests for search, info, deps, list commands
-- [x] Add tests for autoremove and cleanup (--dry-run)
-- [x] Add test for fetch error handling
-- [x] Add test for help and version commands
-- [x] Set up CI to run integration tests on macOS runner
+### High Priority
 
-## Documentation
+- [ ] Integration test PackageManager with live system
+- [ ] Test install → upgrade → cleanup → uninstall workflow
+- [ ] Performance profile cleanup on large installations (100+ packages)
+- [ ] Verify error handling paths (network failures, missing packages)
+- [ ] Test edge cases (bottle revisions, keg-only, pinned packages)
 
-- [x] Create ai/ directory structure
-- [x] Create STATUS.md with current state
-- [x] Create DECISIONS.md with architectural decisions
-- [x] Create RESEARCH.md index
-- [x] Move permanent specs to docs/architecture/
-- [x] Archive old session files
-- [x] Rename CLAUDE.md → AGENTS.md
-- [x] Update AGENTS.md to follow new template
-- [x] Update README.md with new structure
-- [x] Update STATUS.md with v0.1.6 and v0.1.7 changes
-- [x] Remove dated summary files (CODE_REVIEW_2025_10_22.md)
-- [x] Clean up release notes from root directory
+### Documentation
 
-## Future (Backlog)
+- [ ] Update README with library usage section
+- [ ] Add PackageManager examples to docs/
+- [ ] Document API for downstream projects
+- [ ] Add performance characteristics section
+- [ ] Update AGENTS.md with Phase 2 results
+
+### Code Quality
+
+- [ ] Add integration tests for all 4 operations
+- [ ] Profile cleanup directory traversal
+- [ ] Consider optimization (parallel walks, early termination)
+- [ ] Review error messages for clarity
+
+## Phase 4+: Advanced Features (Backlog)
 
 ### Phase 3: Ruby Interop
 - [ ] Design Ruby interop approach for source builds
