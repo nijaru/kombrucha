@@ -107,7 +107,33 @@ pub fn tap_directory(tap: &str) -> Result<PathBuf> {
     Ok(taps_path().join(user).join(repo))
 }
 
-/// List all installed taps
+/// List all installed Homebrew taps.
+///
+/// Returns a vector of tap identifiers in the format `user/repo` (e.g., `"homebrew/cask"`,
+/// `"user/custom-tap"`). Taps are third-party Homebrew repositories.
+///
+/// # Returns
+///
+/// - Empty `Vec` if no taps are installed
+/// - Sorted list of tap names
+///
+/// # Errors
+///
+/// Returns an error if the Taps directory cannot be read (permission denied).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let taps = tap::list_taps()?;
+///     println!("Installed taps: {}", taps.join(", "));
+///     // Output: "homebrew/cask, user/custom-tap"
+///
+///     Ok(())
+/// }
+/// ```
 pub fn list_taps() -> Result<Vec<String>> {
     let taps_dir = taps_path();
 
@@ -154,7 +180,43 @@ pub fn is_tapped(tap: &str) -> Result<bool> {
     Ok(tap_dir.exists() && tap_dir.join(".git").exists())
 }
 
-/// Add a tap (clone the git repository)
+/// Add a custom tap (clone the git repository).
+///
+/// Clones a tap repository from GitHub and makes it available for package installation.
+/// Taps allow access to packages outside the core Homebrew collection.
+///
+/// # Arguments
+///
+/// * `tap_name` - Tap identifier in format `user/repo` (e.g., `"beeftornado/rmtree"`)
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The tap name format is invalid (not `user/repo`)
+/// - The repository doesn't exist on GitHub
+/// - Git clone fails (network error, permission denied, etc.)
+/// - The tap already exists
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+///
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     tap::tap("homebrew/cask")?;
+///     println!("Tap added successfully");
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Format
+///
+/// The tap name is automatically expanded to a full GitHub URL:
+/// - Input: `"user/repo"`
+/// - Cloned from: `https://github.com/user/homebrew-repo.git`
+/// - Stored in: `/opt/homebrew/Library/Taps/user/homebrew-repo/`
 pub fn tap(tap_name: &str) -> Result<()> {
     let (user, repo) = parse_tap_name(tap_name)?;
     let tap_dir = tap_directory(tap_name)?;
@@ -190,7 +252,34 @@ pub fn tap(tap_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Remove a tap (delete the git repository)
+/// Remove a tap (delete the git repository).
+///
+/// Removes a custom tap that was previously added with `tap()`.
+/// Any packages from this tap remain installed but can't be updated.
+///
+/// # Arguments
+///
+/// * `tap_name` - Tap identifier in format `user/repo`
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The tap name format is invalid
+/// - The tap is not installed
+/// - The tap directory cannot be deleted (permission denied)
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+///
+/// fn main() -> anyhow::Result<()> {
+///     tap::untap("beeftornado/rmtree")?;
+///     println!("Tap removed");
+///
+///     Ok(())
+/// }
+/// ```
 pub fn untap(tap_name: &str) -> Result<()> {
     let tap_dir = tap_directory(tap_name)?;
 
@@ -219,8 +308,38 @@ pub fn formula_path(tap_name: &str, formula_name: &str) -> Result<PathBuf> {
     Ok(tap_dir.join("Formula").join(format!("{}.rb", formula_name)))
 }
 
-/// Parse version from a Ruby formula file
-/// Looks for: version "X.Y.Z"
+/// Parse version from a Ruby formula file.
+///
+/// Extracts the version string from a Homebrew formula file by looking for the line:
+/// `version "X.Y.Z"`
+///
+/// # Arguments
+///
+/// * `formula_path` - Path to the Ruby formula file (e.g., `/path/to/formula.rb`)
+///
+/// # Returns
+///
+/// - `Ok(Some(version))` if version is found (e.g., `"13.0.0"`)
+/// - `Ok(None)` if the file doesn't exist or version cannot be parsed
+///
+/// # Errors
+///
+/// Returns an error only if the file exists but cannot be read (permission denied).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+/// use std::path::Path;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let formula_path = Path::new("/opt/homebrew/Library/Taps/user/homebrew-repo/Formula/mypkg.rb");
+///     if let Some(version) = tap::parse_formula_version(formula_path)? {
+///         println!("Version: {}", version);
+///     }
+///     Ok(())
+/// }
+/// ```
 pub fn parse_formula_version(formula_path: &Path) -> Result<Option<String>> {
     if !formula_path.exists() {
         return Ok(None);
@@ -264,7 +383,47 @@ pub struct TapFormulaInfo {
     pub version: Option<String>,
 }
 
-/// Parse formula metadata from a Ruby formula file
+/// Parse complete metadata from a Ruby formula file.
+///
+/// Extracts name, description, homepage, and version from a tap formula file.
+/// Useful for introspecting tap packages without fetching them from the API.
+///
+/// # Arguments
+///
+/// * `formula_path` - Path to the Ruby formula file
+/// * `formula_name` - Name of the formula (used in the returned struct)
+///
+/// # Returns
+///
+/// A `TapFormulaInfo` struct with parsed metadata.
+///
+/// # Errors
+///
+/// Returns an error if the file doesn't exist or cannot be read.
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+/// use std::path::Path;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let formula_path = Path::new("/opt/homebrew/Library/Taps/user/homebrew-repo/Formula/mypkg.rb");
+///     let info = tap::parse_formula_info(formula_path, "mypkg")?;
+///     println!("Name: {}", info.name);
+///     if let Some(desc) = info.desc {
+///         println!("Description: {}", desc);
+///     }
+///     Ok(())
+/// }
+/// ```
+///
+/// # Parsed Fields
+///
+/// Looks for these patterns in the Ruby file:
+/// - `desc "..."` - Package description
+/// - `homepage "https://..."` - Project homepage
+/// - `version "X.Y.Z"` - Package version
 pub fn parse_formula_info(formula_path: &Path, formula_name: &str) -> Result<TapFormulaInfo> {
     if !formula_path.exists() {
         return Err(anyhow::anyhow!(

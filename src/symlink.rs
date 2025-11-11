@@ -63,7 +63,54 @@ const LINKABLE_DIRS: &[&str] = &[
     "Frameworks",
 ];
 
-/// Create symlinks for an installed formula
+/// Create symlinks for an installed formula into the Homebrew prefix.
+///
+/// Creates symlinks from the installed formula's files (bin/, lib/, include/, etc.) to the
+/// prefix directory so binaries and libraries are accessible system-wide.
+///
+/// This matches Homebrew's behavior of making installed packages accessible without
+/// needing to reference the Cellar path directly.
+///
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula
+/// * `version` - Version of the formula (matching a Cellar directory)
+///
+/// # Returns
+///
+/// A vector of all symlinks that were created.
+///
+/// # Errors
+///
+/// Returns an error if symlink creation fails (permission denied, formula not found, etc.).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::symlink;
+///
+/// fn main() -> anyhow::Result<()> {
+///     // After extracting ripgrep/13.0.0 to Cellar
+///     let linked = symlink::link_formula("ripgrep", "13.0.0")?;
+///     println!("Created {} symlinks", linked.len());
+///     // Now /opt/homebrew/bin/ripgrep -> ../Cellar/ripgrep/13.0.0/bin/ripgrep
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Linkable Directories
+///
+/// The following directories are symlinked if they exist:
+/// - `bin/`, `sbin/` - Executable binaries
+/// - `lib/`, `include/` - Libraries and headers
+/// - `share/`, `etc/` - Data and configuration files
+/// - `Frameworks/` - macOS frameworks
+///
+/// # Relative Symlinks
+///
+/// All symlinks are relative (not absolute) for portability. A linked binary at
+/// `/opt/homebrew/bin/ripgrep` points to `../Cellar/ripgrep/13.0.0/bin/ripgrep`.
 pub fn link_formula(formula_name: &str, version: &str) -> Result<Vec<PathBuf>> {
     let prefix = cellar::detect_prefix();
     let cellar_path = cellar::cellar_path();
@@ -319,7 +366,36 @@ fn create_relative_symlink(source: &Path, target: &Path, cellar_root: &Path) -> 
     Ok(())
 }
 
-/// Unlink all symlinks for a formula
+/// Remove all symlinks for an installed formula from the prefix.
+///
+/// Scans the prefix directory for symlinks pointing to the formula's Cellar path
+/// and removes them. Safe to call even if symlinks don't exist.
+///
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula
+/// * `version` - Version of the formula
+///
+/// # Returns
+///
+/// A vector of symlink paths that were removed.
+///
+/// # Errors
+///
+/// Returns an error only if directory scanning fails (not if symlinks don't exist).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::symlink;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let unlinked = symlink::unlink_formula("ripgrep", "13.0.0")?;
+///     println!("Removed {} symlinks", unlinked.len());
+///
+///     Ok(())
+/// }
+/// ```
 pub fn unlink_formula(formula_name: &str, version: &str) -> Result<Vec<PathBuf>> {
     let prefix = cellar::detect_prefix();
     let cellar_path = cellar::cellar_path();
@@ -403,11 +479,41 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     components.iter().collect()
 }
 
-/// Create version-agnostic symlinks for a formula in opt/ and var/homebrew/linked/
+/// Create version-agnostic symlinks for a formula (`/opt/homebrew/opt/`).
 ///
-/// This matches Homebrew's `optlink` behavior by creating:
-/// - /opt/homebrew/opt/<formula> -> ../Cellar/<formula>/<version>
-/// - /opt/homebrew/var/homebrew/linked/<formula> -> ../../../Cellar/<formula>/<version>
+/// Creates symlinks that point to a formula regardless of its version. This is essential
+/// for tools that need to track the "currently installed" version of a package.
+///
+/// Creates two symlinks:
+/// - `/opt/homebrew/opt/<formula>` → `../Cellar/<formula>/<version>`
+/// - `/opt/homebrew/var/homebrew/linked/<formula>` → `../../../Cellar/<formula>/<version>`
+///
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula
+/// * `version` - Version of the formula to link to
+///
+/// # Errors
+///
+/// Returns an error if symlink creation fails (permission denied, etc.).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::symlink;
+///
+/// fn main() -> anyhow::Result<()> {
+///     symlink::optlink("python", "3.13.0")?;
+///     // Now /opt/homebrew/opt/python points to python 3.13.0
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Version Switching
+///
+/// When upgrading, call `optlink()` with the new version to switch the symlink.
+/// This allows multiple versions to coexist, with only one being "active".
 pub fn optlink(formula_name: &str, version: &str) -> Result<()> {
     let prefix = cellar::detect_prefix();
 
@@ -488,11 +594,34 @@ pub fn optlink(formula_name: &str, version: &str) -> Result<()> {
     Ok(())
 }
 
-/// Remove version-agnostic symlinks for a formula
+/// Remove version-agnostic symlinks for a formula.
 ///
-/// This removes:
-/// - /opt/homebrew/opt/<formula>
-/// - /opt/homebrew/var/homebrew/linked/<formula>
+/// Removes the symlinks created by `optlink()`:
+/// - `/opt/homebrew/opt/<formula>`
+/// - `/opt/homebrew/var/homebrew/linked/<formula>`
+///
+/// Safe to call even if symlinks don't exist.
+///
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula
+///
+/// # Errors
+///
+/// Returns an error if symlink removal fails (permission denied).
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::symlink;
+///
+/// fn main() -> anyhow::Result<()> {
+///     symlink::unoptlink("python")?;
+///     // /opt/homebrew/opt/python symlink removed
+///
+///     Ok(())
+/// }
+/// ```
 pub fn unoptlink(formula_name: &str) -> Result<()> {
     let prefix = cellar::detect_prefix();
 
@@ -521,13 +650,49 @@ pub fn unoptlink(formula_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Get the currently linked version of a formula
+/// Get the currently linked version of a formula.
 ///
-/// Returns the version that is currently linked via /opt/homebrew/opt/<formula>
-/// This matches Homebrew's linked_keg behavior and is critical for handling
+/// Returns the version that is currently linked via `/opt/homebrew/opt/<formula>`.
+/// This is essential for determining which version is "active" and for handling
 /// interrupted upgrades correctly.
 ///
-/// Returns None if the formula is not currently linked.
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula
+///
+/// # Returns
+///
+/// - `Ok(Some(version))` if the formula is linked (e.g., "3.13.0")
+/// - `Ok(None)` if the formula is not currently linked
+///
+/// # Errors
+///
+/// Returns an error if the symlink cannot be read (permission denied, etc.).
+/// A missing symlink is not an error - it returns `Ok(None)`.
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::symlink;
+///
+/// fn main() -> anyhow::Result<()> {
+///     if let Some(version) = symlink::get_linked_version("python")? {
+///         println!("Python {} is currently linked", version);
+///     } else {
+///         println!("Python is not currently linked");
+///     }
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Upgrade Handling
+///
+/// When upgrading a package:
+/// 1. Check the current linked version with this function
+/// 2. Download and extract the new version
+/// 3. Update symlinks with `link_formula()` and `optlink()`
+/// 4. If an error occurs, you can read this to determine what was partially installed
 pub fn get_linked_version(formula_name: &str) -> Result<Option<String>> {
     let prefix = cellar::detect_prefix();
     let opt_link = prefix.join("opt").join(formula_name);

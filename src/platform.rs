@@ -33,7 +33,48 @@
 use anyhow::{Context, Result};
 use std::process::Command;
 
-/// Detect the current platform for bottle selection
+/// Detect the current system platform for bottle selection.
+///
+/// Returns a platform tag that identifies which precompiled bottle variant to download.
+/// Homebrew maintains different bottles for different macOS versions and CPU architectures.
+///
+/// # Platform Tags
+///
+/// Examples of returned tags:
+/// - `arm64_sequoia` - Apple Silicon (M1+) on macOS 15
+/// - `x86_64_ventura` - Intel on macOS 13
+/// - `arm64_linux` - ARM64 Linux
+/// - `x86_64_linux` - x86_64 Linux
+///
+/// # Returns
+///
+/// A string identifying the platform (e.g., `"arm64_sequoia"`).
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - On macOS: `sw_vers` command is unavailable
+/// - On unsupported platforms: Not macOS or Linux
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::platform;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let tag = platform::detect_bottle_tag()?;
+///     println!("Bottle tag: {}", tag);
+///     // Output: "arm64_sequoia" (on M3 Mac)
+///     // Output: "x86_64_ventura" (on Intel Mac)
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Fallback Behavior
+///
+/// If exact platform bottles aren't available, Homebrew falls back to universal bottles
+/// tagged as `all`. This function returns the preferred tag, not the fallback.
 pub fn detect_bottle_tag() -> Result<String> {
     #[cfg(target_os = "macos")]
     {

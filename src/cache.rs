@@ -48,7 +48,33 @@ use std::time::{Duration, SystemTime};
 
 const CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
 
-/// Get the cache directory (~/.cache/bru/ or equivalent)
+/// Get the local disk cache directory for Homebrew API data.
+///
+/// Returns the path where cached formula and cask lists are stored.
+/// Uses XDG standards: `$XDG_CACHE_HOME/bru` or `~/.cache/bru`
+///
+/// # Returns
+///
+/// The cache directory path. Directory is created automatically when caching data.
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::cache;
+///
+/// fn main() {
+///     let cache = cache::cache_dir();
+///     println!("Cache directory: {}", cache.display());
+///     // Output: "/Users/nick/.cache/bru" or "$XDG_CACHE_HOME/bru"
+/// }
+/// ```
+///
+/// # Cache Files
+///
+/// The directory contains:
+/// - `formulae.json` - Cached list of all Homebrew formulae (24-hour TTL)
+/// - `casks.json` - Cached list of all Homebrew casks (24-hour TTL)
+/// - `downloads/` - Cached downloaded bottles
 pub fn cache_dir() -> PathBuf {
     if let Some(cache_home) = std::env::var_os("XDG_CACHE_HOME") {
         PathBuf::from(cache_home).join("bru")
@@ -83,7 +109,29 @@ pub fn is_cache_fresh(path: &PathBuf) -> bool {
     age < CACHE_TTL
 }
 
-/// Get cached formulae list or None if stale/missing
+/// Get cached formulae list if it's still fresh (less than 24 hours old).
+///
+/// Returns the cached list of all Homebrew formulae if the cache exists and is fresh.
+/// Returns `None` if the cache is missing or older than 24 hours.
+///
+/// # Returns
+///
+/// - `Some(formulae)` if cache is fresh and valid
+/// - `None` if cache is stale, missing, or corrupted
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::cache;
+///
+/// fn main() {
+///     if let Some(formulae) = cache::get_cached_formulae() {
+///         println!("Cache hit: {} formulae cached", formulae.len());
+///     } else {
+///         println!("Cache miss: will fetch from API");
+///     }
+/// }
+/// ```
 pub fn get_cached_formulae() -> Option<Vec<Formula>> {
     let cache_path = cache_dir().join("formulae.json");
 
@@ -95,7 +143,30 @@ pub fn get_cached_formulae() -> Option<Vec<Formula>> {
     serde_json::from_str(&content).ok()
 }
 
-/// Store formulae list in cache
+/// Store the complete formulae list to cache.
+///
+/// Saves the formulae list for fast lookup on subsequent runs.
+/// Cache is automatically refreshed after 24 hours.
+///
+/// # Errors
+///
+/// Returns an error if the cache directory cannot be created or the file cannot be written.
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::{cache, BrewApi};
+///
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     let api = BrewApi::new()?;
+///     let formulae = api.fetch_all_formulae().await?;
+///     cache::store_formulae(&formulae)?;
+///     println!("Cached {} formulae", formulae.len());
+///
+///     Ok(())
+/// }
+/// ```
 pub fn store_formulae(formulae: &Vec<Formula>) -> Result<()> {
     let cache_path = cache_dir().join("formulae.json");
 
@@ -110,7 +181,29 @@ pub fn store_formulae(formulae: &Vec<Formula>) -> Result<()> {
     Ok(())
 }
 
-/// Get cached casks list or None if stale/missing
+/// Get cached casks list if it's still fresh (less than 24 hours old).
+///
+/// Returns the cached list of all Homebrew casks if the cache exists and is fresh.
+/// Returns `None` if the cache is missing or older than 24 hours.
+///
+/// # Returns
+///
+/// - `Some(casks)` if cache is fresh and valid
+/// - `None` if cache is stale, missing, or corrupted
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::cache;
+///
+/// fn main() {
+///     if let Some(casks) = cache::get_cached_casks() {
+///         println!("Cache hit: {} casks cached", casks.len());
+///     } else {
+///         println!("Cache miss: will fetch from API");
+///     }
+/// }
+/// ```
 pub fn get_cached_casks() -> Option<Vec<Cask>> {
     let cache_path = cache_dir().join("casks.json");
 
@@ -122,7 +215,30 @@ pub fn get_cached_casks() -> Option<Vec<Cask>> {
     serde_json::from_str(&content).ok()
 }
 
-/// Store casks list in cache
+/// Store the complete casks list to cache.
+///
+/// Saves the casks list for fast lookup on subsequent runs.
+/// Cache is automatically refreshed after 24 hours.
+///
+/// # Errors
+///
+/// Returns an error if the cache directory cannot be created or the file cannot be written.
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::{cache, BrewApi};
+///
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     let api = BrewApi::new()?;
+///     let casks = api.fetch_all_casks().await?;
+///     cache::store_casks(&casks)?;
+///     println!("Cached {} casks", casks.len());
+///
+///     Ok(())
+/// }
+/// ```
 pub fn store_casks(casks: &Vec<Cask>) -> Result<()> {
     let cache_path = cache_dir().join("casks.json");
 

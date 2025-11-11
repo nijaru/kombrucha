@@ -50,7 +50,51 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 
-/// Extract a bottle tar.gz to the Cellar
+/// Extract a bottle tar.gz archive to the Cellar.
+///
+/// Decompresses and extracts a precompiled bottle (tar.gz) to the Homebrew Cellar directory.
+/// Automatically handles bottle revisions (e.g., `1.0.0_1`, `1.0.0_2`).
+///
+/// # Arguments
+///
+/// * `bottle_path` - Path to the bottle tar.gz file
+/// * `formula_name` - Name of the formula
+/// * `version` - Version of the formula
+///
+/// # Returns
+///
+/// The path to the extracted formula directory in the Cellar.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The bottle file cannot be read
+/// - Decompression fails (corrupted archive)
+/// - Extraction to Cellar fails (permission denied, disk full, etc.)
+/// - The extracted directory structure is invalid
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::extract;
+/// use std::path::Path;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let bottle_path = Path::new("/path/to/ripgrep--13.0.0.arm64_sonoma.bottle.tar.gz");
+///     let extracted = extract::extract_bottle(bottle_path, "ripgrep", "13.0.0")?;
+///     println!("Extracted to: {}", extracted.display());
+///     // Output: "/opt/homebrew/Cellar/ripgrep/13.0.0"
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Bottle Revisions
+///
+/// Homebrew sometimes rebuilds bottles without changing the source version, creating revision
+/// suffixes like `1.0.0_1`, `1.0.0_2`. This function automatically detects and handles these:
+/// - Extracts to whichever revision directory exists in the tar.gz
+/// - Returns the path to that directory
 pub fn extract_bottle(bottle_path: &Path, formula_name: &str, version: &str) -> Result<PathBuf> {
     let cellar = cellar::cellar_path();
 
