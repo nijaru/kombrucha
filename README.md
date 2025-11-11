@@ -29,21 +29,20 @@ bru install wget    # works exactly like brew
 
 **Bottom line:** Same formulae, same ecosystem, dramatically faster.
 
-## Status: Experimental / Unstable (v0.1.30)
+## Status: v0.2.0 - Library + CLI (Production-Ready for Bottles)
 
-⚠️ **WARNING**: This is experimental software under active development. While core functionality works, there may be bugs that could affect your system.
+✅ **Production-ready for bottle-based workflows** (95% of formulae)
 
-**Use at your own risk. Always keep Homebrew (`brew`) installed as a fallback.**
-
-- ✅ **Core Commands**: Functional (install, upgrade, uninstall, cleanup, etc.)
+- ✅ **Library API** (v0.2.0): `PackageManager` for programmatic package management
+- ✅ **CLI**: All core commands functional (install, upgrade, uninstall, cleanup, etc.)
 - ✅ **100% Formula Coverage**: Bottles (95%) + automatic brew fallback (5%)
 - ✅ **Custom Tap Support**: Works with third-party taps (delegated to brew)
-- ✅ **Tested**: 76 unit tests + 14 regression tests, CI verification
-- ⚠️ **Experimental**: Use alongside Homebrew, report issues
+- ✅ **Tested**: Integration tests on production system (340+ packages)
 - ✅ **Modern CLI**: Clean output matching cargo/uv, live progress updates
 - ✅ **Optimized**: Parallel operations, HTTP/2 connection pooling
+- ✅ **Homebrew Compatible**: INSTALL_RECEIPT.json format, symlink structure, full interoperability
 
-**Recent critical fix (v0.1.30)**: Fixed autoremove bug that could incorrectly remove required dependencies. Receipts now correctly track runtime dependencies after upgrade/reinstall.
+Can be used alongside Homebrew with no conflicts. All packages remain accessible to both tools.
 
 ## Installation
 
@@ -68,7 +67,48 @@ cargo build --release
 sudo cp target/release/bru /usr/local/bin/
 ```
 
-## Quick Start
+## Library API (v0.2.0)
+
+The Kombrucha library provides a high-level `PackageManager` interface for programmatic package management. Use it in your Rust projects to integrate Homebrew package management without shelling out to the CLI.
+
+### Add to Cargo.toml
+
+```toml
+[dependencies]
+kombrucha = "0.2.0"
+tokio = { version = "1", features = ["full"] }
+```
+
+### Quick Example
+
+```rust
+use kombrucha::PackageManager;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let pm = PackageManager::new()?;
+    
+    // Install a package
+    let result = pm.install("ripgrep").await?;
+    println!("Installed {} {}", result.name, result.version);
+    
+    // Check for upgrades
+    let outdated = pm.outdated().await?;
+    for pkg in outdated {
+        println!("{} {} → {}", pkg.name, pkg.installed, pkg.latest);
+    }
+    
+    // List installed packages
+    let installed = pm.list()?;
+    println!("Total installed: {}", installed.len());
+    
+    Ok(())
+}
+```
+
+**See [docs/library-api.md](docs/library-api.md) for complete API reference, error handling, and performance characteristics.**
+
+## CLI Quick Start
 
 ```bash
 # Use command aliases for speed
