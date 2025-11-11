@@ -162,33 +162,23 @@ cargo build --release
 
 ## Status
 
-**v0.1.34** - Stable, 340+ packages validated
-- ✅ All core package operations (install, upgrade, uninstall, cleanup)
-- ✅ Full Homebrew compatibility (Cellar, receipts, symlinks)
-- ✅ All bugs from earlier versions fixed and tested
-- ✅ Zero panics in current error handling
-- ✅ Safe to use—any issues are recoverable via `brew`
-
-**History**: Earlier versions (v0.1.20-0.1.33) had issues with binary execution, symlink paths, architecture compatibility, and keg-only packages. **All fixed and validated in v0.1.34.**
+**v0.1.34** - 340+ packages tested, all core commands working
+- ✅ Install, upgrade, uninstall, cleanup
+- ✅ Search, info, deps, outdated
+- ✅ Full Homebrew compatibility
 
 **v0.1.35** (coming soon) - Library API for Rust projects
 - PackageManager struct for programmatic access
 - High-level interface for common workflows
-- Low-level module access for advanced use cases
 
-**Why experimental?**
-- Under active development and feature-complete for bottles
-- ~5% of formulae (source builds) not yet supported
-- New features being added regularly
-- Most users should prefer `brew` for production systems without tolerance for development-stage tooling
+**Note**: Experimental and can break. Falls back to `brew` to recover.
 
 ## FAQ
 
 **Will it break my Homebrew setup?**  
 No. bru uses the same Cellar and infrastructure. You can use both tools interchangeably.
 
-**Is it safe?**  
-Yes. bru uses Homebrew's infrastructure (Cellar, bottles, JSON API). Any issues are recoverable—just use `brew` for the affected package. Early versions (v0.1.20-0.1.33) had bugs, but all are fixed and tested in v0.1.34+.
+
 
 **Can I uninstall it?**  
 Yes. All packages remain intact.
