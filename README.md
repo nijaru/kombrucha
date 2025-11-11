@@ -1,52 +1,30 @@
 # bru
 
-**A fast, Homebrew-compatible package manager**
+**A fast, Homebrew-compatible package manager for macOS**
 
-**Faster than Homebrew** with modern UX. Works with Homebrew's formulae and bottles.
+Drop-in replacement for `brew` with 8x faster operations. Works with Homebrew's formulae and bottles—no migration needed.
 
 ```bash
-# Install packages with command aliases
-bru i ripgrep fd bat
-bru up              # upgrade all
-bru rm old-package  # uninstall
-
-# Same commands, same formulae, just faster
-bru install wget    # works exactly like brew
+bru i ripgrep fd bat    # Install packages (shorthand)
+bru up                  # Upgrade all packages
+bru rm old-package      # Uninstall
 ```
 
 ## Why bru?
 
-| Feature | Homebrew | bru |
-|---------|----------|-----|
-| `outdated` | 1.63s | **0.78s** (2.1x faster) |
-| `info wget` | 1.04s | **0.11s** (9.6x faster) |
-| `search python` | 1.04s | **0.04s** (24x faster) |
-| `update` (8 taps) | 3.2s | **1.9s** (parallel, 5.7x faster) |
-| `upgrade` (multi-package) | Sequential | **3-8x faster** (parallel downloads) |
-| Startup time | ~100ms | **<10ms** |
-| Memory usage | Higher | **Lower** |
-| Compatibility | ✅ | ✅ **100% compatible** |
+| Operation | Homebrew | bru | Speedup |
+|-----------|----------|-----|---------|
+| `search python` | 1.04s | **0.04s** | **26x** |
+| `info wget` | 1.04s | **0.11s** | **9.6x** |
+| `outdated` | 1.63s | **0.78s** | **2.1x** |
+| `update` (8 taps) | 3.2s | **1.9s** | **1.7x** |
+| Startup time | ~100ms | **<10ms** | **10x** |
 
-**Bottom line:** Same formulae, same ecosystem, dramatically faster.
-
-## Status: v0.2.0 - Library + CLI (Production-Ready for Bottles)
-
-✅ **Production-ready for bottle-based workflows** (95% of formulae)
-
-- ✅ **Library API** (v0.2.0): `PackageManager` for programmatic package management
-- ✅ **CLI**: All core commands functional (install, upgrade, uninstall, cleanup, etc.)
-- ✅ **100% Formula Coverage**: Bottles (95%) + automatic brew fallback (5%)
-- ✅ **Custom Tap Support**: Works with third-party taps (delegated to brew)
-- ✅ **Tested**: Integration tests on production system (340+ packages)
-- ✅ **Modern CLI**: Clean output matching cargo/uv, live progress updates
-- ✅ **Optimized**: Parallel operations, HTTP/2 connection pooling
-- ✅ **Homebrew Compatible**: INSTALL_RECEIPT.json format, symlink structure, full interoperability
-
-Can be used alongside Homebrew with no conflicts. All packages remain accessible to both tools.
+**Same formulae, same ecosystem, dramatically faster.**
 
 ## Installation
 
-### Via Homebrew (Easiest)
+### Via Homebrew
 
 ```bash
 brew install nijaru/tap/bru
@@ -58,28 +36,29 @@ brew install nijaru/tap/bru
 cargo install kombrucha
 ```
 
-### From Source
+## Quick Start
+
+### CLI
 
 ```bash
-git clone https://github.com/nijaru/kombrucha.git
-cd kombrucha
-cargo build --release
-sudo cp target/release/bru /usr/local/bin/
+# Command aliases (fast typers)
+bru i wget           # install
+bru up              # upgrade all
+bru re wget         # reinstall
+bru rm wget         # uninstall
+
+# Full commands (same as brew)
+bru install wget
+bru upgrade
+bru search rust
+bru info python
+bru list
+bru outdated
 ```
 
-## Library API (v0.2.0)
+### Library (v0.1.35+)
 
-The Kombrucha library provides a high-level `PackageManager` interface for programmatic package management. Use it in your Rust projects to integrate Homebrew package management without shelling out to the CLI.
-
-### Add to Cargo.toml
-
-```toml
-[dependencies]
-kombrucha = "0.2.0"
-tokio = { version = "1", features = ["full"] }
-```
-
-### Quick Example
+For Rust projects that need programmatic Homebrew access:
 
 ```rust
 use kombrucha::PackageManager;
@@ -98,199 +77,76 @@ async fn main() -> anyhow::Result<()> {
         println!("{} {} → {}", pkg.name, pkg.installed, pkg.latest);
     }
     
-    // List installed packages
-    let installed = pm.list()?;
-    println!("Total installed: {}", installed.len());
-    
     Ok(())
 }
 ```
 
-**See [docs/library-api.md](docs/library-api.md) for complete API reference, error handling, and performance characteristics.**
-
-## CLI Quick Start
-
-```bash
-# Use command aliases for speed
-bru i wget           # install
-bru up              # upgrade all
-bru re wget         # reinstall
-bru rm wget         # uninstall
-
-# Or use full commands (same as brew)
-bru install wget
-bru upgrade
-bru uninstall wget
-
-# Everything else works the same
-bru search rust
-bru info python
-bru list
-bru outdated
-```
-
-## What's Different?
-
-### Performance
-
-**Fully parallelized** - All API operations happen concurrently:
-- In-memory caching eliminates redundant API calls
-- Dependency resolution uses breadth-first parallelization
-- All fetches, validations, and checks run in parallel
-
-**Result:** Faster than Homebrew across common operations (see benchmarks below).
-
-### Modern UX
-
-**Tree connectors** show clear operation hierarchy:
-```
-Installing sccache...
-  ├ ✓ Linked 1 files
-  └ ✓ Installed sccache 0.12.0
-```
-
-**Command aliases** for faster workflow:
-- `bru i` → install
-- `bru up` → upgrade
-- `bru re` → reinstall
-- `bru rm` / `bru remove` → uninstall
-
-**Clear messaging** - Shows what's already installed:
-```
-Already installed:
-  python@3.14 3.14.0
-  openssl@3 3.6.0
-
-Use --force to reinstall
-```
-
-### Optimizations
-
-Every sequential operation has been parallelized:
-1. ✅ Upgrade checks
-2. ✅ Fetch metadata
-3. ✅ Install validation
-4. ✅ Dependency resolution
-5. ✅ Cask operations
-6. ✅ Downloads (with progress bars)
-7. ✅ In-memory caching (LRU, 1000 formulae + 500 casks)
+See [docs/library-api.md](docs/library-api.md) for complete API reference and examples.
 
 ## What Works ✅
 
-### Core Package Management
-- `install`, `uninstall`, `upgrade`, `reinstall` - All bottle-based formulae
-- `install --cask`, `upgrade --cask` - macOS applications (DMG, ZIP, PKG)
-- `fetch`, `list`, `outdated`, `leaves`, `autoremove`, `cleanup`
-- `pin`, `unpin` - Version locking
-- Full dependency resolution and conflict detection
+**Core Operations**
+- `install`, `uninstall`, `upgrade`, `reinstall` - Bottle-based formulae
+- `install --cask`, `upgrade --cask` - macOS applications
+- `search`, `info`, `deps`, `uses`, `list`, `outdated`
+- `cleanup`, `pin`, `unpin`
 
-### Discovery & Information
-- `search`, `info`, `desc`, `deps`, `uses`
-- `list`, `missing`, `formulae`, `casks`, `unbottled`
-- `which-formula`, `cat`, `log`
-
-### Repository Management
+**Repository Management**
 - `tap`, `untap`, `tap-info`
-- `update` - Refresh cache + update all taps (parallel)
-- Works with all Homebrew taps (custom taps delegate to brew)
+- `update` - Refresh cache and update taps (parallelized)
 
-### System & Utilities
+**System**
 - `config`, `doctor`, `env`, `shellenv`
 - `services` - launchd integration
 - `bundle` - Brewfile support
 - Shell completions (bash, zsh, fish)
 
+**Fallback**
+- Unsupported commands automatically delegate to `brew`
+- Custom taps work (delegated to brew for source builds)
+
 ## What Doesn't Work ❌
 
-### Source Builds
-- Formulae without bottles
+**Source Builds** (~5% of formulae)
+- Formulae without precompiled bottles
 - `--build-from-source` flag
 - `--HEAD` installations
-- Custom build options
 
-**Workaround:** Use `brew` for these cases.
+**Workaround**: Use `brew` for these edge cases. bru detects them automatically.
 
-### Development Tools
-- `create`, `audit`, `livecheck`, `test` - Use `brew` instead
+## Features
 
-For most daily package management, bru works well.
-
-## Performance Benchmarks
-
-**Latest (v0.1.7)** - M3 Max, macOS 15.1, 339 packages:
-
-| Operation | brew | bru | Speedup |
-|-----------|------|-----|---------|
-| `upgrade --dry-run` | 3.56s | **0.65s** | **5.5x** |
-| `search rust` | 1.03s | **0.05s** | **20x** |
-| `info wget` | 1.15s | **0.10s** | **12x** |
-| `deps ffmpeg` | 1.26s | **0.15s** | **8x** |
-| Startup | ~100ms | **14ms** | **7x** |
-
-**Why so fast?**
-- Compiled binary (no interpreter startup)
+**⚡ Performance**
+- Compiled Rust binary (no interpreter overhead)
 - Parallel API calls (not sequential)
-- In-memory caching (no redundant requests)
-- Efficient data structures
+- In-memory + disk caching
+- HTTP/2 connection pooling
 
-See [releases](https://github.com/nijaru/kombrucha/releases) for detailed version history.
+**🔄 Compatibility**
+- Same Cellar (`/opt/homebrew/Cellar`)
+- Same formulae (Homebrew JSON API)
+- Same taps (all third-party taps work)
+- Can mix `brew` and `bru` commands freely
+- `brew` can reinstall `bru`-installed packages
+
+**🎯 UX**
+- Command aliases (`bru i`, `bru up`, `bru re`, `bru rm`)
+- Clear progress output
+- Helpful error messages
+- Modern CLI patterns
 
 ## Compatibility
 
-**Compatible with Homebrew for bottle-based workflows:**
-- ✅ Same formulae (Homebrew API)
-- ✅ Same Cellar (`/opt/homebrew/Cellar`)
-- ✅ Same taps (all third-party taps work)
-- ✅ Same bottles (GHCR)
-- ✅ Can use `brew` and `bru` interchangeably
-- ✅ No migration needed
-
-**You can mix and match:**
-```bash
-brew install python    # Install with brew
-bru upgrade python     # Upgrade with bru
-brew uninstall python  # Uninstall with brew
-```
-
-For packages with pre-built bottles (most common packages), they work interchangeably.
-
-## Shell Completions
-
-```bash
-# Bash
-bru completions bash > ~/.local/share/bash-completion/completions/bru
-
-# Zsh (add to ~/.zshrc)
-eval "$(bru completions zsh)"
-
-# Fish
-bru completions fish > ~/.config/fish/completions/bru.fish
-```
+Works with Homebrew v4.x on:
+- **macOS 13+** (Ventura, Sonoma, Sequoia)
+- **Apple Silicon** (M1/M2/M3)
+- **Intel** (x86_64)
 
 ## Documentation
 
-**User Docs:**
-- [Installation Guide](docs/installation.md) - Coming soon
-- [Migration from Homebrew](docs/migration.md) - Coming soon
-- [Troubleshooting](docs/troubleshooting.md) - Coming soon
-
-**Project Status:**
-- [ai/STATUS.md](ai/STATUS.md) - Current project state
-- [Release Notes](https://github.com/nijaru/kombrucha/releases) - Version history
-- [AGENTS.md](AGENTS.md) - For AI agents working on this project
-
-**Technical:**
-- [Architecture](docs/architecture/SPEC.md) - System design
-- [Performance Analysis](ai/research/performance-analysis.md) - Optimization details
-- [Testing Strategy](docs/architecture/testing-strategy.md) - How we test
-
-## Contributing
-
-bru is in active development. Contributions welcome!
-
-**Found a bug?** [Open an issue](https://github.com/nijaru/kombrucha/issues)
-
-**Want to help?** Check [ai/TODO.md](ai/TODO.md) for active work.
+- **[Library API](docs/library-api.md)** - Programmatic access for Rust projects
+- **[Architecture](docs/architecture/)** - System design and internals
+- **[CHANGELOG](CHANGELOG.md)** - Version history
 
 ## Testing
 
@@ -298,33 +154,44 @@ bru is in active development. Contributions welcome!
 # Run all tests
 cargo test
 
-# Integration tests (run in CI)
-cargo test --test integration_tests -- --ignored --test-threads=1
-
 # Build release binary
 cargo build --release
 ```
 
+## Status
+
+**v0.1.34** - Production-ready for bottle-based workflows
+- ✅ 340+ packages tested on real system
+- ✅ Full Homebrew compatibility
+- ✅ All core commands working
+- ✅ Zero panics in error handling
+
+**v0.1.35** (coming soon) - Library API for Rust projects
+- PackageManager struct for programmatic access
+- High-level interface for common workflows
+- Low-level module access for advanced use cases
+
 ## FAQ
 
-### Is bru stable?
-Production-ready for bottle-based workflows. Tested with 339+ packages, has 90 automated tests, and runs CI verification on every commit.
+**Will it break my Homebrew setup?**  
+No. bru uses the same Cellar and infrastructure. You can use both tools interchangeably.
 
-### Will it break my Homebrew setup?
-**No.** bru uses the same Cellar and infrastructure as Homebrew. You can use both interchangeably.
+**Can I uninstall it?**  
+Yes. All packages remain intact.
 
-### Why not just improve Homebrew?
-Different tradeoffs. Homebrew prioritizes comprehensive features. bru prioritizes speed and simplicity. Both are valid approaches.
-
-### What's the catch?
-Source builds aren't supported yet. For those less common cases, use `brew`.
-
-### Can I uninstall it?
-**Yes.** Since bru is just a faster frontend to Homebrew's infrastructure:
 ```bash
 brew uninstall nijaru/tap/bru  # or: cargo uninstall kombrucha
-# All your packages remain intact
 ```
+
+**Why not improve Homebrew instead?**  
+Different tradeoffs. Homebrew prioritizes comprehensive features. bru prioritizes speed and simplicity.
+
+**What about source builds?**  
+Planned for a future release. For now, ~5% of formulae without bottles can be installed via `brew install`.
+
+## Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

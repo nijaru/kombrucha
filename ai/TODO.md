@@ -1,72 +1,64 @@
-# TODO
+# Active Tasks
 
-## Phase 2 Completion (v0.2.0) - COMPLETE ✅
+**Last Updated**: November 10, 2025
 
-- [x] Implement uninstall() operation
-- [x] Implement upgrade() operation  
-- [x] Implement reinstall() operation
-- [x] Implement cleanup() operation
-- [x] Create example programs (6 total)
-- [x] Compile and test all operations
-- [x] Document Phase 2 in STATUS.md
+## Current Sprint
 
-## Phase 3: Integration Testing & Optimization - COMPLETE ✅
+### Code Review & Release (Priority: HIGH)
 
-### Testing Completed ✅
+- [ ] GitHub review of PR #2 (library API)
+- [ ] Merge feature/library-api to main
+- [ ] Tag v0.1.35 release
+- [ ] Publish to crates.io
 
-- [x] Integration test PackageManager with live system (340+ packages)
-- [x] Test install → upgrade → cleanup → uninstall workflow (all passed)
-- [x] Performance profile on large installations (acceptable characteristics)
-- [x] Verify error handling paths (zero panics, proper Results returned)
-- [x] Test edge cases (multi-versioned packages, "already at latest", cleanup dry-run)
-- [x] Create comprehensive test report (ai/PHASE_3_TEST_REPORT.md)
+### Repository Cleanup (Priority: HIGH)
 
-### Documentation Added ✅
+- [x] Move archived docs to docs/archive/
+- [x] Archive ai/ working files
+- [x] Reorganize ai/ for clarity
+- [ ] Update README.md (concise, idiomatic)
+- [ ] Add API design improvements to roadmap
 
-- [x] Created test artifacts (5 example test programs)
-- [x] Documented performance findings in test report
-- [x] Documented edge cases and their handling
-- [x] Added test artifacts to examples/
+## Planned Features (v0.1.36+)
 
-## Phase 4: Release & Documentation (CURRENT)
+### PackageManager API Improvements
 
-### High Priority
+- [ ] Add `is_installed(name: &str) -> Result<bool>` helper
+- [ ] Add `install_multiple(names: &[&str]) -> Result<Vec<InstallResult>>` batch op
+- [ ] Add `upgrade_multiple(names: &[&str]) -> Result<Vec<UpgradeResult>>` batch op
+- [ ] Optimize `outdated()` for parallel API queries (40s → ~10s possible)
 
-- [ ] Update CHANGELOG with v0.2.0 entry
-- [ ] Tag release: `git tag -a v0.2.0 -m "PackageManager library release"`
-- [ ] Update README with library usage section
-- [ ] Add PackageManager examples to docs/
-- [ ] Publish to crates.io: `cargo publish`
+### Cask Support
 
-### Documentation
+- [ ] Wrap low-level `Cask` type in PackageManager
+- [ ] Add `install_cask()` operation
+- [ ] Add `upgrade_cask()` operation
+- [ ] Test with common applications
 
-- [ ] Create docs/library-api.md with usage patterns
-- [ ] Document PackageManager result types
-- [ ] Add performance characteristics section
-- [ ] Update AGENTS.md with Phase 3 completion
-- [ ] Add examples to README (install, upgrade, cleanup workflows)
+## Phase 5: Source Builds (Future)
 
-### Code Quality
+- [ ] Evaluate Ruby embedding options (`magnus` vs `rutie` vs others)
+- [ ] Design formula execution interface
+- [ ] Implement source build support for remaining ~5% formulae
+- [ ] Test on uncommon packages
 
-- [ ] Review test artifacts (keep in examples/ for reference)
-- [ ] Consider code cleanup in tests if needed
-- [ ] Verify no debug code left in main branch
+## Documentation
 
-## Phase 5+: Advanced Features (Backlog)
+- [ ] Clarify library vs CLI usage in README
+- [ ] Add migration guide for downstream projects
+- [ ] Document caching strategy
+- [ ] Add troubleshooting section
 
-### Phase 3: Ruby Interop
-- [ ] Design Ruby interop approach for source builds
-- [ ] Implement source build support (~5% remaining formulae)
-- [ ] Test source build integration
+## Testing
 
-### Testing Improvements (Lower Priority)
-- [ ] Large package stress tests (1000+ files like yt-dlp)
-- [ ] Resource limit monitoring tests
-- [ ] File descriptor leak detection tests
-- [ ] Download module tests (parallel downloads, checksum verification)
-- [ ] Commands module tests (127 functions currently untested)
+- [ ] Test library API with Cutler integration
+- [ ] Real-world validation on different Mac models
+- [ ] Performance profiling on varying system sizes
+- [ ] Edge case testing (interrupted operations, corrupted Cellar, etc.)
 
-### Future Enhancements
-- [ ] Performance optimizations for large dependency graphs
-- [ ] Better error messages for common failure modes
-- [ ] Lock file support for reproducibility
+## Non-Urgent
+
+- [ ] Performance: Parallelize outdated() queries
+- [ ] Performance: Batch dependency lookups
+- [ ] UX: Add progress callbacks for long operations
+- [ ] UX: Better error messages for network failures

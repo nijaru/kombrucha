@@ -4,9 +4,12 @@
 
 ## Project Overview
 
-**Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. The goal is to create a drop-in replacement that's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
+**Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. It's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
 
-**Status**: v0.2.0 (feature/library-api branch) - Library API + Production-ready CLI (95% formulae via bottles)
+**Current Status**: 
+- CLI: v0.1.34 (stable, production-ready for bottle-based workflows)
+- Library: v0.1.35 in PR (PackageManager API for downstream projects)
+- Combined: 95% formulae via bottles, 5% fallback to brew for source builds
 
 ## Project Structure
 
@@ -53,9 +56,9 @@ See `docs/architecture/SPEC.md` for detailed design.
 - ✅ **Phase 0**: Foundation (CLI scaffolding, API client)
 - ✅ **Phase 1**: Read-only commands (search, info, deps, uses, list, outdated)
 - ✅ **Phase 2**: Bottle-based installation (install, uninstall, upgrade)
-- ✅ **Phase 3 (Library)**: PackageManager high-level API (production-ready, tested on 340+ packages)
+- ✅ **Phase 3 (Library)**: PackageManager API for programmatic access (production-ready, tested on 340+ packages)
 - ✅ **Phase 4**: Core command implementation (tap, update, services, bundle)
-- 🔴 **Phase 3 (Source)**: Ruby interop for source builds (not started)
+- 🔴 **Phase 5 (Source)**: Ruby interop for source builds (planned, low priority)
 
 ## Design Principles
 
@@ -67,23 +70,21 @@ See `docs/architecture/SPEC.md` for detailed design.
 
 ## Current Status
 
-**Phase 3 Integration Testing: COMPLETE** ✅
+**Library API: PRODUCTION-READY** ✅
 
-PackageManager library API fully tested on production system (macOS 15.7, M3 Max, 340 installed packages). All operations validated with zero panics and proper error handling.
+PackageManager API fully tested on production system (macOS 15.7, M3 Max, 340+ installed packages). All operations validated with zero panics and proper error handling.
 
-**Phase 4: BRANCH PENDING VERIFICATION**
+**Release Plan: v0.1.35**
 
-v0.2.0 release prepared on `feature/library-api` branch:
-- [x] Integration testing complete (all 14 integration + 190 total tests passing)
-- [x] CHANGELOG updated with v0.2.0 entry
+- [x] Integration testing complete (9 API tests + 190 total tests passing)
+- [x] CHANGELOG updated with v0.1.35 entry
 - [x] README updated with library section
 - [x] Library API documentation complete (docs/library-api.md)
-- [x] Inline documentation reviewed and all doc tests passing
 - [x] All changes committed to feature/library-api branch
-- [ ] Code review and validation by nick
-- [ ] Merge to main after verification
-- [ ] Create GitHub release with binaries
-- [ ] Publish to crates.io
+- [x] PR opened for GitHub review (#2)
+- [ ] GitHub review + approval
+- [ ] Merge to main
+- [ ] Tag v0.1.35 and publish to crates.io
 
 See `ai/STATUS.md` for detailed status and `ai/PHASE_3_TEST_REPORT.md` for test results.
 
