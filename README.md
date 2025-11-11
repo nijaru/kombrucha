@@ -2,15 +2,9 @@
 
 **A fast, Homebrew-compatible package manager for macOS**
 
-⚠️ **Experimental**: Production-ready for bottle-based workflows, but under active development. [See status](#status).
+⚠️ **Experimental**: Production-ready for bottle-based workflows, but under active development.
 
 Drop-in replacement for `brew` with 8x faster operations. Works with Homebrew's formulae and bottles—no migration needed.
-
-```bash
-bru i ripgrep fd bat    # Install packages (shorthand)
-bru up                  # Upgrade all packages
-bru rm old-package      # Uninstall
-```
 
 ## Why bru?
 
@@ -38,104 +32,15 @@ brew install nijaru/tap/bru
 cargo install kombrucha
 ```
 
-## Quick Start
+## Usage
 
-### CLI
+**CLI**: Works like `brew`. See `bru --help` for all commands. Unsupported commands automatically fall back to `brew`.
 
-```bash
-# Command aliases (fast typers)
-bru i wget           # install
-bru up              # upgrade all
-bru re wget         # reinstall
-bru rm wget         # uninstall
+**Library**: For Rust projects that need programmatic Homebrew access. See [docs/library-api.md](docs/library-api.md) for complete API reference and examples.
 
-# Full commands (same as brew)
-bru install wget
-bru upgrade
-bru search rust
-bru info python
-bru list
-bru outdated
-```
+## Limitations
 
-### Library (v0.1.35+)
-
-For Rust projects that need programmatic Homebrew access:
-
-```rust
-use kombrucha::PackageManager;
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let pm = PackageManager::new()?;
-    
-    // Install a package
-    let result = pm.install("ripgrep").await?;
-    println!("Installed {} {}", result.name, result.version);
-    
-    // Check for upgrades
-    let outdated = pm.outdated().await?;
-    for pkg in outdated {
-        println!("{} {} → {}", pkg.name, pkg.installed, pkg.latest);
-    }
-    
-    Ok(())
-}
-```
-
-See [docs/library-api.md](docs/library-api.md) for complete API reference and examples.
-
-## What Works ✅
-
-**Core Operations**
-- `install`, `uninstall`, `upgrade`, `reinstall` - Bottle-based formulae
-- `install --cask`, `upgrade --cask` - macOS applications
-- `search`, `info`, `deps`, `uses`, `list`, `outdated`
-- `cleanup`, `pin`, `unpin`
-
-**Repository Management**
-- `tap`, `untap`, `tap-info`
-- `update` - Refresh cache and update taps (parallelized)
-
-**System**
-- `config`, `doctor`, `env`, `shellenv`
-- `services` - launchd integration
-- `bundle` - Brewfile support
-- Shell completions (bash, zsh, fish)
-
-**Fallback**
-- Unsupported commands automatically delegate to `brew`
-- Custom taps work (delegated to brew for source builds)
-
-## What Doesn't Work ❌
-
-**Source Builds** (~5% of formulae)
-- Formulae without precompiled bottles
-- `--build-from-source` flag
-- `--HEAD` installations
-
-**Workaround**: Use `brew` for these edge cases. bru detects them automatically.
-
-## Features
-
-**⚡ Performance**
-- Compiled Rust binary (no interpreter overhead)
-- Parallel API calls (not sequential)
-- In-memory + disk caching
-- HTTP/2 connection pooling
-
-**🔄 Compatibility**
-- Same Cellar (`/opt/homebrew/Cellar`)
-- Same formulae (Homebrew JSON API)
-- Same taps (all third-party taps work)
-- Can mix `brew` and `bru` commands freely
-- `brew` can reinstall `bru`-installed packages
-
-**🎯 UX**
-- Command aliases (`bru i`, `bru up`, `bru re`, `bru rm`)
-- Clear progress output
-- Helpful error messages
-- Modern CLI patterns
+Source builds (~5% of formulae without precompiled bottles) automatically fall back to `brew`.
 
 ## Compatibility
 
@@ -159,39 +64,6 @@ cargo test
 # Build release binary
 cargo build --release
 ```
-
-## Status
-
-**v0.1.34** - 340+ packages tested, all core commands working
-- ✅ Install, upgrade, uninstall, cleanup
-- ✅ Search, info, deps, outdated
-- ✅ Full Homebrew compatibility
-
-**v0.1.35** (coming soon) - Library API for Rust projects
-- PackageManager struct for programmatic access
-- High-level interface for common workflows
-
-**Note**: Experimental and can break. Falls back to `brew` to recover.
-
-## FAQ
-
-**Will it break my Homebrew setup?**  
-No. bru uses the same Cellar and infrastructure. You can use both tools interchangeably.
-
-
-
-**Can I uninstall it?**  
-Yes. All packages remain intact.
-
-```bash
-brew uninstall nijaru/tap/bru  # or: cargo uninstall kombrucha
-```
-
-**Why not improve Homebrew instead?**  
-Different tradeoffs. Homebrew prioritizes comprehensive features. bru prioritizes speed and simplicity.
-
-**What about source builds?**  
-Planned for a future release. For now, ~5% of formulae without bottles can be installed via `brew install`.
 
 ## Contributing
 
