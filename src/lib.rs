@@ -130,7 +130,7 @@
 //!
 //!     println!("Found {} formulae", results.formulae.len());
 //!     for formula in &results.formulae {
-//!         println!("  {} - {}", formula.name, formula.desc.unwrap_or_default());
+//!         println!("  {} - {}", formula.name, formula.desc.as_deref().unwrap_or(""));
 //!     }
 //!
 //!     Ok(())

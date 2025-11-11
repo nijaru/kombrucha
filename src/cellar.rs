@@ -383,7 +383,7 @@ pub fn list_installed() -> Result<Vec<InstalledPackage>> {
 ///     let versions = cellar::get_installed_versions("python")?;
 ///     if !versions.is_empty() {
 ///         println!("Installed versions:");
-///         for v in versions {
+///         for v in &versions {
 ///             println!("  {} {}", v.name, v.version);
 ///         }
 ///         // Newest version is at [0]

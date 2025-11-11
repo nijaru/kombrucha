@@ -255,8 +255,8 @@ impl BrewApi {
     ///     let formula = api.fetch_formula("ripgrep").await?;
     ///
     ///     println!("Name: {}", formula.name);
-    ///     println!("Version: {}", formula.versions.stable.unwrap_or_default());
-    ///     println!("Description: {}", formula.desc.unwrap_or_default());
+    ///     println!("Version: {}", formula.versions.stable.as_deref().unwrap_or(""));
+    ///     println!("Description: {}", formula.desc.as_deref().unwrap_or(""));
     ///     println!("Dependencies: {:?}", formula.dependencies);
     ///
     ///     Ok(())
@@ -330,7 +330,7 @@ impl BrewApi {
     ///     println!("Found {} casks", results.casks.len());
     ///
     ///     for formula in &results.formulae {
-    ///         println!("  {} - {}", formula.name, formula.desc.unwrap_or_default());
+    ///         println!("  {} - {}", formula.name, formula.desc.as_deref().unwrap_or(""));
     ///     }
     ///
     ///     Ok(())
