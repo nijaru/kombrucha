@@ -691,7 +691,7 @@ fn test_version_flag() {
 
     // Should show version number
     assert!(
-        stdout.contains("0.2") || stdout.contains("kombrucha"),
+        stdout.contains("0.1") || stdout.contains("kombrucha"),
         "Should show version information"
     );
 }
