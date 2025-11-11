@@ -1,75 +1,191 @@
 # Architectural Decisions
 
-## 2025-10-21: Use non-ignored regression tests with --dry-run
+**Last Updated**: November 10, 2025
 
-**Context**: Integration tests all marked #[ignore] didn't run in CI, missed critical bugs
-**Decision**: Add regression tests using --dry-run that can run without system modification
+## Active Decisions
+
+### Library API Design (v0.1.35)
+
+**Decision**: High-level `PackageManager` API wrapping low-level modules
+
 **Rationale**:
-- Tests are worthless if they don't run
-- --dry-run allows testing logic without actual installs
-- Caught upgrade duplicates and bottle revision bugs
-**Tradeoffs**: Not full integration tests, but better than nothing
+- Downstream projects (like Cutler) need simple, unified interface
+- Don't expose all internal complexity (cellar, download, extract, symlink modules)
+- Maintain backward compatibility with low-level API for advanced users
+- Shared HTTP client enables connection pooling and efficient resource usage
+
+**Implementation**:
+- `PackageManager` struct holds `BrewApi` and `reqwest::Client`
+- All operations return rich result types (InstallResult, UpgradeResult, etc)
+- Async for network operations, sync for local operations
+- Errors wrapped in `anyhow::Result` with context
+
+**Trade-offs**:
+- ✅ Simple for common cases
+- ✅ Performant (connection pooling)
+- ✅ Type-safe (no stringly-typed results)
+- ⚠️ Doesn't expose all advanced options (OK for MVP)
+
+**Future Extensions**:
+- Add `is_installed()` helper (trivial, high-value)
+- Add batch operations (`install_multiple`, `upgrade_multiple`)
+- Add cask support (requires wrapping `Cask` type similarly)
 
 ---
 
-## 2025-10-21: Remove decorative CLI symbols (→ ⬇ ⬆)
+### Version Strategy (v0.1.35 not 0.2.0)
 
-**Context**: Modern CLIs (cargo, uv) don't use emoji/arrow symbols
-**Decision**: Remove decorative arrows, keep checkmarks/warnings
+**Decision**: Bump to v0.1.35, not 0.2.0
+
 **Rationale**:
-- Cleaner, more professional appearance
-- Easier to grep/parse output
-- Follows modern CLI conventions
-**Tradeoffs**: Less "fun" but more functional
+- Library is additive on existing infrastructure (api, cellar, etc already existed)
+- No breaking changes to CLI or existing APIs
+- PackageManager is wrapper, not architectural shift
+- 0.2.0 reserved for future major refactor (e.g., CLI using library)
+
+**Semantic Versioning**:
+- 0.1.x = Feature additions on existing foundation
+- 0.2.0+ = Would be when CLI refactored to use library OR major features added (source builds)
 
 ---
 
-## 2025-10-08: Use JSON API over tap parsing
+### Async/Sync Boundary
 
-**Context**: Need to fetch formula metadata
-**Decision**: Use formulae.brew.sh JSON API instead of parsing local taps
+**Decision**: Async for bottle operations, sync for local operations
+
+**Operations by Category**:
+
+**Async** (network/download-heavy):
+- `install()` - Downloads bottle
+- `uninstall()` - Async symlink cleanup (future)
+- `upgrade()` - Downloads new bottle
+- `reinstall()` - Combo of above
+- `search()` - API query
+- `info()` - API query
+- `outdated()` - API queries (one per package)
+- `dependencies()` - API query
+- `uses()` - API queries (filtered)
+
+**Sync** (local filesystem only):
+- `list()` - Cellar scan
+- `cleanup()` - Filesystem traversal
+- `check()` - System health checks
+- `cellar()` / `prefix()` - Path queries
+
 **Rationale**:
-- Always up-to-date (no brew update needed)
-- Faster than git operations
-- Simpler implementation
-- Same data source as Homebrew's web interface
-**Tradeoffs**: Network dependency, but acceptable for package manager
+- Tokio is lightweight, but don't use async for unnecessary blocking ops
+- Local filesystem is fast enough
+- Makes API simpler (no blocking_on context needed)
 
 ---
 
-## 2025-10-08: Bottle-first strategy (defer source builds to Phase 3)
+### Error Handling Strategy
 
-**Context**: 95% of formulae have bottles, 5% require source builds
-**Decision**: Implement bottle support first, defer source builds
+**Decision**: Use `anyhow::Result<T>` throughout library
+
 **Rationale**:
-- Covers 95% of use cases immediately
-- Source builds require Ruby interop (complex)
-- MVP in 8 weeks vs 20 weeks for full implementation
-**Tradeoffs**: Can't install unbottled formulae until Phase 3
+- Allows error context to be added at each level
+- Downstream projects can match on specific errors via `.downcast()`
+- BruError enum still available for low-level modules
+- Library consumers typically want "something went wrong" with context
+
+**Example**:
+```rust
+pm.install("ripgrep").await
+  .context("failed to install ripgrep")?
+```
 
 ---
 
-## 2025-10-08: Hybrid Rust + Ruby architecture
+### HTTP Client Resource Management
 
-**Context**: Need Homebrew compatibility but want Rust performance
-**Decision**: Rust core with embedded Ruby for formula evaluation
+**Decision**: Single shared `reqwest::Client` in PackageManager
+
 **Rationale**:
-- Rust: Performance, parallel operations, type safety
-- Ruby: Compatibility with existing .rb formulae
-- No need to rewrite 7,000+ formulae
-- Leverage Homebrew ecosystem
-**Tradeoffs**: Complexity of embedding Ruby, but necessary for compatibility
+- Enables HTTP/2 connection pooling
+- Reduces TCP/TLS overhead during parallel operations
+- Matches performance characteristics of Homebrew optimizations
+- Users reuse same `PackageManager` instance for multiple operations
+
+**Configuration**:
+```rust
+timeout: 10s
+pool_idle_timeout: 90s (HTTP keep-alive standard)
+pool_max_idle_per_host: 10
+```
 
 ---
 
-## 2025-10-08: Parallel operations by default
+## Deferred Decisions (Future Phases)
 
-**Context**: Homebrew is sequential, network isn't bottleneck on modern connections
-**Decision**: Use tokio for concurrent downloads, installs, dependency resolution
-**Rationale**:
-- 10-20x performance improvement opportunity
-- Modern networks (100+ Mbps) aren't the bottleneck
-- Rust + tokio make this natural
-**Tradeoffs**: More complex error handling, but worth it for performance
+### Cask Support in PackageManager
+
+**Status**: Not implemented yet
+
+**Design sketch**:
+```rust
+impl PackageManager {
+    pub async fn install_cask(&self, name: &str) -> Result<InstallResult>
+    pub async fn uninstall_cask(&self, name: &str) -> Result<UninstallResult>
+    pub fn list_casks(&self) -> Result<Vec<InstalledPackage>>
+}
+```
+
+**Considerations**:
+- Cask operations are mostly download + extract (different paths than formulae)
+- May have different dependency model
+- Requires testing with applications (Slack, VSCode, etc)
 
 ---
+
+### Batch Operations Optimization
+
+**Status**: Not implemented yet
+
+**Design sketch**:
+```rust
+pub async fn install_multiple(&self, names: &[&str]) -> Result<Vec<InstallResult>> {
+    futures::future::try_join_all(
+        names.iter().map(|n| self.install(n))
+    ).await
+}
+```
+
+**Considerations**:
+- Would improve Cutler's declarative setup workflow
+- Need to consider rate limiting (don't hammer Homebrew API)
+- Error handling: fail-fast vs collect-all-errors
+
+---
+
+### Parallel Outdated() Optimization
+
+**Status**: Known limitation (~42s on 340 packages)
+
+**Current**: Sequential API queries per package
+**Possible**: Batch queries to API or parallelize with semaphore
+
+**Trade-offs**:
+- Current: Simple, reliable, matches Homebrew behavior
+- Parallel: Could be 3-5x faster, but adds complexity
+- Deferred: OK for interactive tool (users typically run once)
+
+---
+
+### Source Build Support (Phase 5)
+
+**Status**: Planned, not started
+
+**Design considerations**:
+- Embed Ruby runtime (via `magnus` crate)
+- Execute formula DSL for building from source
+- Would unlock remaining ~5% formulae without bottles
+- Major undertaking, deferred until library API stabilized
+
+---
+
+## See Also
+
+- [STATUS.md](./STATUS.md) - Current project state
+- [TODO.md](./TODO.md) - Active tasks
+- [docs/library-api.md](../docs/library-api.md) - API documentation
