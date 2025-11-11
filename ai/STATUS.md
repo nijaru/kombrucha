@@ -1,19 +1,19 @@
 # Project Status
 
-**Last Updated**: November 10, 2025  
-**Version**: v0.1.35 (library API release candidate)  
-**Status**: Ready for release
+**Last Updated**: November 10, 2025
+**Version**: v0.2.0 (published to crates.io)
+**Status**: Released
 
 ## Current Phase
 
-**v0.1.35 (2025-11-10) - Library API Addition**
+**v0.2.0 (2025-11-10) - Library API Addition**
 
-✅ **COMPLETE**: PackageManager library API production-ready
+✅ **RELEASED**: PackageManager library API published to crates.io
 - Fully tested on real system with 340+ packages
 - Zero panics across all operations
 - Proper error handling with anyhow Result types
 - Complete documentation with examples
-- PR #2 open for GitHub review
+- Published and available on crates.io
 
 ### What's New
 
@@ -62,12 +62,11 @@
 | Code complete | ✅ | All features implemented and tested |
 | Documentation | ✅ | Library API fully documented |
 | Tests passing | ✅ | 190 tests, all green |
-| Changelog | ✅ | v0.1.35 entry added |
-| PR created | ✅ | #2 open, awaiting review |
-| GitHub review | ⏳ | Awaiting Copilot + nick approval |
-| Merge to main | ⏸️ | Pending review approval |
-| Tag v0.1.35 | ⏸️ | After merge |
-| Publish to crates.io | ⏸️ | After tag |
+| Changelog | ✅ | v0.2.0 entry added |
+| PR merged | ✅ | #2 merged to main |
+| Tag v0.2.0 | ✅ | Tagged and pushed |
+| GitHub release | ✅ | Release created |
+| Publish to crates.io | ✅ | Published (permanent) |
 
 ## Known Limitations
 
@@ -134,34 +133,34 @@ lib.rs (public API surface)
 | `uninstall()` | 1-3s | Removes files and symlinks |
 | `cleanup()` | <50ms | Removes old versions |
 
-## Files Changed (v0.1.35)
+## Files Changed (v0.2.0)
 
 - `src/package_manager.rs` - New module (730 lines)
 - `src/lib.rs` - Expose public API
 - `src/cellar.rs` - Public `compare_versions()`
-- `Cargo.toml` - Version bump to 0.1.35
-- `CHANGELOG.md` - v0.1.35 entry
+- `Cargo.toml` - Version bump to 0.2.0
+- `CHANGELOG.md` - v0.2.0 entry
 - `README.md` - Library section + examples
 - `docs/library-api.md` - Complete API documentation
 - `examples/` - 5 new example programs
 
 ## What's Not Changing
 
-- ✅ CLI remains at v0.1.34 (no breaking changes)
+- ✅ CLI behavior unchanged (no breaking changes)
 - ✅ All existing commands work as before
 - ✅ Performance unchanged
 - ✅ Bottle-based workflows unchanged
 
 ## Next Steps (Future Releases)
 
-1. **v0.1.36** (0.1.x patch): Quality-of-life improvements
+1. **v0.2.1** (patch release): Quality-of-life improvements
    - Add `is_installed()` helper
    - Add `install_multiple()` batch operation
    - Optimize cleanup() for multi-version packages
 
-2. **v0.2.0** (future, only if refactoring CLI):
-   - Refactor CLI to use PackageManager library
-   - Would be major version bump due to architecture shift
+2. **v0.3.0** (future, major version bump):
+   - CLI refactored to use PackageManager library internally
+   - Or other major architectural shifts
 
 3. **Phase 5 (Source Builds)**:
    - Ruby interop for remaining 5% formulae

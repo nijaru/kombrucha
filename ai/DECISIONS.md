@@ -33,19 +33,21 @@
 
 ---
 
-### Version Strategy (v0.1.35 not 0.2.0)
+### Version Strategy (v0.2.0 for Library API)
 
-**Decision**: Bump to v0.1.35, not 0.2.0
+**Decision**: Bumped to v0.2.0 for library API addition
 
 **Rationale**:
-- Library is additive on existing infrastructure (api, cellar, etc already existed)
-- No breaking changes to CLI or existing APIs
-- PackageManager is wrapper, not architectural shift
-- 0.2.0 reserved for future major refactor (e.g., CLI using library)
+- Library API is substantial feature addition (~730 lines, 9+ core operations)
+- Introduces new public API surface area with PackageManager interface
+- Full programmatic access to package management (install, upgrade, uninstall, etc.)
+- Comprehensive refactored documentation and examples
+- While additive and non-breaking, the library API represents significant new functionality
 
 **Semantic Versioning**:
-- 0.1.x = Feature additions on existing foundation
-- 0.2.0+ = Would be when CLI refactored to use library OR major features added (source builds)
+- 0.1.x = CLI-focused feature additions
+- 0.2.0 = Library API addition with programmatic access
+- Future 0.3.0+ = Major features like source builds or architectural shifts
 
 ---
 
