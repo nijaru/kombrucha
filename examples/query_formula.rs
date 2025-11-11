@@ -75,13 +75,13 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // Bottle info
-            if let Some(bottle) = &formula.bottle {
-                if let Some(stable) = &bottle.stable {
-                    println!("\nBottle rebuild: {}", stable.rebuild);
-                    println!("Available platforms:");
-                    for (platform, _file) in &stable.files {
-                        println!("  - {}", platform);
-                    }
+            if let Some(bottle) = &formula.bottle
+                && let Some(stable) = &bottle.stable
+            {
+                println!("\nBottle rebuild: {}", stable.rebuild);
+                println!("Available platforms:");
+                for platform in stable.files.keys() {
+                    println!("  - {}", platform);
                 }
             }
         }

@@ -73,12 +73,10 @@ use std::path::{Path, PathBuf};
 /// ```no_run
 /// use kombrucha::cellar;
 ///
-/// fn main() {
-///     let prefix = cellar::detect_prefix();
-///     println!("Homebrew prefix: {}", prefix.display());
-///     // Output: "/opt/homebrew" (on Apple Silicon)
-///     // Output: "/usr/local" (on Intel)
-/// }
+/// let prefix = cellar::detect_prefix();
+/// println!("Homebrew prefix: {}", prefix.display());
+/// // Output: "/opt/homebrew" (on Apple Silicon)
+/// // Output: "/usr/local" (on Intel)
 /// ```
 pub fn detect_prefix() -> PathBuf {
     // First check environment variable
@@ -111,11 +109,9 @@ pub fn detect_prefix() -> PathBuf {
 /// ```no_run
 /// use kombrucha::cellar;
 ///
-/// fn main() {
-///     let cellar = cellar::cellar_path();
-///     println!("Cellar location: {}", cellar.display());
-///     // Output: "/opt/homebrew/Cellar" (on Apple Silicon)
-/// }
+/// let cellar = cellar::cellar_path();
+/// println!("Cellar location: {}", cellar.display());
+/// // Output: "/opt/homebrew/Cellar" (on Apple Silicon)
 /// ```
 ///
 /// # Directory Structure

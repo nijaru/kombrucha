@@ -767,15 +767,15 @@ impl PackageManager {
         for pkg in installed {
             match self.api.fetch_formula(&pkg.name).await {
                 Ok(formula) => {
-                    if let Some(latest) = formula.versions.stable {
-                        if latest > pkg.version {
-                            result.push(OutdatedPackage {
-                                name: pkg.name,
-                                installed: pkg.version,
-                                latest,
-                                changeable: true,
-                            });
-                        }
+                    if let Some(latest) = formula.versions.stable
+                        && latest > pkg.version
+                    {
+                        result.push(OutdatedPackage {
+                            name: pkg.name,
+                            installed: pkg.version,
+                            latest,
+                            changeable: true,
+                        });
                     }
                 }
                 Err(_) => {

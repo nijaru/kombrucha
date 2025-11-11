@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
     for pkg in &installed {
         by_formula
             .entry(pkg.name.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(pkg.version.clone());
     }
 
@@ -129,7 +129,6 @@ async fn main() -> anyhow::Result<()> {
             println!("Verification: Checking linked versions are preserved");
             let after = pm.list()?;
 
-            let mut preserved = 0;
             let mut issues = Vec::new();
 
             for pkg in &multiversioned {
@@ -137,7 +136,6 @@ async fn main() -> anyhow::Result<()> {
                 let current_versions = after.iter().filter(|p| p.name == *name).collect::<Vec<_>>();
 
                 if !current_versions.is_empty() {
-                    preserved += 1;
                     if current_versions.len() == 1 {
                         println!("✓ {} - Kept newest version only", name);
                     } else {

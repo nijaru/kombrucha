@@ -129,13 +129,13 @@ async fn main() -> anyhow::Result<()> {
         "\nBottle availability: {}",
         if formula.versions.bottle { "Yes" } else { "No" }
     );
-    if let Some(bottle) = &formula.bottle {
-        if let Some(stable) = &bottle.stable {
-            println!("  Rebuild: {}", stable.rebuild);
-            println!("  Platforms available: {}", stable.files.len());
-            for platform in stable.files.keys() {
-                println!("    - {}", platform);
-            }
+    if let Some(bottle) = &formula.bottle
+        && let Some(stable) = &bottle.stable
+    {
+        println!("  Rebuild: {}", stable.rebuild);
+        println!("  Platforms available: {}", stable.files.len());
+        for platform in stable.files.keys() {
+            println!("    - {}", platform);
         }
     }
 

@@ -62,11 +62,9 @@ const CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
 /// ```no_run
 /// use kombrucha::cache;
 ///
-/// fn main() {
-///     let cache = cache::cache_dir();
-///     println!("Cache directory: {}", cache.display());
-///     // Output: "/Users/nick/.cache/bru" or "$XDG_CACHE_HOME/bru"
-/// }
+/// let cache = cache::cache_dir();
+/// println!("Cache directory: {}", cache.display());
+/// // Output: "/Users/nick/.cache/bru" or "$XDG_CACHE_HOME/bru"
 /// ```
 ///
 /// # Cache Files
@@ -124,12 +122,10 @@ pub fn is_cache_fresh(path: &PathBuf) -> bool {
 /// ```no_run
 /// use kombrucha::cache;
 ///
-/// fn main() {
-///     if let Some(formulae) = cache::get_cached_formulae() {
-///         println!("Cache hit: {} formulae cached", formulae.len());
-///     } else {
-///         println!("Cache miss: will fetch from API");
-///     }
+/// if let Some(formulae) = cache::get_cached_formulae() {
+///     println!("Cache hit: {} formulae cached", formulae.len());
+/// } else {
+///     println!("Cache miss: will fetch from API");
 /// }
 /// ```
 pub fn get_cached_formulae() -> Option<Vec<Formula>> {
@@ -196,12 +192,10 @@ pub fn store_formulae(formulae: &Vec<Formula>) -> Result<()> {
 /// ```no_run
 /// use kombrucha::cache;
 ///
-/// fn main() {
-///     if let Some(casks) = cache::get_cached_casks() {
-///         println!("Cache hit: {} casks cached", casks.len());
-///     } else {
-///         println!("Cache miss: will fetch from API");
-///     }
+/// if let Some(casks) = cache::get_cached_casks() {
+///     println!("Cache hit: {} casks cached", casks.len());
+/// } else {
+///     println!("Cache miss: will fetch from API");
 /// }
 /// ```
 pub fn get_cached_casks() -> Option<Vec<Cask>> {

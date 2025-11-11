@@ -83,11 +83,9 @@ async fn get_ghcr_token(repository: &str) -> Result<String> {
 /// ```no_run
 /// use kombrucha::download;
 ///
-/// fn main() {
-///     let cache = download::cache_dir();
-///     println!("Bottle cache: {}", cache.display());
-///     // Output: "/Users/nick/.cache/bru/downloads"
-/// }
+/// let cache = download::cache_dir();
+/// println!("Bottle cache: {}", cache.display());
+/// // Output: "/Users/nick/.cache/bru/downloads"
 /// ```
 pub fn cache_dir() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());

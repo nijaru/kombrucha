@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let installed = pm.list()?;
     println!("Found {} installed packages", installed.len());
     assert!(
-        installed.len() > 0,
+        !installed.is_empty(),
         "Should have at least one package installed"
     );
 

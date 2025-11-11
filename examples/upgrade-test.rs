@@ -89,14 +89,14 @@ async fn main() -> anyhow::Result<()> {
 
             // Check symlinks point to new version
             let bin_link = kombrucha::cellar::detect_prefix().join("bin/jq");
-            if bin_link.exists() {
-                if let Ok(target) = std::fs::read_link(&bin_link) {
-                    println!(
-                        "✓ Symlink updated: {} -> {}",
-                        bin_link.display(),
-                        target.display()
-                    );
-                }
+            if bin_link.exists()
+                && let Ok(target) = std::fs::read_link(&bin_link)
+            {
+                println!(
+                    "✓ Symlink updated: {} -> {}",
+                    bin_link.display(),
+                    target.display()
+                );
             }
 
             println!("\n╔══════════════════════════════════════════════════════════╗");
