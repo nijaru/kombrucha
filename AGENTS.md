@@ -6,7 +6,7 @@
 
 **Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. The goal is to create a drop-in replacement that's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
 
-**Status**: v0.1.35 - Library API + Production-ready CLI (95% formulae via bottles)
+**Status**: v0.2.0 (feature/library-api branch) - Library API + Production-ready CLI (95% formulae via bottles)
 
 ## Project Structure
 
@@ -71,18 +71,19 @@ See `docs/architecture/SPEC.md` for detailed design.
 
 PackageManager library API fully tested on production system (macOS 15.7, M3 Max, 340 installed packages). All operations validated with zero panics and proper error handling.
 
-**Phase 4 Release: IN PROGRESS**
+**Phase 4: BRANCH PENDING VERIFICATION**
 
-Preparing v0.1.35 release:
+v0.2.0 release prepared on `feature/library-api` branch:
 - [x] Integration testing complete (all 14 integration + 190 total tests passing)
-- [x] CHANGELOG updated with v0.1.35 entry
+- [x] CHANGELOG updated with v0.2.0 entry
 - [x] README updated with library section
 - [x] Library API documentation complete (docs/library-api.md)
 - [x] Inline documentation reviewed and all doc tests passing
-- [ ] Git tag created (v0.1.35)
-- [ ] GitHub release created with binaries
+- [x] All changes committed to feature/library-api branch
+- [ ] Code review and validation by nick
+- [ ] Merge to main after verification
+- [ ] Create GitHub release with binaries
 - [ ] Publish to crates.io
-- [ ] Update nijaru/tap formula (separate repo)
 
 See `ai/STATUS.md` for detailed status and `ai/PHASE_3_TEST_REPORT.md` for test results.
 
