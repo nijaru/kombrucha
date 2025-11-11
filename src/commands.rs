@@ -1230,7 +1230,7 @@ pub async fn install(
         return Ok(());
     }
 
-    // Step 1: Validate core formulae in parallel
+    // Step 1: Validate core formulae in parallel, check for casks if formula not found
     println!("Resolving dependencies...");
 
     let validation_futures: Vec<_> = core_formulae
@@ -1238,6 +1238,16 @@ pub async fn install(
         .map(|name| async move {
             match api.fetch_formula(name).await {
                 Ok(_) => Ok(name.clone()),
+                Err(crate::error::BruError::FormulaNotFound(_)) => {
+                    // Formula not found, check if it's a cask
+                    match api.fetch_cask(name).await {
+                        Ok(_) => Err((
+                            name.clone(),
+                            crate::error::BruError::CaskNotFound(name.clone()),
+                        )),
+                        Err(e) => Err((name.clone(), e)),
+                    }
+                }
                 Err(e) => Err((name.clone(), e)),
             }
         })
@@ -1246,30 +1256,68 @@ pub async fn install(
     let validation_results = futures::future::join_all(validation_futures).await;
 
     let mut errors = Vec::new();
+    let mut casks = Vec::new();
     let mut valid_formulae = Vec::new();
 
     for result in validation_results {
         match result {
             Ok(name) => valid_formulae.push(name),
+            Err((name, crate::error::BruError::CaskNotFound(_))) => {
+                // Mark as cask for fallback to brew
+                casks.push(name);
+            }
             Err((name, e)) => errors.push((name, e)),
         }
     }
 
-    // If no valid formulae, report errors and fail
-    if valid_formulae.is_empty() {
+    // Handle casks by delegating to brew
+    if !casks.is_empty() {
+        for cask_name in &casks {
+            match fallback_to_brew_with_reason(
+                "install",
+                cask_name,
+                Some(&format!("{} (cask)", cask_name.bold())),
+            ) {
+                Ok(_) => {
+                    println!(
+                        "  {} {} installed successfully",
+                        "✓".green(),
+                        cask_name.bold()
+                    );
+                }
+                Err(e) => {
+                    println!(
+                        "  {} Failed to install {}: {}",
+                        "✗".red(),
+                        cask_name.bold(),
+                        e
+                    );
+                }
+            }
+        }
+    }
+
+    // Report any other errors
+    if !errors.is_empty() {
         for (name, err) in &errors {
             println!("{} {}: {}", "✗".red(), name, err);
         }
+    }
+
+    // If no valid formulae and no casks handled, fail
+    if valid_formulae.is_empty() && casks.is_empty() {
         return Err(crate::error::BruError::Other(anyhow::anyhow!(
             "All formulae failed to install"
         )));
     }
 
-    // Report any invalid formulae but continue with valid ones
-    if !errors.is_empty() {
-        for (name, err) in &errors {
-            println!("{} {}: {}", "⚠".yellow(), name, err);
-        }
+    // If only casks were requested, we're done
+    if valid_formulae.is_empty() {
+        return Ok(());
+    }
+
+    // Report any non-cask errors but continue with valid formulae
+    if !errors.is_empty() && !casks.is_empty() {
         println!();
     }
 
