@@ -30,3 +30,7 @@ flamegraph.svg
 perf.data
 perf.data.old
 *.trace
+
+# Archived working files (keep in repo for reference, but not active)
+ai/archived/
+.claude/

@@ -1,3 +1,46 @@
+//! Homebrew JSON API client with in-memory caching.
+//!
+//! This module provides a [`BrewApi`] client for querying Homebrew's public JSON API.
+//! It handles all communication with the remote API, including timeout management,
+//! automatic retries, and in-memory caching to avoid redundant requests.
+//!
+//! # Features
+//!
+//! - **Fast lookups**: In-memory LRU cache (1000 formulae, 500 casks) per client instance
+//! - **Persistent cache**: Optional 24-hour disk cache in `~/.cache/bru/`
+//! - **Parallel operations**: Uses tokio for concurrent API requests
+//! - **Error handling**: Distinguishes between 404s and network errors
+//! - **Timeout protection**: 10-second default timeout per request
+//!
+//! # Architecture
+//!
+//! The `BrewApi` client is the primary way to query Homebrew package metadata. It handles:
+//! - Fetching individual formula/cask information
+//! - Bulk fetching all formulae/casks (for search operations)
+//! - Searching across all packages
+//! - Parsing and caching API responses
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::BrewApi;
+//!
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!     let api = BrewApi::new()?;
+//!
+//!     // Fetch a single formula
+//!     let formula = api.fetch_formula("ripgrep").await?;
+//!     println!("Latest version: {}", formula.versions.stable.unwrap_or_default());
+//!
+//!     // Search across all packages
+//!     let results = api.search("python").await?;
+//!     println!("Found {} formulae", results.formulae.len());
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -102,6 +145,19 @@ pub struct BrewApi {
 }
 
 impl BrewApi {
+    /// Create a new Homebrew API client with in-memory caching.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use kombrucha::BrewApi;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     let api = BrewApi::new()?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn new() -> Result<Self> {
         let client = reqwest::Client::builder()
             .timeout(REQUEST_TIMEOUT)
@@ -122,7 +178,29 @@ impl BrewApi {
         })
     }
 
-    /// Fetch all formulae (cached locally for 24 hours)
+    /// Fetch all formulae from Homebrew (with local disk caching for 24 hours).
+    ///
+    /// This downloads the complete list of all available formulae from Homebrew's
+    /// public JSON API. The result is cached on disk to avoid repeated large downloads.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use kombrucha::BrewApi;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     let api = BrewApi::new()?;
+    ///     let formulae = api.fetch_all_formulae().await?;
+    ///     println!("Total formulae available: {}", formulae.len());
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Performance
+    ///
+    /// - First call: ~2-3 seconds (downloads ~25 MB)
+    /// - Subsequent calls: <100 ms (loads from cache)
     pub async fn fetch_all_formulae(&self) -> Result<Vec<Formula>> {
         // Try cache first
         if let Some(cached) = crate::cache::get_cached_formulae() {
@@ -156,7 +234,34 @@ impl BrewApi {
         Ok(casks)
     }
 
-    /// Fetch specific formula by name (with in-memory caching)
+    /// Fetch metadata for a specific formula by name (with in-memory caching).
+    ///
+    /// Returns complete metadata including versions, dependencies, and bottle information.
+    /// Results are cached in-memory for the duration of the API client instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BruError::FormulaNotFound`](crate::error::BruError::FormulaNotFound) if
+    /// the formula doesn't exist in Homebrew.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use kombrucha::BrewApi;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     let api = BrewApi::new()?;
+    ///     let formula = api.fetch_formula("ripgrep").await?;
+    ///
+    ///     println!("Name: {}", formula.name);
+    ///     println!("Version: {}", formula.versions.stable.as_deref().unwrap_or(""));
+    ///     println!("Description: {}", formula.desc.as_deref().unwrap_or(""));
+    ///     println!("Dependencies: {:?}", formula.dependencies);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn fetch_formula(&self, name: &str) -> Result<Formula> {
         // Check cache first
         if let Some(cached) = self.formula_cache.get(name).await {
@@ -206,7 +311,31 @@ impl BrewApi {
         Ok(cask)
     }
 
-    /// Search formulae and casks in parallel
+    /// Search for formulae and casks matching a query.
+    ///
+    /// Performs a case-insensitive search across both formula names/descriptions
+    /// and cask tokens/names. Results are returned separately for filtering.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use kombrucha::BrewApi;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     let api = BrewApi::new()?;
+    ///     let results = api.search("python").await?;
+    ///
+    ///     println!("Found {} formulae", results.formulae.len());
+    ///     println!("Found {} casks", results.casks.len());
+    ///
+    ///     for formula in &results.formulae {
+    ///         println!("  {} - {}", formula.name, formula.desc.as_deref().unwrap_or(""));
+    ///     }
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn search(&self, query: &str) -> Result<SearchResults> {
         let query_lower = query.to_lowercase();
 

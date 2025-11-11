@@ -1,5 +1,4 @@
 use crate::cellar;
-use colored::Colorize;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -98,7 +97,7 @@ pub fn install_app(app_path: &PathBuf, app_name: &str) -> Result<PathBuf> {
 
     // Remove existing app if present
     if target.exists() {
-        println!("  Removing existing {}", app_name.dimmed());
+        println!("  Removing existing {}", app_name);
         std::fs::remove_dir_all(&target)?;
     }
 

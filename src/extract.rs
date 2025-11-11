@@ -1,4 +1,47 @@
-//! Bottle extraction to Cellar
+//! Bottle extraction and installation to Cellar.
+//!
+//! This module handles extracting precompiled Homebrew bottles (tar.gz archives) to the
+//! Cellar directory. It:
+//! - **Decompresses** GZIP-compressed tar archives
+//! - **Extracts** to the correct Cellar location
+//! - **Handles bottle revisions** (e.g., `1.0.0_1`, `1.0.0_2`)
+//! - **Verifies** extraction succeeded
+//!
+//! # Architecture
+//!
+//! Bottles are tar.gz files containing the precompiled formula contents:
+//! ```text
+//! Input:  formula--1.0.0.arm64_sonoma.bottle.tar.gz
+//! Extract to: /opt/homebrew/Cellar/formula/1.0.0/
+//!   bin/
+//!   lib/
+//!   share/
+//!   INSTALL_RECEIPT.json
+//! ```
+//!
+//! # Bottle Revisions
+//!
+//! When Homebrew rebuilds a bottle (without changing the source version), it adds a
+//! revision suffix: `1.0.0_1`, `1.0.0_2`, etc. This module handles finding and validating
+//! the extracted directory regardless of revision number.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use kombrucha::extract;
+//!
+//! fn main() -> anyhow::Result<()> {
+//!     let bottle_path = "/path/to/formula--1.0.0.arm64_sonoma.bottle.tar.gz";
+//!     let cellar_path = extract::extract_bottle(
+//!         std::path::Path::new(bottle_path),
+//!         "formula",
+//!         "1.0.0"
+//!     )?;
+//!
+//!     println!("Extracted to: {}", cellar_path.display());
+//!     Ok(())
+//! }
+//! ```
 
 use crate::cellar;
 use anyhow::{Context, Result};
@@ -7,7 +50,51 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 
-/// Extract a bottle tar.gz to the Cellar
+/// Extract a bottle tar.gz archive to the Cellar.
+///
+/// Decompresses and extracts a precompiled bottle (tar.gz) to the Homebrew Cellar directory.
+/// Automatically handles bottle revisions (e.g., `1.0.0_1`, `1.0.0_2`).
+///
+/// # Arguments
+///
+/// * `bottle_path` - Path to the bottle tar.gz file
+/// * `formula_name` - Name of the formula
+/// * `version` - Version of the formula
+///
+/// # Returns
+///
+/// The path to the extracted formula directory in the Cellar.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The bottle file cannot be read
+/// - Decompression fails (corrupted archive)
+/// - Extraction to Cellar fails (permission denied, disk full, etc.)
+/// - The extracted directory structure is invalid
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::extract;
+/// use std::path::Path;
+///
+/// fn main() -> anyhow::Result<()> {
+///     let bottle_path = Path::new("/path/to/ripgrep--13.0.0.arm64_sonoma.bottle.tar.gz");
+///     let extracted = extract::extract_bottle(bottle_path, "ripgrep", "13.0.0")?;
+///     println!("Extracted to: {}", extracted.display());
+///     // Output: "/opt/homebrew/Cellar/ripgrep/13.0.0"
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// # Bottle Revisions
+///
+/// Homebrew sometimes rebuilds bottles without changing the source version, creating revision
+/// suffixes like `1.0.0_1`, `1.0.0_2`. This function automatically detects and handles these:
+/// - Extracts to whichever revision directory exists in the tar.gz
+/// - Returns the path to that directory
 pub fn extract_bottle(bottle_path: &Path, formula_name: &str, version: &str) -> Result<PathBuf> {
     let cellar = cellar::cellar_path();
 

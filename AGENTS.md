@@ -4,9 +4,12 @@
 
 ## Project Overview
 
-**Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. The goal is to create a drop-in replacement that's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
+**Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. It's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
 
-**Status**: v0.1.0 Beta - Production-ready for bottle-based workflows (95% of formulae)
+**Current Status**: 
+- CLI: v0.1.34 (stable, production-ready for bottle-based workflows)
+- Library: v0.1.35 in PR (PackageManager API for downstream projects)
+- Combined: 95% formulae via bottles, 5% fallback to brew for source builds
 
 ## Project Structure
 
@@ -53,8 +56,9 @@ See `docs/architecture/SPEC.md` for detailed design.
 - ✅ **Phase 0**: Foundation (CLI scaffolding, API client)
 - ✅ **Phase 1**: Read-only commands (search, info, deps, uses, list, outdated)
 - ✅ **Phase 2**: Bottle-based installation (install, uninstall, upgrade)
+- ✅ **Phase 3 (Library)**: PackageManager API for programmatic access (production-ready, tested on 340+ packages)
 - ✅ **Phase 4**: Core command implementation (tap, update, services, bundle)
-- 🔴 **Phase 3**: Ruby interop for source builds (not started)
+- 🔴 **Phase 5 (Source)**: Ruby interop for source builds (planned, low priority)
 
 ## Design Principles
 
@@ -64,26 +68,25 @@ See `docs/architecture/SPEC.md` for detailed design.
 - **No Formula Translation**: Execute existing `.rb` files via embedded Ruby
 - **Drop-in Replacement**: Users should be able to alias `brew` to `bru`
 
-## Current Focus
+## Current Status
 
-**CRITICAL: Testing Infrastructure Overhaul** (2025-10-24)
+**Library API: PRODUCTION-READY** ✅
 
-Our integration tests caused **system corruption** by directly modifying `/opt/homebrew/Cellar/` without isolation. This corrupted the node binary, mise shims, and Claude Code on Oct 23, 2025.
+PackageManager API fully tested on production system (macOS 15.7, M3 Max, 340+ installed packages). All operations validated with zero panics and proper error handling.
 
-**Status**: Comprehensive remediation plan completed in `ai/TESTING_REMEDIATION.md`
+**Release Plan: v0.1.35**
 
-**What We're Doing Wrong**:
-- Tests modify real system directories (violates Homebrew best practices)
-- No isolation via testcontainers or brew test-bot
-- Formula test block is trivial (`--version` check - Homebrew considers this a "bad test")
-- Missing GitHub Actions workflows for automated bottle building
+- [x] Integration testing complete (9 API tests + 190 total tests passing)
+- [x] CHANGELOG updated with v0.1.35 entry
+- [x] README updated with library section
+- [x] Library API documentation complete (docs/library-api.md)
+- [x] All changes committed to feature/library-api branch
+- [x] PR opened for GitHub review (#2)
+- [ ] GitHub review + approval
+- [ ] Merge to main
+- [ ] Tag v0.1.35 and publish to crates.io
 
-**Remediation Plan** (State-of-the-Art):
-- Phase 1 (P0): Delete dangerous tests, implement testcontainers-rs for Docker isolation
-- Phase 2 (P1): Add brew test-bot --local workflow, GitHub Actions for bottles
-- Phase 3 (P2): Comprehensive test suite with proper functional domain organization
-
-See `ai/STATUS.md` for detailed status and `ai/TESTING_REMEDIATION.md` for complete plan.
+See `ai/STATUS.md` for detailed status and `ai/PHASE_3_TEST_REPORT.md` for test results.
 
 ## Performance
 
