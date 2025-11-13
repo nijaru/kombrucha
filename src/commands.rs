@@ -80,6 +80,36 @@ fn fallback_to_brew_with_reason(
     }
 }
 
+/// Clean up a specific old version of a formula after upgrade
+/// This matches the native upgrade behavior (lines 2068-2088)
+fn cleanup_specific_version(formula_name: &str, old_version: &str) -> Result<()> {
+    let old_path = cellar::cellar_path().join(formula_name).join(old_version);
+
+    if !old_path.exists() {
+        return Ok(()); // Already cleaned up or never existed
+    }
+
+    // Unlink symlinks first
+    let unlinked = symlink::unlink_formula(formula_name, old_version)?;
+    if !unlinked.is_empty() {
+        println!(
+            "    ├ {} Unlinked {} symlinks",
+            "✓".green(),
+            unlinked.len().to_string().dimmed()
+        );
+    }
+
+    // Remove the old version directory
+    std::fs::remove_dir_all(&old_path)?;
+    println!(
+        "    ├ {} Removed old version {}",
+        "✓".green(),
+        old_version.dimmed()
+    );
+
+    Ok(())
+}
+
 pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: bool) -> Result<()> {
     // Detect if stdout is a TTY (for brew-compatible behavior)
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
@@ -2056,9 +2086,31 @@ pub async fn upgrade(
             tap_packages.len()
         );
         for (formula_name, tap_name) in &tap_packages {
+            // Capture old version BEFORE upgrade (matches native upgrade behavior at line 1863)
+            let old_version =
+                if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
+                    Some(linked_ver)
+                } else if let Ok(versions) = cellar::get_installed_versions(formula_name) {
+                    versions.first().map(|v| v.version.clone())
+                } else {
+                    None
+                };
+
             let full_name = format!("{}/{}", tap_name, formula_name);
             match fallback_to_brew("upgrade", &full_name) {
-                Ok(_) => println!("  {} Upgraded {}", "✓".green(), formula_name.bold()),
+                Ok(_) => {
+                    // Clean up the SPECIFIC old version that was replaced
+                    if let Some(old_ver) = old_version {
+                        if let Err(e) = cleanup_specific_version(formula_name, &old_ver) {
+                            println!(
+                                "    {} Warning: failed to clean up old version: {}",
+                                "⚠".yellow(),
+                                e
+                            );
+                        }
+                    }
+                    println!("  {} Upgraded {}", "✓".green(), formula_name.bold());
+                }
                 Err(e) => println!(
                     "  {} Failed to upgrade {}: {}",
                     "✗".red(),
