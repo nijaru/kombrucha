@@ -10,7 +10,6 @@ use crate::{download, extract, receipt, symlink};
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::path::PathBuf;
 use std::time::Duration;
 
 /// Strip bottle revision from version string (e.g., "1.4.0_32" → "1.4.0")
@@ -126,10 +125,7 @@ fn topological_sort(formulae: &HashMap<String, Formula>) -> anyhow::Result<Vec<S
     for (name, formula) in formulae {
         in_degree.entry(name.as_str()).or_insert(0);
         for dep in &formula.dependencies {
-            graph
-                .entry(dep.as_str())
-                .or_default()
-                .push(name.as_str());
+            graph.entry(dep.as_str()).or_default().push(name.as_str());
             *in_degree.entry(name.as_str()).or_insert(0) += 1;
         }
     }
@@ -1030,15 +1026,16 @@ pub async fn upgrade(
             match super::utils::fallback_to_brew("upgrade", &full_name) {
                 Ok(_) => {
                     // Clean up the SPECIFIC old version that was replaced
-                    if let Some(old_ver) = old_version {
-                        if let Err(e) = super::utils::cleanup_specific_version(formula_name, &old_ver) {
+                    if let Some(old_ver) = old_version
+                        && let Err(e) =
+                            super::utils::cleanup_specific_version(formula_name, &old_ver)
+                        {
                             println!(
                                 "    {} Warning: failed to clean up old version: {}",
                                 "⚠".yellow(),
                                 e
                             );
                         }
-                    }
                     println!("  {} Upgraded {}", "✓".green(), formula_name.bold());
                 }
                 Err(e) => println!(

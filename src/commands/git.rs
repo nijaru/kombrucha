@@ -87,8 +87,8 @@ pub fn log(formula_name: &str) -> Result<()> {
     if let Ok(entries) = std::fs::read_dir(&bin_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_symlink() {
-                if let Ok(target) = std::fs::read_link(&path) {
+            if path.is_symlink()
+                && let Ok(target) = std::fs::read_link(&path) {
                     // Resolve relative symlinks to absolute paths
                     let resolved_target = if target.is_absolute() {
                         target.clone()
@@ -99,8 +99,8 @@ pub fn log(formula_name: &str) -> Result<()> {
                             .unwrap_or(target.clone())
                     };
 
-                    if resolved_target.starts_with(&install_path) {
-                        if let Some(name) = path.file_name() {
+                    if resolved_target.starts_with(&install_path)
+                        && let Some(name) = path.file_name() {
                             println!(
                                 "  {} {}",
                                 name.to_string_lossy().cyan(),
@@ -112,9 +112,7 @@ pub fn log(formula_name: &str) -> Result<()> {
                                 break;
                             }
                         }
-                    }
                 }
-            }
         }
     }
 

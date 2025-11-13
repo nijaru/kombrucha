@@ -726,8 +726,8 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
 
         // Check bin/ directory
         let bin_dir = formula_path.join("bin");
-        if bin_dir.exists() {
-            if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+        if bin_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&bin_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_file() {
@@ -742,8 +742,8 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                         if let Ok(output) = output {
                             let stdout = String::from_utf8_lossy(&output.stdout);
 
-                            if show_all {
-                                if let Some(name) = path.file_name() {
+                            if show_all
+                                && let Some(name) = path.file_name() {
                                     println!("  {}:", name.to_string_lossy());
                                     for line in stdout.lines().skip(1) {
                                         let trimmed = line.trim();
@@ -752,7 +752,6 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                                         }
                                     }
                                 }
-                            }
 
                             // Check for broken links (simplified)
                             if stdout.contains("dyld:") || stdout.contains("not found") {
@@ -762,21 +761,20 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
                     }
                 }
             }
-        }
 
         // Check lib/ directory
         let lib_dir = formula_path.join("lib");
-        if lib_dir.exists() {
-            if let Ok(entries) = std::fs::read_dir(&lib_dir) {
+        if lib_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&lib_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.is_file() && (path.extension().and_then(|s| s.to_str()) == Some("dylib"))
+                    if path.is_file()
+                        && (path.extension().and_then(|s| s.to_str()) == Some("dylib"))
                     {
                         checked_files += 1;
                     }
                 }
             }
-        }
 
         if checked_files == 0 {
             println!("  No linkable files found");

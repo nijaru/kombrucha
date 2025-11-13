@@ -368,7 +368,8 @@ pub async fn deps(
         unsafe {
             std::env::set_var("BRU_QUIET", "1");
         }
-        let (_all_formulae, dep_order) = super::install::resolve_dependencies(api, &[formula.to_string()]).await?;
+        let (_all_formulae, dep_order) =
+            super::install::resolve_dependencies(api, &[formula.to_string()]).await?;
         unsafe {
             std::env::remove_var("BRU_QUIET");
         }

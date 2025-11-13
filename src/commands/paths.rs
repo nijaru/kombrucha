@@ -180,17 +180,13 @@ pub fn shellenv(shell: Option<&str>) -> Result<()> {
     // Auto-detect shell from $SHELL environment variable if not explicitly provided
     let shell_type = match shell {
         Some(s) => String::from(s),
-        None => {
-            std::env::var("SHELL")
-                .ok()
-                .and_then(|s| {
-                    let path = std::path::PathBuf::from(s);
-                    path.file_name()
-                        .and_then(|f| f.to_str())
-                        .map(String::from)
-                })
-                .unwrap_or_else(|| String::from("bash"))
-        }
+        None => std::env::var("SHELL")
+            .ok()
+            .and_then(|s| {
+                let path = std::path::PathBuf::from(s);
+                path.file_name().and_then(|f| f.to_str()).map(String::from)
+            })
+            .unwrap_or_else(|| String::from("bash")),
     };
 
     // Generate shell-specific configuration

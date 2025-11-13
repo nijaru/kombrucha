@@ -30,8 +30,7 @@
 //! }
 //! ```
 
-use anyhow::{Context, Result};
-use std::process::Command;
+use anyhow::Result;
 
 /// Detect the current system platform for bottle selection.
 ///

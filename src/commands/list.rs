@@ -33,7 +33,7 @@ fn format_columns(names: &[String]) -> String {
     let num_cols = (term_width / col_width).max(1);
 
     // Pre-allocate string with estimated capacity
-    let estimated_lines = (names.len() + num_cols - 1) / num_cols;
+    let estimated_lines = names.len().div_ceil(num_cols);
     let mut result = String::with_capacity(estimated_lines * term_width);
 
     for (i, name) in names.iter().enumerate() {
@@ -49,7 +49,7 @@ fn format_columns(names: &[String]) -> String {
     }
 
     // Add final newline if last row is incomplete
-    if !names.is_empty() && names.len() % num_cols != 0 {
+    if !names.is_empty() && !names.len().is_multiple_of(num_cols) {
         result.push('\n');
     }
 
@@ -665,10 +665,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
     println!();
 
     let all_installed = cellar::list_installed()?;
-    let installed_set: HashSet<_> = all_installed
-        .iter()
-        .map(|p| p.name.as_str())
-        .collect();
+    let installed_set: HashSet<_> = all_installed.iter().map(|p| p.name.as_str()).collect();
 
     let mut has_missing = false;
 
