@@ -365,11 +365,17 @@ pub async fn deps(
     } else {
         // Default mode: show all transitive runtime dependencies (like brew deps)
         // Temporarily suppress the spinner output from resolve_dependencies
+        // SAFETY: Temporarily setting BRU_QUIET to suppress output during dependency resolution.
+        // While this is in an async context, the CLI is single-threaded in its command execution
+        // (only one command runs at a time), and this variable is immediately removed after use.
+        // The only potential race is within resolve_dependencies itself, which is acceptable as
+        // it would only affect UI output, not correctness.
         unsafe {
             std::env::set_var("BRU_QUIET", "1");
         }
         let (_all_formulae, dep_order) =
             super::install::resolve_dependencies(api, &[formula.to_string()]).await?;
+        // SAFETY: Removing the temporary BRU_QUIET variable set above. Safe for same reasons.
         unsafe {
             std::env::remove_var("BRU_QUIET");
         }
