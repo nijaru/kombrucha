@@ -78,6 +78,7 @@ use std::path::{Path, PathBuf};
 /// // Output: "/opt/homebrew" (on Apple Silicon)
 /// // Output: "/usr/local" (on Intel)
 /// ```
+#[inline]
 pub fn detect_prefix() -> PathBuf {
     // First check environment variable
     if let Ok(prefix) = std::env::var("HOMEBREW_PREFIX") {
@@ -131,6 +132,7 @@ pub fn detect_prefix() -> PathBuf {
 ///       bin/python3
 ///       INSTALL_RECEIPT.json
 /// ```
+#[inline]
 pub fn cellar_path() -> PathBuf {
     detect_prefix().join("Cellar")
 }

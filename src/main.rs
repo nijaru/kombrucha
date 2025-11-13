@@ -884,6 +884,9 @@ fn error_exit(message: &str, usage: &str) -> ! {
 async fn run() -> anyhow::Result<()> {
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
+        // SAFETY: Setting RUST_LOG before any threads spawn is safe. This is the entry point
+        // and no other threads have been created yet. Environment variable is only read by
+        // tracing_subscriber initialization immediately after this.
         unsafe {
             std::env::set_var("RUST_LOG", "warn");
         }
@@ -941,6 +944,8 @@ async fn run() -> anyhow::Result<()> {
 
     // Set NO_COLOR if --no-color flag is set
     if cli.no_color {
+        // SAFETY: Setting NO_COLOR early in main before colors are initialized is safe.
+        // This happens before any concurrent access and is only read by colors::init_colors().
         unsafe {
             std::env::set_var("NO_COLOR", "1");
         }
@@ -951,6 +956,8 @@ async fn run() -> anyhow::Result<()> {
 
     // Set quiet mode environment variable for commands to check
     if cli.quiet {
+        // SAFETY: Setting BRU_QUIET early in main is safe. This happens in the main thread
+        // before command execution and is only read (not modified) by child operations.
         unsafe {
             std::env::set_var("BRU_QUIET", "1");
         }

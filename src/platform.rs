@@ -31,6 +31,10 @@
 //! ```
 
 use anyhow::Result;
+#[cfg(target_os = "macos")]
+use anyhow::Context;
+#[cfg(target_os = "macos")]
+use std::process::Command;
 
 /// Detect the current system platform for bottle selection.
 ///

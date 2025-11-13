@@ -13,6 +13,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
 /// Strip bottle revision from version string (e.g., "1.4.0_32" → "1.4.0")
+#[inline]
 fn strip_bottle_revision(version: &str) -> &str {
     if let Some(pos) = version.rfind('_') {
         // Check if everything after _ is digits (bottle revision)
