@@ -88,31 +88,33 @@ pub fn log(formula_name: &str) -> Result<()> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_symlink()
-                && let Ok(target) = std::fs::read_link(&path) {
-                    // Resolve relative symlinks to absolute paths
-                    let resolved_target = if target.is_absolute() {
-                        target.clone()
-                    } else {
-                        bin_dir
-                            .join(&target)
-                            .canonicalize()
-                            .unwrap_or(target.clone())
-                    };
+                && let Ok(target) = std::fs::read_link(&path)
+            {
+                // Resolve relative symlinks to absolute paths
+                let resolved_target = if target.is_absolute() {
+                    target.clone()
+                } else {
+                    bin_dir
+                        .join(&target)
+                        .canonicalize()
+                        .unwrap_or(target.clone())
+                };
 
-                    if resolved_target.starts_with(&install_path)
-                        && let Some(name) = path.file_name() {
-                            println!(
-                                "  {} {}",
-                                name.to_string_lossy().cyan(),
-                                format!("-> {}", target.display()).dimmed()
-                            );
-                            file_count += 1;
-                            if file_count >= 10 {
-                                println!("  {} (showing first 10)", "...".dimmed());
-                                break;
-                            }
-                        }
+                if resolved_target.starts_with(&install_path)
+                    && let Some(name) = path.file_name()
+                {
+                    println!(
+                        "  {} {}",
+                        name.to_string_lossy().cyan(),
+                        format!("-> {}", target.display()).dimmed()
+                    );
+                    file_count += 1;
+                    if file_count >= 10 {
+                        println!("  {} (showing first 10)", "...".dimmed());
+                        break;
+                    }
                 }
+            }
         }
     }
 

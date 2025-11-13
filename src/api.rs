@@ -373,7 +373,9 @@ impl BrewApi {
                         .into_iter()
                         .filter(|c| {
                             c.token.to_lowercase().contains(query.as_str())
-                                || c.name.iter().any(|n| n.to_lowercase().contains(query.as_str()))
+                                || c.name
+                                    .iter()
+                                    .any(|n| n.to_lowercase().contains(query.as_str()))
                                 || c.desc
                                     .as_ref()
                                     .is_some_and(|d| d.to_lowercase().contains(query.as_str()))

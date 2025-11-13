@@ -1030,13 +1030,13 @@ pub async fn upgrade(
                     if let Some(old_ver) = old_version
                         && let Err(e) =
                             super::utils::cleanup_specific_version(formula_name, &old_ver)
-                        {
-                            println!(
-                                "    {} Warning: failed to clean up old version: {}",
-                                "⚠".yellow(),
-                                e
-                            );
-                        }
+                    {
+                        println!(
+                            "    {} Warning: failed to clean up old version: {}",
+                            "⚠".yellow(),
+                            e
+                        );
+                    }
                     println!("  {} Upgraded {}", "✓".green(), formula_name.bold());
                 }
                 Err(e) => println!(
