@@ -988,7 +988,7 @@ async fn run() -> anyhow::Result<()> {
             quiet,
             columns,
         }) => {
-            commands::list(&api, versions, json, cask, quiet, columns).await?;
+            commands::list::list(&api, versions, json, cask, quiet, columns).await?;
         }
         Some(Commands::Outdated { cask, quiet }) => {
             commands::outdated(&api, cask, quiet).await?;
@@ -997,7 +997,7 @@ async fn run() -> anyhow::Result<()> {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru fetch [FORMULAE]...");
             }
-            commands::fetch(&api, &formulae).await?;
+            commands::fetch::fetch(&api, &formulae).await?;
         }
         Some(Commands::Install {
             formulae,
@@ -1015,7 +1015,8 @@ async fn run() -> anyhow::Result<()> {
             if cask {
                 commands::install_cask(&api, &formulae).await?;
             } else {
-                commands::install(&api, &formulae, only_dependencies, dry_run, force).await?;
+                commands::install::install(&api, &formulae, only_dependencies, dry_run, force)
+                    .await?;
             }
         }
         Some(Commands::Upgrade {
@@ -1024,7 +1025,7 @@ async fn run() -> anyhow::Result<()> {
             dry_run,
             force,
         }) => {
-            commands::upgrade(&api, &formulae, cask, dry_run, force).await?;
+            commands::upgrade::upgrade(&api, &formulae, cask, dry_run, force).await?;
         }
         Some(Commands::Reinstall { formulae, cask }) => {
             if formulae.is_empty() {
@@ -1033,7 +1034,7 @@ async fn run() -> anyhow::Result<()> {
                     "bru reinstall [OPTIONS] [FORMULAE]...",
                 );
             }
-            commands::reinstall(&api, &formulae, cask).await?;
+            commands::reinstall::reinstall(&api, &formulae, cask).await?;
         }
         Some(Commands::Uninstall {
             formulae,
@@ -1049,121 +1050,121 @@ async fn run() -> anyhow::Result<()> {
             if cask {
                 commands::uninstall_cask(&formulae)?;
             } else {
-                commands::uninstall(&api, &formulae, force).await?;
+                commands::uninstall::uninstall(&api, &formulae, force).await?;
             }
         }
         Some(Commands::Autoremove { dry_run }) => {
-            commands::autoremove(dry_run)?;
+            commands::autoremove::autoremove(dry_run)?;
         }
         Some(Commands::Tap { tap }) => {
-            commands::tap(tap.as_deref())?;
+            commands::tap::tap(tap.as_deref())?;
         }
         Some(Commands::Untap { tap }) => {
-            commands::untap(&tap)?;
+            commands::tap::untap(&tap)?;
         }
         Some(Commands::TapInfo { tap }) => {
-            commands::tap_info(&tap)?;
+            commands::tap::tap_info(&tap)?;
         }
         Some(Commands::Update) => {
-            commands::update()?;
+            commands::update::update()?;
         }
         Some(Commands::Cleanup {
             formulae,
             dry_run,
             cask,
         }) => {
-            commands::cleanup(&formulae, dry_run, cask)?;
+            commands::cleanup::cleanup(&formulae, dry_run, cask)?;
         }
         Some(Commands::Cache { clean }) => {
-            commands::cache(clean)?;
+            commands::cache::cache(clean)?;
         }
         Some(Commands::Config) => {
-            commands::config()?;
+            commands::config::config()?;
         }
         Some(Commands::Doctor) => {
-            commands::doctor()?;
+            commands::config::doctor()?;
         }
         Some(Commands::Env) => {
-            commands::env()?;
+            commands::config::env()?;
         }
         Some(Commands::Home { formula }) => {
-            commands::home(&api, &formula).await?;
+            commands::home::home(&api, &formula).await?;
         }
         Some(Commands::Leaves) => {
-            commands::leaves()?;
+            commands::leaves::leaves()?;
         }
         Some(Commands::Pin { formulae }) => {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru pin [FORMULAE]...");
             }
-            commands::pin(&formulae)?;
+            commands::pin::pin(&formulae)?;
         }
         Some(Commands::Unpin { formulae }) => {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru unpin [FORMULAE]...");
             }
-            commands::unpin(&formulae)?;
+            commands::pin::unpin(&formulae)?;
         }
         Some(Commands::Desc { formulae }) => {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru desc [FORMULAE]...");
             }
-            commands::desc(&api, &formulae).await?;
+            commands::desc::desc(&api, &formulae).await?;
         }
         Some(Commands::Link { formulae }) => {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru link [FORMULAE]...");
             }
-            commands::link(&api, &formulae).await?;
+            commands::link::link(&api, &formulae).await?;
         }
         Some(Commands::Unlink { formulae }) => {
             if formulae.is_empty() {
                 error_exit("No formulae specified", "bru unlink [FORMULAE]...");
             }
-            commands::unlink(&formulae)?;
+            commands::link::unlink(&formulae)?;
         }
         Some(Commands::Commands) => {
-            commands::commands()?;
+            commands::commands::commands()?;
         }
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "bru", &mut std::io::stdout());
         }
         Some(Commands::Missing { formulae }) => {
-            commands::missing(&formulae)?;
+            commands::missing::missing(&formulae)?;
         }
         Some(Commands::Analytics { action }) => {
-            commands::analytics(action.as_deref())?;
+            commands::analytics::analytics(action.as_deref())?;
         }
         Some(Commands::Cat { formulae }) => {
-            commands::cat(&api, &formulae).await?;
+            commands::cat::cat(&api, &formulae).await?;
         }
         Some(Commands::Shellenv { shell }) => {
-            commands::shellenv(shell.as_deref())?;
+            commands::shellenv::shellenv(shell.as_deref())?;
         }
         Some(Commands::GistLogs { formula }) => {
-            commands::gist_logs(&api, formula.as_deref()).await?;
+            commands::gist_logs::gist_logs(&api, formula.as_deref()).await?;
         }
         Some(Commands::Alias { formula }) => {
-            commands::alias(&api, formula.as_deref()).await?;
+            commands::alias::alias(&api, formula.as_deref()).await?;
         }
         Some(Commands::Log { formula }) => {
-            commands::log(&formula)?;
+            commands::log_cmd::log(&formula)?;
         }
         Some(Commands::WhichFormula { command }) => {
-            commands::which_formula(&command)?;
+            commands::which::which_formula(&command)?;
         }
         Some(Commands::Options { formula }) => {
-            commands::options(&api, &formula).await?;
+            commands::options::options(&api, &formula).await?;
         }
         Some(Commands::Bundle { dump, file }) => {
-            commands::bundle(&api, dump, file.as_deref()).await?;
+            commands::bundle::bundle(&api, dump, file.as_deref()).await?;
         }
         Some(Commands::Services { action, formula }) => {
-            commands::services(action.as_deref(), formula.as_deref())?;
+            commands::services::services(action.as_deref(), formula.as_deref())?;
         }
         Some(Commands::Edit { formula }) => {
-            commands::edit(&api, &formula).await?;
+            commands::edit::edit(&api, &formula).await?;
         }
         Some(Commands::Create { url, name }) => {
             commands::create(&url, name.as_deref())?;

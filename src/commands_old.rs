@@ -20,7 +20,7 @@ fn check_brew_available() -> bool {
 
 /// Check if a formula name is from a custom tap (format: user/tap/formula)
 /// Returns true only for non-core taps (excludes homebrew/core)
-fn is_tap_formula(name: &str) -> bool {
+pub fn is_tap_formula(name: &str) -> bool {
     // Tap formulas have format: user/tap/formula (at least 2 slashes)
     if name.matches('/').count() < 2 {
         return false;
@@ -37,12 +37,12 @@ fn is_tap_formula(name: &str) -> bool {
 }
 
 /// Fallback to brew for packages that require source builds or custom tap formulas
-fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
+pub fn fallback_to_brew(command: &str, formula_name: &str) -> Result<()> {
     fallback_to_brew_with_reason(command, formula_name, None)
 }
 
 /// Fallback to brew with optional custom reason message
-fn fallback_to_brew_with_reason(
+pub fn fallback_to_brew_with_reason(
     command: &str,
     formula_name: &str,
     reason: Option<&str>,
@@ -82,7 +82,7 @@ fn fallback_to_brew_with_reason(
 
 /// Clean up a specific old version of a formula after upgrade
 /// This matches the native upgrade behavior (lines 2068-2088)
-fn cleanup_specific_version(formula_name: &str, old_version: &str) -> Result<()> {
+pub fn cleanup_specific_version(formula_name: &str, old_version: &str) -> Result<()> {
     let old_path = cellar::cellar_path().join(formula_name).join(old_version);
 
     if !old_path.exists() {
@@ -576,7 +576,7 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
 }
 
 /// Format names in columns for display
-fn format_columns(names: &[String]) -> String {
+pub fn format_columns(names: &[String]) -> String {
     use std::io::IsTerminal;
 
     if names.is_empty() {
@@ -1668,7 +1668,7 @@ fn topological_sort(formulae: &HashMap<String, Formula>) -> anyhow::Result<Vec<S
 }
 
 /// Build runtime dependencies list for receipt
-fn build_runtime_deps(
+pub fn build_runtime_deps(
     dep_names: &[String],
     all_formulae: &HashMap<String, Formula>,
 ) -> Vec<RuntimeDependency> {
@@ -1689,10 +1689,10 @@ fn build_runtime_deps(
         .collect()
 }
 
-struct UpgradeCandidate {
-    name: String,
-    old_version: String,
-    formula: crate::api::Formula,
+pub struct UpgradeCandidate {
+    pub name: String,
+    pub old_version: String,
+    pub formula: crate::api::Formula,
 }
 
 pub async fn upgrade(
@@ -3495,11 +3495,11 @@ pub fn leaves() -> Result<()> {
     Ok(())
 }
 
-fn pinned_file_path() -> std::path::PathBuf {
+pub fn pinned_file_path() -> std::path::PathBuf {
     cellar::detect_prefix().join("var/homebrew/pinned_formulae")
 }
 
-fn read_pinned() -> Result<Vec<String>> {
+pub fn read_pinned() -> Result<Vec<String>> {
     let path = pinned_file_path();
     if !path.exists() {
         return Ok(vec![]);

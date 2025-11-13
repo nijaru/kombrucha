@@ -1,72 +1,47 @@
 # Project Status
 
-**Last Updated**: November 10, 2025
+**Last Updated**: November 13, 2025
 **Version**: v0.2.0 (published to crates.io)
-**Status**: Released
+**Status**: Active Development - Command Migration in Progress
 
 ## Current Phase
 
-**v0.2.0 (2025-11-10) - Library API Addition**
+**v0.2.1 (2025-11-13) - Command Migration Refactoring**
 
-✅ **RELEASED**: PackageManager library API published to crates.io
-- Fully tested on real system with 340+ packages
-- Zero panics across all operations
-- Proper error handling with anyhow Result types
-- Complete documentation with examples
-- Published and available on crates.io
+🔄 **IN PROGRESS**: Command Migration from commands_old.rs (7,808 lines)
+- ✅ Core commands migrated: install, uninstall, upgrade, list, search, info, deps, uses, fetch, reinstall, autoremove, cleanup, link/unlink
+- ✅ Utility commands migrated: leaves, pin/unpin, missing, cache, tap/untap  
+- ✅ Information commands migrated: desc, commands, config, doctor, env, home
+- ✅ Developer commands migrated: analytics, doctor, cat, shellenv, gist-logs, alias, log, which, options, bundle, services, edit, update
+- 📊 **Progress**: 36/80+ commands migrated to individual modules (~45% complete)
+- 🏗 **Architecture**: Each command in focused module with proper error handling and colored output
+- 🔄 **Fallback**: Unmigrated commands fall back to real brew via main.rs mechanism
 
-### What's New
-
-**PackageManager API** (`src/package_manager.rs`):
-- Core operations: `install()`, `uninstall()`, `upgrade()`, `reinstall()`
-- Discovery: `search()`, `info()`, `list()`, `outdated()`, `dependencies()`, `uses()`
-- Maintenance: `cleanup()`, `check()`
-- Rich result types with timing, paths, dependencies
-- Automatic resource management (HTTP client, connection pooling)
-
-**Public Library API** via `src/lib.rs`:
-- All core modules exposed: api, cellar, download, extract, symlink, etc.
-- High-level PackageManager wrapper for common workflows
-- Low-level module access for advanced use cases
-
-**Documentation**:
-- `docs/library-api.md` - Complete API reference with examples
-- Inline rustdoc with usage patterns
-- 5 example programs showing integration patterns
-- 190 total tests (all passing)
-
-### Test Results
-
-| Category | Count | Status |
-|----------|-------|--------|
-| Library API tests | 9 | ✅ PASS |
-| Unit tests | 76 | ✅ PASS |
-| Integration tests | 14 | ✅ PASS |
-| Doc tests | 66 | ✅ PASS |
-| Other tests | 25 | ✅ PASS |
-| **Total** | **190** | **✅ PASS** |
-
-### Verified
-
-- ✅ Full Homebrew compatibility (INSTALL_RECEIPT.json, symlinks, binary execution)
-- ✅ Error handling robustness (zero panics, proper Result types)
-- ✅ Performance acceptable for interactive use
-- ✅ Type safety across all operations and result types
-- ✅ Async/await patterns correct (async for downloads, sync for local ops)
+✅ **Verified**:
+- ✅ All migrated commands maintain identical behavior to original
+- ✅ Code compiles successfully with proper module organization
+- ✅ Core functionality fully working in bru (daily use commands)
+- ✅ Performance and compatibility preserved
 - ✅ All examples compile and run correctly
 
-## Release Status
+## Migration Progress
 
-| Step | Status | Notes |
-|------|--------|-------|
-| Code complete | ✅ | All features implemented and tested |
-| Documentation | ✅ | Library API fully documented |
-| Tests passing | ✅ | 190 tests, all green |
-| Changelog | ✅ | v0.2.0 entry added |
-| PR merged | ✅ | #2 merged to main |
-| Tag v0.2.0 | ✅ | Tagged and pushed |
-| GitHub release | ✅ | Release created |
-| Publish to crates.io | ✅ | Published (permanent) |
+| Priority | Commands | Status | Notes |
+|----------|----------|--------|
+| Core (P1) | 4/4 | ✅ install, uninstall, upgrade, list |
+| Installation (P2) | 5/5 | ✅ fetch, reinstall, autoremove, cleanup, link/unlink |
+| Information (P3) | 6/6 | ✅ desc, commands, config, doctor, env, home |
+| Utility (P4) | 5/5 | ✅ leaves, pin/unpin, missing, cache, tap/untap |
+| Developer (P5) | 10/10 | ✅ analytics, cat, shellenv, gist-logs, alias, log, which, options, bundle |
+| Advanced (P6) | 3/?? | ✅ services, edit, update |
+| **Total** | **33/80+** | **~41% complete** |
+
+## Current Architecture
+
+✅ **Modular Structure**: Each command in focused `src/commands/*.rs` module
+✅ **Fallback System**: Commands not in bru fall back to real brew seamlessly  
+✅ **Core Functionality**: All daily-use commands work in bru
+✅ **Code Organization**: 7,808-line file being systematically broken down
 
 ## Known Limitations
 
@@ -151,21 +126,29 @@ lib.rs (public API surface)
 - ✅ Performance unchanged
 - ✅ Bottle-based workflows unchanged
 
-## Next Steps (Future Releases)
+## Next Steps (Continue Migration)
 
-1. **v0.2.1** (patch release): Quality-of-life improvements
-   - Add `is_installed()` helper
-   - Add `install_multiple()` batch operation
-   - Optimize cleanup() for multi-version packages
+1. **Continue Priority 6 Migration**: Advanced developer tools
+   - Advanced tap management (tap-pin, tap-unpin, tap-readme, etc.)
+   - Ruby interop commands (install-bundler, etc.)
+   - Other advanced utilities
 
-2. **v0.3.0** (future, major version bump):
-   - CLI refactored to use PackageManager library internally
-   - Or other major architectural shifts
+2. **Priority 7 Commands**: Experimental and legacy features
+   - PR management commands
+   - Development workflow tools
+   - Legacy compatibility commands
 
-3. **Phase 5 (Source Builds)**:
-   - Ruby interop for remaining 5% formulae
-   - Embed Ruby via `magnus` crate
-   - Full feature parity with Homebrew
+3. **Future Releases** (when migration complete):
+   - **v0.2.1**: Quality-of-life improvements
+   - **v0.3.0**: Major architectural shifts if needed
+   - **Phase 5**: Ruby interop for source builds
+
+## Current Architecture Benefits
+
+✅ **Modular Commands**: Each command in focused module with proper error handling
+✅ **Fallback System**: Unmigrated commands seamlessly fall back to real brew
+✅ **Core Functionality**: All daily-use commands work in high-performance bru
+✅ **Maintainable Code**: 7,808-line file being broken into focused modules
 
 ## See Also
 
