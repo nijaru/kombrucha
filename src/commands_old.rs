@@ -1545,7 +1545,7 @@ pub async fn install(
 }
 
 /// Resolve all dependencies recursively, parallelizing each level
-async fn resolve_dependencies(
+pub async fn resolve_dependencies(
     api: &BrewApi,
     root_formulae: &[String],
 ) -> Result<(HashMap<String, Formula>, Vec<String>)> {

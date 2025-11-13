@@ -965,10 +965,10 @@ async fn run() -> anyhow::Result<()> {
             formula,
             cask,
         }) => {
-            commands::search(&api, &query, formula, cask).await?;
+            commands::search::search(&api, &query, formula, cask).await?;
         }
         Some(Commands::Info { formula, json }) => {
-            commands::info(&api, &formula, json).await?;
+            commands::info::info(&api, &formula, json).await?;
         }
         Some(Commands::Deps {
             formula,
@@ -976,10 +976,10 @@ async fn run() -> anyhow::Result<()> {
             installed,
             direct,
         }) => {
-            commands::deps(&api, &formula, tree, installed, direct).await?;
+            commands::deps::deps(&api, &formula, tree, installed, direct).await?;
         }
         Some(Commands::Uses { formula }) => {
-            commands::uses(&api, &formula).await?;
+            commands::uses::uses(&api, &formula).await?;
         }
         Some(Commands::List {
             versions,
