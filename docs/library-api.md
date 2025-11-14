@@ -2,8 +2,8 @@
 
 The Kombrucha library provides a high-level `PackageManager` API for programmatic Homebrew package management. This is useful for downstream projects that need to integrate package management without shelling out to the CLI.
 
-**Current Version**: v0.2.0  
-**Status**: Production-ready for bottle-based workflows  
+**Current Version**: v0.2.1
+**Status**: Production-ready for bottle-based workflows
 **Platform**: macOS (Apple Silicon and Intel)
 
 ## Table of Contents
@@ -24,7 +24,7 @@ Add Kombrucha to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-kombrucha = "0.2.0"
+kombrucha = "0.2.1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 ```
