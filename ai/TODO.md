@@ -6,7 +6,7 @@
 
 No active sprint tasks - v0.2.0 released successfully
 
-## Planned Features (v0.1.36+)
+## Planned Features
 
 ### PackageManager API Improvements
 
