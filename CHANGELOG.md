@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-11-13
+
+### Fixed
+- Fixed `install --dry-run` validation to correctly return exit code 1 for nonexistent packages. Previously, packages that didn't exist as either formulae or casks would incorrectly delegate to `brew` and return exit code 0, breaking CI/CD scripts that rely on exit codes.
+
+### Changed
+- **Internal**: Refactored monolithic 7,808-line `commands.rs` into 17 well-organized modules for better maintainability and compile times
+- **Performance**: Applied idiomatic Rust optimizations (Arc-based string sharing in parallel operations, 64KB I/O buffers, inline hints on hot paths)
+- **Code Quality**: Zero clippy warnings, comprehensive documentation, improved error handling with SAFETY comments
+
 ## [0.2.0] - 2025-11-10
 
 ### Added
