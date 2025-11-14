@@ -7,7 +7,7 @@
 **Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. It's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
 
 **Current Status**:
-- Version: v0.2.0 (published to crates.io)
+- Version: v0.2.1 (published to crates.io)
 - CLI: Production-ready for bottle-based workflows
 - Library: PackageManager API available for downstream projects
 - Combined: 95% formulae via bottles, 5% fallback to brew for source builds
@@ -93,18 +93,7 @@ See `docs/architecture/SPEC.md` for detailed design.
 
 PackageManager API fully tested on production system (macOS 15.7, M3 Max, 340+ installed packages). All operations validated with zero panics and proper error handling.
 
-**Release: v0.2.0** ✅
-
-- [x] Integration testing complete (9 API tests + 190 total tests passing)
-- [x] CHANGELOG updated with v0.2.0 entry
-- [x] README updated with library section
-- [x] Library API documentation complete (docs/library-api.md)
-- [x] All changes committed and merged to main
-- [x] PR #2 merged
-- [x] Tagged v0.2.0 and pushed to GitHub
-- [x] Published to crates.io (permanent)
-
-See `ai/STATUS.md` for detailed status and `ai/PHASE_3_TEST_REPORT.md` for test results.
+See `ai/STATUS.md` for detailed status.
 
 ## Performance
 
