@@ -353,6 +353,13 @@ pub async fn install(
                             name.clone(),
                             crate::error::BruError::CaskNotFound(name.clone()),
                         )),
+                        Err(crate::error::BruError::CaskNotFound(_)) => {
+                            // Neither formula nor cask exists
+                            Err((
+                                name.clone(),
+                                crate::error::BruError::FormulaNotFound(name.clone()),
+                            ))
+                        }
                         Err(e) => Err((name.clone(), e)),
                     }
                 }
