@@ -1,12 +1,12 @@
 # Project Status
 
-**Last Updated**: November 10, 2025
-**Version**: v0.2.0 (published to crates.io)
+**Last Updated**: November 13, 2025
+**Version**: v0.2.1 (published to crates.io)
 **Status**: Released
 
 ## Current Phase
 
-**v0.2.0 (2025-11-10) - Library API Addition**
+**v0.2.1 (2025-11-13) - Library API Maintenance**
 
 ✅ **RELEASED**: PackageManager library API published to crates.io
 - Fully tested on real system with 340+ packages
@@ -133,17 +133,6 @@ lib.rs (public API surface)
 | `uninstall()` | 1-3s | Removes files and symlinks |
 | `cleanup()` | <50ms | Removes old versions |
 
-## Files Changed (v0.2.0)
-
-- `src/package_manager.rs` - New module (730 lines)
-- `src/lib.rs` - Expose public API
-- `src/cellar.rs` - Public `compare_versions()`
-- `Cargo.toml` - Version bump to 0.2.0
-- `CHANGELOG.md` - v0.2.0 entry
-- `README.md` - Library section + examples
-- `docs/library-api.md` - Complete API documentation
-- `examples/` - 5 new example programs
-
 ## What's Not Changing
 
 - ✅ CLI behavior unchanged (no breaking changes)
@@ -151,25 +140,8 @@ lib.rs (public API surface)
 - ✅ Performance unchanged
 - ✅ Bottle-based workflows unchanged
 
-## Next Steps (Future Releases)
-
-1. **v0.2.1** (patch release): Quality-of-life improvements
-   - Add `is_installed()` helper
-   - Add `install_multiple()` batch operation
-   - Optimize cleanup() for multi-version packages
-
-2. **v0.3.0** (future, major version bump):
-   - CLI refactored to use PackageManager library internally
-   - Or other major architectural shifts
-
-3. **Phase 5 (Source Builds)**:
-   - Ruby interop for remaining 5% formulae
-   - Embed Ruby via `magnus` crate
-   - Full feature parity with Homebrew
-
 ## See Also
 
 - [Library API Docs](../docs/library-api.md) - Complete reference
-- [Test Report](./PHASE_3_TEST_REPORT.md) - Detailed test results
 - [Todo List](./TODO.md) - Active tasks
 - [Decisions](./DECISIONS.md) - Architecture decisions
