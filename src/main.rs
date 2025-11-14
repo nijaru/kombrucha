@@ -884,6 +884,9 @@ fn error_exit(message: &str, usage: &str) -> ! {
 async fn run() -> anyhow::Result<()> {
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
+        // SAFETY: Setting RUST_LOG before any threads spawn is safe. This is the entry point
+        // and no other threads have been created yet. Environment variable is only read by
+        // tracing_subscriber initialization immediately after this.
         unsafe {
             std::env::set_var("RUST_LOG", "warn");
         }
@@ -941,6 +944,8 @@ async fn run() -> anyhow::Result<()> {
 
     // Set NO_COLOR if --no-color flag is set
     if cli.no_color {
+        // SAFETY: Setting NO_COLOR early in main before colors are initialized is safe.
+        // This happens before any concurrent access and is only read by colors::init_colors().
         unsafe {
             std::env::set_var("NO_COLOR", "1");
         }
@@ -951,6 +956,8 @@ async fn run() -> anyhow::Result<()> {
 
     // Set quiet mode environment variable for commands to check
     if cli.quiet {
+        // SAFETY: Setting BRU_QUIET early in main is safe. This happens in the main thread
+        // before command execution and is only read (not modified) by child operations.
         unsafe {
             std::env::set_var("BRU_QUIET", "1");
         }
@@ -1013,7 +1020,7 @@ async fn run() -> anyhow::Result<()> {
                 );
             }
             if cask {
-                commands::install_cask(&api, &formulae).await?;
+                commands::cask::install_cask(&api, &formulae).await?;
             } else {
                 commands::install(&api, &formulae, only_dependencies, dry_run, force).await?;
             }
@@ -1047,47 +1054,47 @@ async fn run() -> anyhow::Result<()> {
                 );
             }
             if cask {
-                commands::uninstall_cask(&formulae)?;
+                commands::cask::uninstall_cask(&formulae)?;
             } else {
                 commands::uninstall(&api, &formulae, force).await?;
             }
         }
         Some(Commands::Autoremove { dry_run }) => {
-            commands::autoremove(dry_run)?;
+            commands::maintenance::autoremove(dry_run)?;
         }
         Some(Commands::Tap { tap }) => {
-            commands::tap(tap.as_deref())?;
+            commands::tap::tap(tap.as_deref())?;
         }
         Some(Commands::Untap { tap }) => {
-            commands::untap(&tap)?;
+            commands::tap::untap(&tap)?;
         }
         Some(Commands::TapInfo { tap }) => {
-            commands::tap_info(&tap)?;
+            commands::tap::tap_info(&tap)?;
         }
         Some(Commands::Update) => {
-            commands::update()?;
+            commands::maintenance::update()?;
         }
         Some(Commands::Cleanup {
             formulae,
             dry_run,
             cask,
         }) => {
-            commands::cleanup(&formulae, dry_run, cask)?;
+            commands::maintenance::cleanup(&formulae, dry_run, cask)?;
         }
         Some(Commands::Cache { clean }) => {
-            commands::cache(clean)?;
+            commands::maintenance::cache(clean)?;
         }
         Some(Commands::Config) => {
             commands::config()?;
         }
         Some(Commands::Doctor) => {
-            commands::doctor()?;
+            commands::maintenance::doctor()?;
         }
         Some(Commands::Env) => {
             commands::env()?;
         }
         Some(Commands::Home { formula }) => {
-            commands::home(&api, &formula).await?;
+            commands::query::home(&api, &formula).await?;
         }
         Some(Commands::Leaves) => {
             commands::leaves()?;
@@ -1202,7 +1209,7 @@ async fn run() -> anyhow::Result<()> {
             commands::docs()?;
         }
         Some(Commands::TapNew { tap }) => {
-            commands::tap_new(&tap)?;
+            commands::tap::tap_new(&tap)?;
         }
         Some(Commands::Migrate { formula, tap }) => {
             commands::migrate(&formula, tap.as_deref())?;
@@ -1226,7 +1233,7 @@ async fn run() -> anyhow::Result<()> {
             commands::man()?;
         }
         Some(Commands::UpdateReset { tap }) => {
-            commands::update_reset(tap.as_deref())?;
+            commands::maintenance::update_reset(tap.as_deref())?;
         }
         Some(Commands::Style { formulae, fix }) => {
             commands::style(&formulae, fix)?;
@@ -1238,10 +1245,10 @@ async fn run() -> anyhow::Result<()> {
             commands::bottle(&formulae, write)?;
         }
         Some(Commands::TapPin { tap }) => {
-            commands::tap_pin(&tap)?;
+            commands::tap::tap_pin(&tap)?;
         }
         Some(Commands::TapUnpin { tap }) => {
-            commands::tap_unpin(&tap)?;
+            commands::tap::tap_unpin(&tap)?;
         }
         Some(Commands::VendorGems) => {
             commands::vendor_gems()?;
@@ -1256,7 +1263,7 @@ async fn run() -> anyhow::Result<()> {
             commands::prof(&args)?;
         }
         Some(Commands::TapReadme { tap }) => {
-            commands::tap_readme(&tap)?;
+            commands::tap::tap_readme(&tap)?;
         }
         Some(Commands::InstallBundlerGems) => {
             commands::install_bundler_gems()?;
@@ -1268,7 +1275,7 @@ async fn run() -> anyhow::Result<()> {
             commands::typecheck(&files)?;
         }
         Some(Commands::UpdateReport) => {
-            commands::update_report()?;
+            commands::maintenance::update_report()?;
         }
         Some(Commands::UpdatePythonResources {
             formula,
@@ -1326,16 +1333,16 @@ async fn run() -> anyhow::Result<()> {
             commands::formula_info(&api, &formula).await?;
         }
         Some(Commands::TapCmd { tap, command, args }) => {
-            commands::tap_cmd(&tap, &command, &args)?;
+            commands::tap::tap_cmd(&tap, &command, &args)?;
         }
         Some(Commands::InstallFormulaApi) => {
             commands::install_formula_api()?;
         }
         Some(Commands::UsesCask { cask }) => {
-            commands::uses_cask(&cask)?;
+            commands::cask::uses_cask(&cask)?;
         }
         Some(Commands::AbvCask { cask }) => {
-            commands::abv_cask(&api, &cask).await?;
+            commands::cask::abv_cask(&api, &cask).await?;
         }
         Some(Commands::Setup) => {
             commands::setup()?;
@@ -1426,7 +1433,7 @@ async fn run() -> anyhow::Result<()> {
             }
         }
         Some(Commands::UpdateIfNeeded) => {
-            commands::update_if_needed()?;
+            commands::maintenance::update_if_needed()?;
         }
         None => {
             println!(

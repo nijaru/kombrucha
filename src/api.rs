@@ -43,6 +43,7 @@
 
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::Duration;
 
 const HOMEBREW_API_BASE: &str = "https://formulae.brew.sh/api";
@@ -346,35 +347,38 @@ impl BrewApi {
         let formulae = formulae_result?;
         let casks = casks_result?;
 
+        // Share query string between parallel tasks using Arc to avoid cloning
+        let query = std::sync::Arc::new(query_lower);
+
         // Filter results in parallel
         let (matching_formulae, matching_casks) = tokio::join!(
             tokio::task::spawn_blocking({
-                let query = query_lower.clone();
+                let query = Arc::clone(&query);
                 move || {
                     formulae
                         .into_iter()
                         .filter(|f| {
-                            f.name.to_lowercase().contains(&query)
+                            f.name.to_lowercase().contains(query.as_str())
                                 || f.desc
                                     .as_ref()
-                                    .map(|d| d.to_lowercase().contains(&query))
-                                    .unwrap_or(false)
+                                    .is_some_and(|d| d.to_lowercase().contains(query.as_str()))
                         })
                         .collect::<Vec<_>>()
                 }
             }),
             tokio::task::spawn_blocking({
-                let query = query_lower.clone();
+                let query = Arc::clone(&query);
                 move || {
                     casks
                         .into_iter()
                         .filter(|c| {
-                            c.token.to_lowercase().contains(&query)
-                                || c.name.iter().any(|n| n.to_lowercase().contains(&query))
+                            c.token.to_lowercase().contains(query.as_str())
+                                || c.name
+                                    .iter()
+                                    .any(|n| n.to_lowercase().contains(query.as_str()))
                                 || c.desc
                                     .as_ref()
-                                    .map(|d| d.to_lowercase().contains(&query))
-                                    .unwrap_or(false)
+                                    .is_some_and(|d| d.to_lowercase().contains(query.as_str()))
                         })
                         .collect::<Vec<_>>()
                 }

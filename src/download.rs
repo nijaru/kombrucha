@@ -87,6 +87,7 @@ async fn get_ghcr_token(repository: &str) -> Result<String> {
 /// println!("Bottle cache: {}", cache.display());
 /// // Output: "/Users/nick/.cache/bru/downloads"
 /// ```
+#[inline]
 pub fn cache_dir() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home).join(".cache/bru/downloads")
@@ -99,7 +100,8 @@ async fn verify_checksum(file_path: &Path, expected: &str) -> Result<bool> {
 
     let mut file = fs::File::open(file_path).await?;
     let mut hasher = Sha256::new();
-    let mut buffer = vec![0; 8192];
+    // Use 64KB buffer for better I/O performance (8x larger than default)
+    let mut buffer = vec![0; 65536];
 
     loop {
         let n = file.read(&mut buffer).await?;
