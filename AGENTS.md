@@ -14,12 +14,30 @@
 
 ## Project Structure
 
-- **Documentation**: `docs/architecture/` - Permanent specs and architecture
-- **AI Working Context**: `ai/` - Tasks, status, decisions, research
-- **Source Code**: `src/` - Rust implementation
-- **Tests**: `tests/` - Unit, integration, and regression tests
-- **Scripts**: `scripts/` - Development and testing tools
-- **Benchmarks**: `benchmarks/` - Performance testing
+| Directory | Purpose |
+|-----------|---------|
+| `docs/architecture/` | Permanent specs and architecture (user documentation) |
+| `ai/` | **AI session context** - Agent workspace for maintaining state across sessions |
+| `src/` | Rust implementation |
+| `tests/` | Unit, integration, and regression tests |
+| `scripts/` | Development and testing tools |
+| `benchmarks/` | Performance testing |
+
+### AI Context Organization
+
+**Purpose**: AI uses `ai/` to maintain continuity between sessions. Read session files every session.
+
+**Session files** (ai/ root - read FIRST every session):
+- `STATUS.md` — Current state, metrics, blockers (read FIRST)
+- `TODO.md` — Active tasks only
+- `DECISIONS.md` — Active architectural decisions
+- `RESEARCH.md` — Research findings index
+
+**Reference files** (subdirectories - loaded only when needed):
+- `research/` — Detailed research (>200 lines per topic)
+- `profiles/` — Performance profiling data
+
+Session files kept minimal (<500 lines) for token efficiency. Detailed content in subdirectories loaded on demand. Trust git history - delete completed/historical content from session files.
 
 ## Quick Start
 
@@ -107,13 +125,73 @@ See `ai/research/performance-analysis.md` for detailed analysis.
 
 See `docs/architecture/feature-parity-audit.md` for complete command coverage.
 
+## Development Workflow
+
+### Build & Test Commands
+
+| Command | Purpose |
+|---------|---------|
+| `cargo build --release` | Production build |
+| `cargo test` | Unit + regression tests |
+| `cargo test -- --ignored` | Integration tests (requires Homebrew) |
+| `cargo clippy` | Linting |
+| `cargo fmt` | Format code |
+| `cargo doc --open` | Generate and view documentation |
+
+### Release Process
+
+**Versioning Strategy**:
+- Use commit hashes for references
+- Bump versions only when instructed
+- 0.1.0+ = production ready, 1.0.0 = proven in production
+- Sequential bumps only: 0.0.1 → 0.0.2 → 0.1.0 → 1.0.0
+
+**Release Steps** (wait for CI ✅):
+1. Bump version, update docs → commit → push
+2. `gh run watch` (wait for pass)
+3. Tag: `git tag -a vX.Y.Z -m "Description" && git push --tags`
+4. `gh release create vX.Y.Z --notes-file release_notes.md`
+5. ASK before publishing to crates.io (can't unpublish)
+
+If CI fails: delete tag/release, fix, restart
+
+### Git Conventions
+
+- NO AI attribution in commits/PRs (strip manually)
+- Ask before: PRs, publishing packages, force ops
+- Commit frequently, push regularly (no ask needed)
+- Never force push to main/master
+- Commit message format: `type: brief description`
+  - Types: feat, fix, chore, docs, test, refactor
+
 ## Code Conventions
 
-- Follow Rust 2024 edition idioms
-- Use `tokio` for all async operations
-- Prefer `anyhow` for error handling
-- Test naming: `test_<feature>_<scenario>`
-- Keep functions focused and composable
+### Rust Standards
+
+| Category | Standard |
+|----------|----------|
+| **Edition** | Rust 2024 |
+| **Async** | `tokio` for network, sync for filesystem |
+| **Errors** | `anyhow` for library, `thiserror` for custom types |
+| **Allocations** | Avoid: use `&str` not `String`, `&[T]` not `Vec<T>` |
+| **Testing** | `test_<feature>_<scenario>` naming |
+| **Functions** | Focused and composable |
+
+### Naming Conventions
+
+- Concise, context-aware, no redundancy
+- Proportional to scope (local: `count`, package: `user_count`)
+- Omit redundant context (`Cache` not `LRUCache_V2`)
+- Omit type info (`count` not `num_users`, `timeout` not `timeout_int`)
+- Booleans: `is_enabled`, `has_data`
+- Constants: `MAX_RETRIES`
+- Units: `timeout_ms`, `buffer_kb`
+
+### Comments
+
+- Only WHY, never WHAT
+- Write: non-obvious decisions, external requirements, algorithm rationale
+- Never: change tracking, obvious behavior, TODOs
 
 ## Resources
 
