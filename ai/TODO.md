@@ -1,23 +1,10 @@
 # Active Tasks
 
-**Last Updated**: November 10, 2025
+**Last Updated**: November 13, 2025
 
 ## Current Sprint
 
-### Code Review & Release (Priority: HIGH)
-
-- [ ] GitHub review of PR #2 (library API)
-- [ ] Merge feature/library-api to main
-- [ ] Tag v0.1.35 release
-- [ ] Publish to crates.io
-
-### Repository Cleanup (Priority: HIGH)
-
-- [x] Move archived docs to docs/archive/
-- [x] Archive ai/ working files
-- [x] Reorganize ai/ for clarity
-- [ ] Update README.md (concise, idiomatic)
-- [ ] Add API design improvements to roadmap
+No active sprint tasks - v0.2.0 released successfully
 
 ## Planned Features (v0.1.36+)
 
