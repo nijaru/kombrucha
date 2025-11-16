@@ -898,16 +898,17 @@ pub async fn upgrade(
 
             // Unlink old version first
             if let Err(e) = symlink::unlink_formula(formula_name, old_version) {
-                return Err(format!("{}: failed to unlink old version: {}", formula_name, e));
+                return Err(format!(
+                    "{}: failed to unlink old version: {}",
+                    formula_name, e
+                ));
             }
 
             // Extract new version
             let extracted_path =
                 match extract::extract_bottle(bottle_path, formula_name, new_version) {
                     Ok(path) => path,
-                    Err(e) => {
-                        return Err(format!("{}: failed to extract: {}", formula_name, e))
-                    }
+                    Err(e) => return Err(format!("{}: failed to extract: {}", formula_name, e)),
                 };
 
             // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
@@ -918,7 +919,7 @@ pub async fn upgrade(
                         "{}: invalid extracted path: {}",
                         formula_name,
                         extracted_path.display()
-                    ))
+                    ));
                 }
             };
 
@@ -933,14 +934,15 @@ pub async fn upgrade(
             let linked_count = if !formula.keg_only {
                 let linked = match symlink::link_formula(formula_name, &actual_new_version) {
                     Ok(l) => l,
-                    Err(e) => {
-                        return Err(format!("{}: failed to link: {}", formula_name, e))
-                    }
+                    Err(e) => return Err(format!("{}: failed to link: {}", formula_name, e)),
                 };
 
                 // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
                 if let Err(e) = symlink::optlink(formula_name, &actual_new_version) {
-                    return Err(format!("{}: failed to create opt link: {}", formula_name, e));
+                    return Err(format!(
+                        "{}: failed to create opt link: {}",
+                        formula_name, e
+                    ));
                 }
 
                 linked.len()
@@ -973,7 +975,10 @@ pub async fn upgrade(
 
                 // Remove the old version directory
                 if let Err(e) = std::fs::remove_dir_all(&old_path) {
-                    return Err(format!("{}: failed to remove old version: {}", formula_name, e));
+                    return Err(format!(
+                        "{}: failed to remove old version: {}",
+                        formula_name, e
+                    ));
                 }
             }
 

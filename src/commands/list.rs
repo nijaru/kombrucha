@@ -49,7 +49,7 @@ fn format_columns(names: &[String]) -> String {
     }
 
     // Add final newline if last row is incomplete
-    if !names.is_empty() && !names.len().is_multiple_of(num_cols) {
+    if !names.is_empty() && names.len() % num_cols != 0 {
         result.push('\n');
     }
 
@@ -508,11 +508,9 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 if let Ok(formula) = api.fetch_formula(&pkg.name).await
                     && let Some(latest) = &formula.versions.stable
                 {
-                    // Strip bottle revisions before comparison to avoid false positives
-                    let installed_stripped = strip_bottle_revision(&pkg.version);
-                    let latest_stripped = strip_bottle_revision(latest);
-
-                    if installed_stripped != latest_stripped {
+                    // Compare full versions including bottle revisions
+                    // This ensures rebuilt bottles with updated dependencies are detected
+                    if &pkg.version != latest {
                         return Some((pkg.clone(), latest.clone()));
                     }
                 }
