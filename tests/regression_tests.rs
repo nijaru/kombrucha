@@ -285,17 +285,20 @@ fn test_regression_upgrade_duplicates() {
 
 #[test]
 fn test_regression_upgrade_bottle_revision() {
-    // BUG: upgrade attempted to "upgrade" packages differing only in bottle revision
-    // DATE: 2025-10-21
-    // DESCRIPTION: upgrade showed "mosh 1.4.0_31 → 1.4.0" and attempted upgrade
-    // CAUSE: Version comparison in upgrade didn't strip bottle revisions
-    // FIX: Added strip_bottle_revision() call before version comparison in upgrade
+    // BEHAVIOR: Bottle revision changes are now intentionally detected as upgrades
+    // DATE: 2025-11-16
+    // REASON: Bottle revisions often contain security fixes or dependency updates
     //
-    // REPRODUCTION:
-    // 1. Have package with bottle revision (e.g., mosh 1.4.0_31)
-    // 2. API reports 1.4.0 (no revision)
-    // 3. Old code: Tried to upgrade 1.4.0_31 → 1.4.0 (failed extraction)
-    // 4. Fixed code: Recognizes same version, skips upgrade
+    // PREVIOUS BUG (2025-10-21):
+    // - upgrade showed "mosh 1.4.0_31 → 1.4.0" (downgrade, failed extraction)
+    // - This was a bug because it tried to DOWNGRADE from _31 to no revision
+    //
+    // CURRENT BEHAVIOR:
+    // - 1.4.0 → 1.4.0_1: Valid upgrade (new bottle revision)
+    // - 1.4.0_1 → 1.4.0_2: Valid upgrade (newer bottle revision)
+    // - 1.4.0_31 → 1.4.0: INVALID (downgrade - should not happen)
+    //
+    // This test ensures we don't attempt DOWNGRADES (higher revision → lower/none)
 
     // Skip if brew not available
     if Command::new("brew").arg("--version").output().is_err() {
@@ -309,8 +312,8 @@ fn test_regression_upgrade_bottle_revision() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    // Look for bottle revision "upgrades" like "1.4.0_32 → 1.4.0"
-    // Check each line for version_N → version pattern (same version, different revision)
+    // Look for bottle revision DOWNGRADES like "1.4.0_32 → 1.4.0"
+    // These are invalid - we should never downgrade bottle revisions
     for line in stdout.lines() {
         // Match pattern: "something X.Y.Z_N → X.Y.Z"
         if line.contains(" → ") {
@@ -320,17 +323,17 @@ fn test_regression_upgrade_bottle_revision() {
                 if let Some(old_ver) = parts[0].split_whitespace().last() {
                     let new_ver = parts[1].trim();
 
-                    // Check if old version has _N and matches new version when stripped
+                    // Check if old version has _N and new version is the base (downgrade)
                     if let Some(pos) = old_ver.rfind('_') {
                         let base_ver = &old_ver[..pos];
                         let suffix = &old_ver[pos + 1..];
 
-                        // If suffix is all digits and base matches new version
+                        // If suffix is all digits and base matches new version (downgrade!)
                         if suffix.chars().all(|c| c.is_ascii_digit()) && base_ver == new_ver {
                             panic!(
-                                "Found bottle revision false positive: {}\n\
-                                 Trying to upgrade {} → {} (only bottle revision differs)\n\
-                                 This suggests the bottle revision bug has returned.",
+                                "Found bottle revision DOWNGRADE: {}\n\
+                                 Trying to downgrade {} → {} (removing bottle revision)\n\
+                                 This is invalid - API should report version WITH revision.",
                                 line, old_ver, new_ver
                             );
                         }
@@ -339,16 +342,20 @@ fn test_regression_upgrade_bottle_revision() {
             }
         }
     }
+
+    // Note: Upgrades like "1.4.0 → 1.4.0_1" or "1.4.0_1 → 1.4.0_2" are now VALID
+    // and intentionally included in upgrade candidates
 }
 
 #[test]
 fn test_parity_outdated_count() {
-    // PARITY TEST: Verify bru and brew report same outdated count
-    // This test ensures our outdated detection matches Homebrew's exactly
+    // PARITY TEST: Verify bru and brew report similar outdated counts
+    // This test ensures our outdated detection is reasonable compared to Homebrew
 
-    // Note: This is a property that should ALWAYS hold:
-    // bru and brew should always report the same packages as outdated
-    // (though the output format may differ)
+    // Note: bru intentionally differs from brew in some ways:
+    // - bru includes bottle revision changes (e.g., 1.76.0 → 1.76.0_1)
+    // - brew ignores bottle revision changes by default
+    // This means bru may report MORE outdated packages than brew
 
     // Skip if brew not available
     if Command::new("brew").arg("--version").output().is_err() {
@@ -388,24 +395,46 @@ fn test_parity_outdated_count() {
         .filter(|line| !line.trim().is_empty())
         .count();
 
-    // bru only checks homebrew/core by default, while brew checks all taps
-    // Allow bru to report fewer outdated packages (missing third-party taps)
-    // but not more (which would indicate a bug)
+    // bru may report MORE outdated packages than brew because:
+    // - bru includes bottle revision changes (security/dependency updates)
+    // - brew ignores bottle revisions by default
+    // bru may report FEWER because:
+    // - bru only checks homebrew/core, brew checks all taps
+
+    // Allow reasonable difference (up to 2x in either direction)
+    let max_reasonable = std::cmp::max(brew_count * 2, brew_count + 20);
+    let min_reasonable = brew_count.saturating_sub(20);
     assert!(
-        bru_count <= brew_count,
-        "bru should not report more outdated packages than brew.\n\
-         brew count: {}, bru count: {}\n\
-         Note: brew checks all taps, bru only checks homebrew/core",
+        bru_count <= max_reasonable,
+        "bru reports unreasonably more outdated packages than brew.\n\
+         brew count: {}, bru count: {}, max reasonable: {}\n\
+         This might indicate a bug in outdated detection.",
         brew_count,
-        bru_count
+        bru_count,
+        max_reasonable
+    );
+    assert!(
+        bru_count >= min_reasonable,
+        "bru reports unreasonably fewer outdated packages than brew.\n\
+         brew count: {}, bru count: {}, min reasonable: {}\n\
+         This might indicate a bug in outdated detection.",
+        brew_count,
+        bru_count,
+        min_reasonable
     );
 
-    // If counts differ significantly, warn but don't fail
-    if brew_count > 0 && bru_count == 0 {
+    // Log difference for visibility
+    if bru_count > brew_count {
         eprintln!(
-            "Warning: brew reports {} outdated, but bru reports 0. \
-             This might indicate third-party tap formulae.",
-            brew_count
+            "Note: bru reports {} outdated vs brew's {}. \
+             Difference likely due to bottle revision changes (bru includes these, brew ignores them).",
+            bru_count, brew_count
+        );
+    } else if brew_count > bru_count {
+        eprintln!(
+            "Note: brew reports {} outdated vs bru's {}. \
+             Difference likely due to third-party tap formulae.",
+            brew_count, bru_count
         );
     }
 }

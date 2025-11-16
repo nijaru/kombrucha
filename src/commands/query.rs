@@ -711,7 +711,7 @@ pub async fn formulae(api: &BrewApi) -> Result<()> {
     }
 
     // Final newline if needed
-    if !names.len().is_multiple_of(num_cols) {
+    if names.len() % num_cols != 0 {
         println!();
     }
 
@@ -748,7 +748,7 @@ pub async fn casks(api: &BrewApi) -> Result<()> {
     }
 
     // Final newline if needed
-    if !tokens.len().is_multiple_of(num_cols) {
+    if tokens.len() % num_cols != 0 {
         println!();
     }
 

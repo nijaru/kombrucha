@@ -49,22 +49,11 @@ fn format_columns(names: &[String]) -> String {
     }
 
     // Add final newline if last row is incomplete
-    if !names.is_empty() && !names.len().is_multiple_of(num_cols) {
+    if !names.is_empty() && names.len() % num_cols != 0 {
         result.push('\n');
     }
 
     result
-}
-
-/// Strip bottle revision from version string (e.g., "1.4.0_32" → "1.4.0")
-fn strip_bottle_revision(version: &str) -> &str {
-    if let Some(pos) = version.rfind('_') {
-        // Check if everything after underscore is digits (bottle revision)
-        if version[pos + 1..].chars().all(|c| c.is_ascii_digit()) {
-            return &version[..pos];
-        }
-    }
-    version
 }
 
 /// List installed formulae or casks with various output formats
@@ -508,11 +497,9 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 if let Ok(formula) = api.fetch_formula(&pkg.name).await
                     && let Some(latest) = &formula.versions.stable
                 {
-                    // Strip bottle revisions before comparison to avoid false positives
-                    let installed_stripped = strip_bottle_revision(&pkg.version);
-                    let latest_stripped = strip_bottle_revision(latest);
-
-                    if installed_stripped != latest_stripped {
+                    // Compare full versions including bottle revisions
+                    // This ensures rebuilt bottles with updated dependencies are detected
+                    if &pkg.version != latest {
                         return Some((pkg.clone(), latest.clone()));
                     }
                 }
