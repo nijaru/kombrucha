@@ -937,10 +937,13 @@ pub async fn upgrade(
             if let Err(e) =
                 crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())
             {
+                // Clean up extracted bottle to avoid orphans in Cellar
+                let _ = std::fs::remove_dir_all(&extracted_path);
                 return Err(format!("{}: failed to relocate: {}", formula_name, e));
             }
 
-            // Update progress
+            // Update progress (Relaxed ordering is sufficient - this is only for UI updates
+            // and doesn't require synchronization with other memory operations)
             let done = completed.fetch_add(1, Ordering::Relaxed) + 1;
             progress.set_position(done as u64);
 
@@ -954,7 +957,7 @@ pub async fn upgrade(
         })
         .collect();
 
-    progress.finish_and_clear();
+    progress.finish_with_message(format!("Extracted {} bottles", with_bottles.len()));
 
     // SEQUENTIAL PHASE: Link and cleanup (touches shared directories - no race conditions)
     println!("Linking packages...");
