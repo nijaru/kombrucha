@@ -1020,21 +1020,23 @@ pub async fn upgrade(
                 }
 
                 // Remove old version directory
-                if old_path.exists() {
-                    // Unlink any remaining symlinks
-                    let _ = symlink::unlink_formula(&pkg.name, &pkg.old_version);
-
-                    // Remove the old version directory
-                    if let Err(e) = std::fs::remove_dir_all(&old_path) {
-                        println!(
-                            "  {} {}: failed to remove old version: {}",
-                            "✗".red(),
-                            pkg.name.bold(),
-                            e
-                        );
-                        // Continue anyway - new version is installed
+                let old_removed = if old_path.exists() {
+                    match std::fs::remove_dir_all(&old_path) {
+                        Ok(_) => true,
+                        Err(e) => {
+                            println!(
+                                "  {} {}: failed to remove old version: {}",
+                                "✗".red(),
+                                pkg.name.bold(),
+                                e
+                            );
+                            // Continue anyway - new version is installed
+                            false
+                        }
                     }
-                }
+                } else {
+                    false
+                };
 
                 // Report success
                 if linked_count > 0 {
@@ -1051,11 +1053,13 @@ pub async fn upgrade(
                         pkg.name
                     );
                 }
-                println!(
-                    "    ├ {} Removed old version {}",
-                    "✓".green(),
-                    pkg.old_version.dimmed()
-                );
+                if old_removed {
+                    println!(
+                        "    ├ {} Removed old version {}",
+                        "✓".green(),
+                        pkg.old_version.dimmed()
+                    );
+                }
                 println!(
                     "    └ {} Upgraded {} to {}",
                     "✓".green(),
