@@ -964,7 +964,14 @@ pub async fn upgrade(
         match result {
             Ok(pkg) => {
                 // Unlink old version (sequential - touches shared /opt/homebrew/bin/)
-                let _ = symlink::unlink_formula(&pkg.name, &pkg.old_version);
+                if let Err(e) = symlink::unlink_formula(&pkg.name, &pkg.old_version) {
+                    println!(
+                        "  {} {}: failed to unlink old version symlink: {}",
+                        "✗".red(),
+                        pkg.name.bold(),
+                        e
+                    );
+                }
 
                 // Create symlinks (sequential - touches shared directories)
                 let linked_count = if !pkg.formula.keg_only {
