@@ -974,6 +974,7 @@ pub async fn upgrade(
                 }
 
                 // Create symlinks (sequential - touches shared directories)
+                let mut linking_failed = false;
                 let linked_count = if !pkg.formula.keg_only {
                     let linked = match symlink::link_formula(&pkg.name, &pkg.new_version) {
                         Ok(l) => l,
@@ -991,7 +992,7 @@ pub async fn upgrade(
                             pkg.name.bold(),
                             e
                         );
-                        continue;
+                        linking_failed = true;
                     }
 
                     linked.len()
@@ -1016,6 +1017,7 @@ pub async fn upgrade(
                     runtime_deps,
                     installed_on_request,
                 );
+                let mut receipt_failed = false;
                 if let Err(e) = receipt_data.write(&pkg.extracted_path) {
                     println!(
                         "  {} {}: failed to write receipt: {}",
@@ -1023,10 +1025,10 @@ pub async fn upgrade(
                         pkg.name.bold(),
                         e
                     );
-                    continue;
+                    receipt_failed = true;
                 }
 
-                // Remove old version directory
+                // Remove old version directory (always cleanup to avoid inconsistent state)
                 let old_removed = if old_path.exists() {
                     match std::fs::remove_dir_all(&old_path) {
                         Ok(_) => true,
@@ -1067,13 +1069,23 @@ pub async fn upgrade(
                         pkg.old_version.dimmed()
                     );
                 }
-                println!(
-                    "    └ {} Upgraded {} to {}",
-                    "✓".green(),
-                    pkg.name.bold().green(),
-                    pkg.new_version.dimmed()
-                );
-                successful_upgrades += 1;
+
+                if linking_failed || receipt_failed {
+                    println!(
+                        "    └ {} Upgraded {} to {} (with warnings)",
+                        "⚠".yellow(),
+                        pkg.name.bold().yellow(),
+                        pkg.new_version.dimmed()
+                    );
+                } else {
+                    println!(
+                        "    └ {} Upgraded {} to {}",
+                        "✓".green(),
+                        pkg.name.bold().green(),
+                        pkg.new_version.dimmed()
+                    );
+                    successful_upgrades += 1;
+                }
             }
             Err(err) => {
                 println!("  {} {}", "✗".red(), err);

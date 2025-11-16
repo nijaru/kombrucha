@@ -403,6 +403,7 @@ fn test_parity_outdated_count() {
 
     // Allow reasonable difference (up to 2x in either direction)
     let max_reasonable = std::cmp::max(brew_count * 2, brew_count + 20);
+    let min_reasonable = brew_count.saturating_sub(20);
     assert!(
         bru_count <= max_reasonable,
         "bru reports unreasonably more outdated packages than brew.\n\
@@ -411,6 +412,15 @@ fn test_parity_outdated_count() {
         brew_count,
         bru_count,
         max_reasonable
+    );
+    assert!(
+        bru_count >= min_reasonable,
+        "bru reports unreasonably fewer outdated packages than brew.\n\
+         brew count: {}, bru count: {}, min reasonable: {}\n\
+         This might indicate a bug in outdated detection.",
+        brew_count,
+        bru_count,
+        min_reasonable
     );
 
     // Log difference for visibility
