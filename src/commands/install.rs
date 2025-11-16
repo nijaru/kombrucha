@@ -11,6 +11,7 @@ use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 fn pinned_file_path() -> std::path::PathBuf {
@@ -873,8 +874,27 @@ pub async fn upgrade(
     let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
     // Phase 4: Install in parallel using rayon
-    // Each package is independent - extract, relocate, link, and cleanup can all happen concurrently
-    let upgrade_results: Vec<std::result::Result<(String, String, usize), String>> = candidates
+    // Separate packages that need fallback (no bottles) from those with bottles
+    let (with_bottles, without_bottles): (Vec<_>, Vec<_>) = candidates
+        .iter()
+        .partition(|c| download_map.contains_key(&c.name));
+
+    // Progress bar for parallel operations
+    let progress = ProgressBar::new(with_bottles.len() as u64);
+    progress.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.cyan} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+            .unwrap()
+            .progress_chars("=>-"),
+    );
+    progress.set_message("Upgrading packages...");
+
+    let completed = AtomicUsize::new(0);
+
+    // Parallel upgrade for packages with bottles
+    // Note: Symlink operations touch shared directories but conflicts are rare
+    // (packages have unique binaries). The symlink module handles existing links gracefully.
+    let upgrade_results: Vec<std::result::Result<(String, String, usize), String>> = with_bottles
         .par_iter()
         .map(|candidate| {
             let formula_name = &candidate.name;
@@ -885,24 +905,10 @@ pub async fn upgrade(
                 None => return Err(format!("{}: no stable version", formula_name)),
             };
 
-            let bottle_path = match download_map.get(formula_name) {
-                Some(path) => path,
-                None => {
-                    // No bottle available - fall back to brew for source build
-                    match super::utils::fallback_to_brew("upgrade", formula_name) {
-                        Ok(_) => return Ok((formula_name.clone(), new_version.clone(), 0)),
-                        Err(e) => return Err(format!("{}: {}", formula_name, e)),
-                    }
-                }
-            };
+            let bottle_path = download_map.get(formula_name).unwrap();
 
-            // Unlink old version first
-            if let Err(e) = symlink::unlink_formula(formula_name, old_version) {
-                return Err(format!(
-                    "{}: failed to unlink old version: {}",
-                    formula_name, e
-                ));
-            }
+            // Unlink old version (non-fatal - new version will overwrite symlinks anyway)
+            let _ = symlink::unlink_formula(formula_name, old_version);
 
             // Extract new version
             let extracted_path =
@@ -970,7 +976,7 @@ pub async fn upgrade(
 
             // Remove old version
             if old_path.exists() {
-                // Unlink any remaining symlinks
+                // Unlink any remaining symlinks (ignore errors - new version already linked)
                 let _ = symlink::unlink_formula(formula_name, old_version);
 
                 // Remove the old version directory
@@ -982,11 +988,17 @@ pub async fn upgrade(
                 }
             }
 
+            // Update progress
+            let done = completed.fetch_add(1, Ordering::Relaxed) + 1;
+            progress.set_position(done as u64);
+
             Ok((formula_name.clone(), actual_new_version, linked_count))
         })
         .collect();
 
-    // Report results in order
+    progress.finish_and_clear();
+
+    // Report results in order (after parallel completes to avoid interleaved output)
     let mut successful_upgrades = 0;
     for result in upgrade_results {
         match result {
@@ -999,7 +1011,7 @@ pub async fn upgrade(
                     );
                 }
                 // Find the candidate to check keg_only status and get old version
-                if let Some(candidate) = candidates.iter().find(|c| c.name == name) {
+                if let Some(candidate) = with_bottles.iter().find(|c| c.name == name) {
                     if candidate.formula.keg_only {
                         println!(
                             "    ├ {} {} is keg-only (not linked to prefix)",
@@ -1023,6 +1035,33 @@ pub async fn upgrade(
             }
             Err(err) => {
                 println!("  {} {}", "✗".red(), err);
+            }
+        }
+    }
+
+    // Handle packages without bottles sequentially (fallback to brew)
+    // This runs after parallel section to avoid interleaved console output
+    for candidate in &without_bottles {
+        let formula_name = &candidate.name;
+        let new_version = candidate.formula.versions.stable.as_ref().unwrap();
+
+        match super::utils::fallback_to_brew("upgrade", formula_name) {
+            Ok(_) => {
+                println!(
+                    "    └ {} Upgraded {} to {} (via brew)",
+                    "✓".green(),
+                    formula_name.bold().green(),
+                    new_version.dimmed()
+                );
+                successful_upgrades += 1;
+            }
+            Err(e) => {
+                println!(
+                    "  {} Failed to upgrade {}: {}",
+                    "✗".red(),
+                    formula_name.bold(),
+                    e
+                );
             }
         }
     }

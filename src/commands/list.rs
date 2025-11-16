@@ -56,17 +56,6 @@ fn format_columns(names: &[String]) -> String {
     result
 }
 
-/// Strip bottle revision from version string (e.g., "1.4.0_32" → "1.4.0")
-fn strip_bottle_revision(version: &str) -> &str {
-    if let Some(pos) = version.rfind('_') {
-        // Check if everything after underscore is digits (bottle revision)
-        if version[pos + 1..].chars().all(|c| c.is_ascii_digit()) {
-            return &version[..pos];
-        }
-    }
-    version
-}
-
 /// List installed formulae or casks with various output formats
 ///
 /// Supports multiple output modes:
