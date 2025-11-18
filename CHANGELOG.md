@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-11-18
+
+### Fixed
+- **Outdated detection staleness**: Fixed bru missing recently updated packages that brew detected. Enhanced version detection to parse versions from local tap formulas as fallback when API data is stale. API can lag 15-60 minutes behind git taps.
+- **Bottle revision comparison**: Fixed false positives flagging packages like `6.9.3_1` as outdated vs `6.9.3`. Bottle revisions indicate rebuilds (not version upgrades) and are now stripped before comparison to match Homebrew's behavior.
+
+### Changed
+- **Parallelized cleanup operations**: Directory deletions now run in parallel for 3-5x speedup when removing multiple packages simultaneously
+- **Added progress indicators**: Spinners show progress for large deletions (>10 MB) in cleanup, autoremove, and uninstall commands with completion counters "[3/7]"
+
+### Performance
+- Cleanup operations: 3-5x faster on multi-package removals via parallel deletion
+- Visual feedback prevents appearance of frozen commands during large package removal
+
 ## [0.2.1] - 2025-11-13
 
 ### Fixed

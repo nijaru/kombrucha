@@ -1,10 +1,10 @@
 # Active Tasks
 
-**Last Updated**: November 13, 2025
+**Last Updated**: November 18, 2025
 
 ## Current Sprint
 
-No active sprint tasks - v0.2.0 released successfully
+No active sprint tasks - v0.2.2 ready for release
 
 ## Planned Features
 
