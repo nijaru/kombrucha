@@ -52,6 +52,7 @@
 //! }
 //! ```
 
+use crate::cellar;
 use anyhow::{Context, Result, anyhow};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -362,6 +363,104 @@ pub fn parse_formula_version(formula_path: &Path) -> Result<Option<String>> {
                 return Ok(Some(version.to_string()));
             }
         }
+
+        // Look for: url ".../{version}.tar.gz"
+        // Common patterns:
+        //   url "https://github.com/user/repo/archive/refs/tags/v1.2.3.tar.gz"
+        //   url "https://example.com/download/1.2.3/file.tar.gz"
+        if line.starts_with("url ") && line.contains('"') {
+            if let Some(start) = line.find('"')
+                && let Some(end) = line[start + 1..].find('"')
+            {
+                let url = &line[start + 1..start + 1 + end];
+
+                // Extract version from common URL patterns
+                // Pattern 1: /tags/v1.2.3.tar.gz or /tags/1.2.3.tar.gz
+                // Also handles: /tags/@scope/package@1.2.3.tar.gz
+                if let Some(tags_idx) = url.rfind("/tags/") {
+                    let after_tags = &url[tags_idx + 6..];
+                    if let Some(dot_tar) = after_tags.find(".tar") {
+                        let mut version_str = &after_tags[..dot_tar];
+                        // Handle npm-style tags: @scope/package@1.2.3 -> extract 1.2.3
+                        if let Some(at_idx) = version_str.rfind('@') {
+                            version_str = &version_str[at_idx + 1..];
+                        }
+                        // Strip leading 'v' if present
+                        let version = version_str.strip_prefix('v').unwrap_or(version_str);
+                        return Ok(Some(version.to_string()));
+                    }
+                }
+
+                // Pattern 2: /archive/v1.2.3.tar.gz or /archive/1.2.3.tar.gz
+                if let Some(archive_idx) = url.rfind("/archive/") {
+                    let after_archive = &url[archive_idx + 9..];
+                    if let Some(dot_tar) = after_archive.find(".tar") {
+                        let version_str = &after_archive[..dot_tar];
+                        // Strip leading 'v' and 'refs/tags/' if present
+                        let version = version_str
+                            .strip_prefix("refs/tags/")
+                            .unwrap_or(version_str)
+                            .strip_prefix('v')
+                            .unwrap_or(
+                                version_str
+                                    .strip_prefix("refs/tags/")
+                                    .unwrap_or(version_str),
+                            );
+                        return Ok(Some(version.to_string()));
+                    }
+                }
+
+                // Pattern 3: /{name}-{version}.tar.gz (e.g., git-2.52.0.tar.xz)
+                // Extract the last path component
+                if let Some(last_slash) = url.rfind('/') {
+                    let filename = &url[last_slash + 1..];
+                    // Look for pattern: name-version.tar.*
+                    if let Some(tar_idx) = filename.find(".tar") {
+                        let name_version = &filename[..tar_idx];
+                        // Find the last dash to split name from version
+                        if let Some(last_dash) = name_version.rfind('-') {
+                            let potential_version = &name_version[last_dash + 1..];
+                            // Check if it looks like a version (starts with digit)
+                            if potential_version
+                                .chars()
+                                .next()
+                                .map_or(false, |c| c.is_ascii_digit())
+                            {
+                                let version = potential_version
+                                    .strip_prefix('v')
+                                    .unwrap_or(potential_version);
+                                return Ok(Some(version.to_string()));
+                            }
+                        }
+                    }
+                }
+
+                // Pattern 4: npm registry URLs
+                // E.g., https://registry.npmjs.org/@google/gemini-cli/-/gemini-cli-0.16.0.tgz
+                // E.g., https://registry.npmjs.org/opencode-ai/-/opencode-ai-1.0.74.tgz
+                if url.contains("registry.npmjs.org") && url.ends_with(".tgz") {
+                    // Find the last path component (e.g., "gemini-cli-0.16.0.tgz")
+                    if let Some(last_slash) = url.rfind('/') {
+                        let filename = &url[last_slash + 1..];
+                        // Remove .tgz extension
+                        if let Some(name_version) = filename.strip_suffix(".tgz") {
+                            // Find the last dash to split name from version
+                            if let Some(last_dash) = name_version.rfind('-') {
+                                let potential_version = &name_version[last_dash + 1..];
+                                // Check if it looks like a version
+                                if potential_version
+                                    .chars()
+                                    .next()
+                                    .map_or(false, |c| c.is_ascii_digit())
+                                {
+                                    return Ok(Some(potential_version.to_string()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     Ok(None)
@@ -372,6 +471,50 @@ pub fn parse_formula_version(formula_path: &Path) -> Result<Option<String>> {
 pub fn get_tap_formula_version(tap_name: &str, formula_name: &str) -> Result<Option<String>> {
     let path = formula_path(tap_name, formula_name)?;
     parse_formula_version(&path)
+}
+
+/// Get the latest version for a homebrew/core formula from local tap
+///
+/// Checks the local homebrew/core tap repository for the formula version.
+/// This is more reliable than the JSON API which can be stale.
+///
+/// # Arguments
+///
+/// * `formula_name` - Name of the formula (e.g., "mise", "git")
+///
+/// # Returns
+///
+/// - `Ok(Some(version))` if formula is found in local tap
+/// - `Ok(None)` if formula file doesn't exist or version can't be parsed
+///
+/// # Examples
+///
+/// ```no_run
+/// use kombrucha::tap;
+///
+/// fn main() -> anyhow::Result<()> {
+///     if let Some(version) = tap::get_core_formula_version("mise")? {
+///         println!("Latest mise version: {}", version);
+///     }
+///     Ok(())
+/// }
+/// ```
+pub fn get_core_formula_version(formula_name: &str) -> Result<Option<String>> {
+    // homebrew/core uses first letter subdirectories (e.g., Formula/m/mise.rb)
+    let prefix = cellar::detect_prefix();
+    let first_char = formula_name
+        .chars()
+        .next()
+        .unwrap_or('a')
+        .to_lowercase()
+        .to_string();
+
+    let formula_path = prefix
+        .join("Library/Taps/homebrew/homebrew-core/Formula")
+        .join(&first_char)
+        .join(format!("{}.rb", formula_name));
+
+    parse_formula_version(&formula_path)
 }
 
 /// Tap formula metadata extracted from Ruby file

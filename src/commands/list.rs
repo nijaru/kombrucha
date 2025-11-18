@@ -494,6 +494,17 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         let fetch_futures: Vec<_> = packages
             .iter()
             .map(|pkg| async move {
+                // Check local homebrew/core tap first (more reliable than API)
+                if let Ok(Some(latest)) = crate::tap::get_core_formula_version(&pkg.name) {
+                    // Compare full versions including bottle revisions
+                    // This ensures rebuilt bottles with updated dependencies are detected
+                    if pkg.version != latest {
+                        return Some((pkg.clone(), latest));
+                    }
+                    return None;
+                }
+
+                // Fallback to API if tap is not available
                 if let Ok(formula) = api.fetch_formula(&pkg.name).await
                     && let Some(latest) = &formula.versions.stable
                 {

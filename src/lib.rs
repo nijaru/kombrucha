@@ -272,4 +272,4 @@ pub use package_manager::{
 };
 pub use receipt::InstallReceipt;
 pub use symlink::{link_formula, normalize_path, optlink, unlink_formula, unoptlink};
-pub use tap::{list_taps, parse_formula_info, parse_formula_version};
+pub use tap::{get_core_formula_version, list_taps, parse_formula_info, parse_formula_version};

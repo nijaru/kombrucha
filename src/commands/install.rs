@@ -703,7 +703,12 @@ pub async fn upgrade(
                     return None;
                 }
 
-                // Fallback to API for homebrew/core packages
+                // Check local homebrew/core tap first (more reliable than API)
+                if let Ok(Some(latest_version)) = crate::tap::get_core_formula_version(&pkg.name) {
+                    return Some((pkg.name.clone(), pkg.version.clone(), latest_version));
+                }
+
+                // Fallback to API if tap is not available
                 let formula = api.fetch_formula(&pkg.name).await.ok()?;
                 let latest = formula.versions.stable.as_ref()?;
                 Some((pkg.name.clone(), pkg.version.clone(), latest.clone()))
