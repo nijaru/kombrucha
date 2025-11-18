@@ -494,26 +494,34 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
         let fetch_futures: Vec<_> = packages
             .iter()
             .map(|pkg| async move {
-                // Check local homebrew/core tap first (more reliable than API)
-                if let Ok(Some(latest)) = crate::tap::get_core_formula_version(&pkg.name) {
-                    // Compare full versions including bottle revisions
-                    // This ensures rebuilt bottles with updated dependencies are detected
-                    if pkg.version != latest {
-                        return Some((pkg.clone(), latest));
+                // Hybrid approach: check tap for freshness, use API for accuracy
+                // Tap parsing may be incomplete for complex formulas (e.g., bash with patches)
+                // but is always up-to-date. API is complete but may lag.
+
+                // Try API first (complete and accurate)
+                if let Ok(formula) = api.fetch_formula(&pkg.name).await
+                    && let Some(api_version) = &formula.versions.stable
+                {
+                    // Strip bottle revisions for comparison (e.g., "6.9.3_1" -> "6.9.3")
+                    // Bottle revisions indicate rebuilds, not version upgrades
+                    let installed_base = pkg.version.split('_').next().unwrap_or(&pkg.version);
+                    let api_base = api_version.split('_').next().unwrap_or(api_version);
+
+                    // Only flag as outdated if the base version changed
+                    if installed_base != api_base {
+                        return Some((pkg.clone(), api_version.clone()));
                     }
                     return None;
                 }
 
-                // Fallback to API if tap is not available
-                if let Ok(formula) = api.fetch_formula(&pkg.name).await
-                    && let Some(latest) = &formula.versions.stable
-                {
-                    // Compare full versions including bottle revisions
-                    // This ensures rebuilt bottles with updated dependencies are detected
-                    if &pkg.version != latest {
-                        return Some((pkg.clone(), latest.clone()));
+                // API unavailable - fall back to tap parsing
+                // This ensures we still work when offline or if API is down
+                if let Ok(Some(tap_ver)) = crate::tap::get_core_formula_version(&pkg.name) {
+                    if pkg.version != tap_ver {
+                        return Some((pkg.clone(), tap_ver));
                     }
                 }
+
                 None
             })
             .collect();
