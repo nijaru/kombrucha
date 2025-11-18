@@ -1,19 +1,42 @@
 # Project Status
 
-**Last Updated**: November 13, 2025
-**Version**: v0.2.1 (published to crates.io)
-**Status**: Released
+**Last Updated**: November 18, 2025
+**Version**: v0.2.2 (ready for release)
+**Status**: Testing complete, ready to release
 
 ## Current Phase
 
-**v0.2.1 (2025-11-13) - Library API Maintenance**
+**v0.2.2 (2025-11-18) - Performance & Reliability**
 
-✅ **RELEASED**: PackageManager library API published to crates.io
-- Fully tested on real system with 340+ packages
-- Zero panics across all operations
-- Proper error handling with anyhow Result types
-- Complete documentation with examples
-- Published and available on crates.io
+### Fixes & Improvements
+
+1. **Fixed Outdated Detection Staleness** (Issue #1)
+   - Problem: bru missed recently updated packages that brew detected
+   - Root cause: JSON API could lag 15-60 minutes behind git taps
+   - Solution: Enhanced URL version parsing from local tap formulas
+   - Status: ✅ FIXED - All 7 test cases now detected correctly
+
+2. **Parallelized Cleanup Operations**
+   - Problem: Cleanup appeared frozen when removing large packages
+   - Solution: Parallel directory deletions with progress spinners
+   - Impact: 3-5x faster when removing multiple packages simultaneously
+   - Status: ✅ COMPLETE
+
+3. **Added Progress Indicators**
+   - Added spinners for large deletions (>10 MB) in: cleanup, autoremove, uninstall
+   - Progress counters show completion: "Removed X [3/7]"
+   - Status: ✅ COMPLETE
+
+4. **Fixed Bottle Revision Comparison**
+   - Problem: False positives flagging 6.9.3_1 as outdated vs 6.9.3
+   - Solution: Strip bottle revisions before version comparison
+   - Impact: Matches Homebrew's default behavior
+   - Status: ✅ FIXED
+
+### Test Results
+- All 190 tests passing ✅
+- Regression test `test_parity_outdated_count` passing ✅
+- No test failures
 
 ### What's New
 
