@@ -267,45 +267,113 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
             }
         }
 
+        // Collect metadata for all versions to remove
+        let mut removal_tasks: Vec<(String, String, std::path::PathBuf, u64)> = Vec::new();
+
         for old in old_versions {
             let version_path = cellar::cellar_path().join(&old.name).join(&old.version);
-
-            // Calculate directory size
             let size = calculate_dir_size(&version_path)?;
             total_space_freed += size;
 
-            if dry_run {
+            removal_tasks.push((old.name.clone(), old.version.clone(), version_path, size));
+        }
+
+        if dry_run {
+            // Dry run: just show what would be removed
+            for (name, version, _, size) in &removal_tasks {
                 println!(
                     "  Would remove {} {} ({})",
-                    old.name.cyan(),
-                    old.version.dimmed(),
-                    format_size(size).dimmed()
+                    name.cyan(),
+                    version.dimmed(),
+                    format_size(*size).dimmed()
                 );
-            } else {
-                println!(
-                    "  Removing {} {} ({})",
-                    old.name.cyan(),
-                    old.version.dimmed(),
-                    format_size(size).dimmed()
-                );
-
-                // Unlink symlinks first
-                let unlinked = symlink::unlink_formula(&old.name, &old.version)?;
+                total_removed += 1;
+            }
+        } else {
+            // Phase 1: Unlink all symlinks sequentially (touches shared directories)
+            for (name, version, _, _) in &removal_tasks {
+                let unlinked = symlink::unlink_formula(name, version)?;
                 if !unlinked.is_empty() {
                     println!(
-                        "    {} Unlinked {} symlinks",
+                        "  {} Unlinked {} symlinks from {} {}",
                         "✓".green(),
-                        unlinked.len().to_string().dimmed()
+                        unlinked.len().to_string().dimmed(),
+                        name.cyan(),
+                        version.dimmed()
                     );
-                }
-
-                // Remove the old version directory
-                if version_path.exists() {
-                    std::fs::remove_dir_all(&version_path)?;
                 }
             }
 
-            total_removed += 1;
+            // Phase 2: Delete directories in parallel
+            use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+            use std::sync::Arc;
+            use std::sync::atomic::{AtomicUsize, Ordering};
+
+            let multi_progress = MultiProgress::new();
+            let completed = Arc::new(AtomicUsize::new(0));
+            let total = removal_tasks.len();
+
+            // Create deletion tasks
+            let handles: Vec<_> = removal_tasks
+                .into_iter()
+                .map(|(name, version, version_path, size)| {
+                    let multi_progress = multi_progress.clone();
+                    let completed = Arc::clone(&completed);
+
+                    std::thread::spawn(move || {
+                        // Show spinner for deletions > 10 MB
+                        let show_spinner = size > 10 * 1024 * 1024;
+                        let spinner = if show_spinner {
+                            let pb = multi_progress.add(ProgressBar::new_spinner());
+                            pb.set_style(
+                                ProgressStyle::default_spinner()
+                                    .template(&format!(
+                                        "  {{spinner:.cyan}} Removing {} {} ({})",
+                                        name,
+                                        version,
+                                        format_size(size)
+                                    ))
+                                    .unwrap(),
+                            );
+                            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+                            pb
+                        } else {
+                            ProgressBar::hidden()
+                        };
+
+                        // Remove directory
+                        let result = if version_path.exists() {
+                            std::fs::remove_dir_all(&version_path)
+                        } else {
+                            Ok(())
+                        };
+
+                        if show_spinner {
+                            spinner.finish_and_clear();
+                        }
+
+                        let count = completed.fetch_add(1, Ordering::Relaxed) + 1;
+                        println!(
+                            "  {} Removed {} {} ({}) [{}/{}]",
+                            "✓".green(),
+                            name.cyan(),
+                            version.dimmed(),
+                            format_size(size).dimmed(),
+                            count,
+                            total
+                        );
+
+                        result
+                    })
+                })
+                .collect();
+
+            // Wait for all deletions to complete
+            for handle in handles {
+                handle.join().unwrap()?;
+            }
+
+            total_removed = total;
         }
     }
 
