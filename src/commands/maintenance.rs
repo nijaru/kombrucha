@@ -94,11 +94,16 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     }
 
     // Remove packages
-    for pkg in &to_remove {
+    use indicatif::{ProgressBar, ProgressStyle};
+    let total = to_remove.len();
+
+    for (idx, pkg) in to_remove.iter().enumerate() {
         println!(
-            "  Uninstalling {} {}",
+            "  Uninstalling {} {} [{}/{}]",
             pkg.name.cyan(),
-            pkg.version.dimmed()
+            pkg.version.dimmed(),
+            idx + 1,
+            total
         );
 
         // Unlink symlinks
@@ -114,10 +119,36 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
         // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
         symlink::unoptlink(&pkg.name)?;
 
-        // Remove from Cellar
+        // Calculate size for progress indication
         let cellar_path = cellar::cellar_path().join(&pkg.name).join(&pkg.version);
+        let size = if cellar_path.exists() {
+            calculate_dir_size(&cellar_path).unwrap_or(0)
+        } else {
+            0
+        };
+
+        // Show spinner for large deletions (> 10 MB)
+        let show_spinner = size > 10 * 1024 * 1024;
+        let spinner = if show_spinner {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(
+                ProgressStyle::default_spinner()
+                    .template("    {spinner:.cyan} Removing files...")
+                    .unwrap(),
+            );
+            pb.enable_steady_tick(std::time::Duration::from_millis(100));
+            pb
+        } else {
+            ProgressBar::hidden()
+        };
+
+        // Remove from Cellar
         if cellar_path.exists() {
             std::fs::remove_dir_all(&cellar_path)?;
+        }
+
+        if show_spinner {
+            spinner.finish_and_clear();
         }
 
         // Remove formula directory if empty

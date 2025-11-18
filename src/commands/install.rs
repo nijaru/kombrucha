@@ -1460,10 +1460,32 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         // Remove version-agnostic symlinks (opt/ and var/homebrew/linked/)
         symlink::unoptlink(formula_name)?;
 
-        // Remove from Cellar
+        // Remove from Cellar with progress indication for large packages
         let cellar_path = cellar::cellar_path().join(formula_name).join(&version);
         if cellar_path.exists() {
+            use indicatif::{ProgressBar, ProgressStyle};
+
+            // Calculate size and show spinner for large deletions (> 10 MB)
+            let size = calculate_dir_size(&cellar_path).unwrap_or(0);
+            let show_spinner = size > 10 * 1024 * 1024;
+            let spinner = if show_spinner {
+                let pb = ProgressBar::new_spinner();
+                pb.set_style(
+                    ProgressStyle::default_spinner()
+                        .template("    {spinner:.cyan} Removing files...")
+                        .unwrap(),
+                );
+                pb.enable_steady_tick(std::time::Duration::from_millis(100));
+                pb
+            } else {
+                ProgressBar::hidden()
+            };
+
             std::fs::remove_dir_all(&cellar_path)?;
+
+            if show_spinner {
+                spinner.finish_and_clear();
+            }
         }
 
         // Remove formula directory if empty (or if it's a symlink)
@@ -1501,4 +1523,25 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
     }
 
     Ok(())
+}
+
+/// Calculate the total size of a directory recursively
+fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
+    let mut total = 0u64;
+
+    if !path.exists() {
+        return Ok(0);
+    }
+
+    for entry in walkdir::WalkDir::new(path).follow_links(false).max_open(64) {
+        let entry = entry.map_err(|e| anyhow::anyhow!("Failed to read directory: {}", e))?;
+        if entry.file_type().is_file() {
+            total += entry
+                .metadata()
+                .map_err(|e| anyhow::anyhow!("Failed to read metadata: {}", e))?
+                .len();
+        }
+    }
+
+    Ok(total)
 }
