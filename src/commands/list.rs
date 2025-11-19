@@ -517,7 +517,11 @@ pub async fn outdated(api: &BrewApi, cask: bool, quiet: bool) -> Result<()> {
                 // API unavailable - fall back to tap parsing
                 // This ensures we still work when offline or if API is down
                 if let Ok(Some(tap_ver)) = crate::tap::get_core_formula_version(&pkg.name) {
-                    if pkg.version != tap_ver {
+                    // Strip bottle revisions for comparison
+                    let installed_base = pkg.version.split('_').next().unwrap_or(&pkg.version);
+                    let tap_base = tap_ver.split('_').next().unwrap_or(&tap_ver);
+
+                    if installed_base != tap_base {
                         return Some((pkg.clone(), tap_ver));
                     }
                 }
