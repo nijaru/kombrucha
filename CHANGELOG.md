@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-11-19
+
+### Fixed
+- **Critical: Bottle revision false positives in upgrade**: Fixed upgrade command incorrectly flagging packages with bottle revisions (e.g., `2.14.1_1`) as outdated when compared to API versions without revisions (e.g., `2.14.1`). This was causing unnecessary "upgrades" that would reinstall the same version, potentially breaking dependencies.
+- **Upgrade version detection**: Changed upgrade command to use API-first approach (with tap fallback) instead of tap-first. This fixes false positives on packages like bash where tap parsing is incomplete due to patches.
+- **Outdated tap fallback**: Fixed tap fallback path in outdated command to also strip bottle revisions, ensuring consistency across all code paths.
+
+### Impact
+This release fixes a critical bug in v0.2.2 that caused upgrade to reinstall 50+ packages unnecessarily, which could break system dependencies (e.g., gettext, breaking bash and git).
+
 ## [0.2.2] - 2025-11-18
 
 ### Fixed
