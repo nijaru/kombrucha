@@ -684,7 +684,18 @@ pub async fn upgrade(
         let fetch_futures: Vec<_> = packages
             .iter()
             .map(|pkg| async move {
-                // Check if this package is from a tap
+                // Hybrid approach: use API for accuracy, tap for fallback
+                // Tap parsing may be incomplete for complex formulas (e.g., bash with patches)
+                // but is always up-to-date. API is complete but may lag.
+
+                // Try API first (complete and accurate)
+                if let Ok(formula) = api.fetch_formula(&pkg.name).await {
+                    if let Some(latest) = formula.versions.stable.as_ref() {
+                        return Some((pkg.name.clone(), pkg.version.clone(), latest.clone()));
+                    }
+                }
+
+                // API unavailable - check if this package is from a tap
                 if let Ok(Some((tap_name, formula_path, installed_version))) =
                     crate::tap::get_package_tap_info(&pkg.path)
                 {
@@ -700,18 +711,14 @@ pub async fn upgrade(
                     {
                         return Some((pkg.name.clone(), installed_version, latest_version));
                     }
-                    return None;
                 }
 
-                // Check local homebrew/core tap first (more reliable than API)
+                // Fallback to local homebrew/core tap
                 if let Ok(Some(latest_version)) = crate::tap::get_core_formula_version(&pkg.name) {
                     return Some((pkg.name.clone(), pkg.version.clone(), latest_version));
                 }
 
-                // Fallback to API if tap is not available
-                let formula = api.fetch_formula(&pkg.name).await.ok()?;
-                let latest = formula.versions.stable.as_ref()?;
-                Some((pkg.name.clone(), pkg.version.clone(), latest.clone()))
+                None
             })
             .collect();
 
@@ -719,9 +726,12 @@ pub async fn upgrade(
 
         let mut outdated = Vec::new();
         for (name, pkg_version, latest) in results.into_iter().flatten() {
-            // Compare full versions INCLUDING bottle revisions
-            // A version change from 1.76.0 to 1.76.0_1 IS an upgrade (rebuild with different deps)
-            if force || pkg_version != latest {
+            // Strip bottle revisions for comparison (e.g., "6.9.3_1" -> "6.9.3")
+            // Bottle revisions indicate rebuilds, not version upgrades
+            let installed_base = pkg_version.split('_').next().unwrap_or(&pkg_version);
+            let latest_base = latest.split('_').next().unwrap_or(&latest);
+
+            if force || installed_base != latest_base {
                 outdated.push(name);
             }
         }
