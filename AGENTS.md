@@ -7,7 +7,7 @@
 **Kombrucha** is a high-performance Homebrew clone with the CLI command `bru`. It's 8x faster on average while maintaining full compatibility with Homebrew's formulae and infrastructure.
 
 **Current Status**:
-- Version: v0.2.3 (ready for release)
+- Version: v0.2.4 (ready for release)
 - CLI: Production-ready for bottle-based workflows
 - Library: PackageManager API available for downstream projects
 - Combined: 95% formulae via bottles, 5% fallback to brew for source builds

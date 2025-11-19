@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2025-11-19
+
+### Fixed
+- **List command parity**: `bru list` (no args) now lists both formulae and casks (separated by headers), matching Homebrew behavior. Added `--formula` flag for filtering.
+- **Uninstall fallback**: `bru uninstall` now automatically checks for and uninstalls casks if a formula with the given name is not found, matching Homebrew behavior.
+- **Cleanup parity**: `bru cleanup` (no args) now cleans up both formulae and casks, matching Homebrew behavior.
+- **Bundle parity**: `bru bundle` now supports listing and installing Casks.
+- **Doctor parity**: `bru doctor` now checks for Caskroom existence and permissions.
+
+### Changed
+- **Upgrade scope**: `bru upgrade` (no args) now upgrades both outdated formulae and outdated casks.
+
 ## [0.2.3] - 2025-11-19
 
 ### Fixed
@@ -14,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Impact
 This release fixes a critical bug in v0.2.2 that caused upgrade to reinstall 50+ packages unnecessarily, which could break system dependencies (e.g., gettext, breaking bash and git).
+
 
 ## [0.2.2] - 2025-11-18
 

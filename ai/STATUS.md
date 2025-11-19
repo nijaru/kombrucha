@@ -1,12 +1,12 @@
 # Project Status
 
-**Last Updated**: November 18, 2025
-**Version**: v0.2.2 (ready for release)
+**Last Updated**: November 19, 2025
+**Version**: v0.2.4 (ready for release)
 **Status**: Testing complete, ready to release
 
 ## Current Phase
 
-**v0.2.2 (2025-11-18) - Performance & Reliability**
+**v0.2.4 (2025-11-19) - Feature Parity & Polish**
 
 ### Fixes & Improvements
 
@@ -31,6 +31,36 @@
    - Problem: False positives flagging 6.9.3_1 as outdated vs 6.9.3
    - Solution: Strip bottle revisions before version comparison
    - Impact: Matches Homebrew's default behavior
+   - Status: ✅ FIXED
+
+5. **Fixed Missing Outdated Casks in Upgrade**
+   - Problem: `bru upgrade` (no args) only upgraded formulae, missing outdated casks
+   - Solution: Added automatic Cask upgrade step when upgrading all packages
+   - Impact: Matches Homebrew behavior, ensuring all software is up to date
+   - Status: ✅ FIXED
+
+6. **Added Cask Support to Bundle**
+   - Problem: `bru bundle` previously ignored casks in both dump and install
+   - Solution: Implemented Cask listing in dump and Cask installation in bundle
+   - Impact: Full Brewfile compatibility
+   - Status: ✅ FIXED
+
+7. **Improved Cleanup & Doctor Parity**
+   - Problem: `bru cleanup` (no args) ignored casks; `bru doctor` ignored Caskroom
+   - Solution: Default cleanup now includes casks; doctor checks Caskroom
+   - Impact: Better alignment with Homebrew behavior
+   - Status: ✅ FIXED
+
+8. **Improved List Command Parity**
+   - Problem: `bru list` (no args) only listed formulae; `brew list` lists both
+   - Solution: Implemented logic to list both by default, using headers like `brew`
+   - Impact: Full compatibility with `brew list` behavior
+   - Status: ✅ FIXED
+
+9. **Improved Uninstall Fallback**
+   - Problem: `bru uninstall <cask>` failed if `--cask` wasn't specified
+   - Solution: Added fallback to check for installed cask if formula not found
+   - Impact: Matches `brew uninstall` smart behavior
    - Status: ✅ FIXED
 
 ### Test Results

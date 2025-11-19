@@ -51,14 +51,27 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
             content.push_str(&format!("brew \"{}\"\n", name));
         }
 
+        // Get all installed casks
+        let casks = crate::cask::list_installed_casks()?;
+        let mut cask_tokens: Vec<_> = casks.iter().map(|(token, _)| token).collect();
+        cask_tokens.sort();
+
+        if !cask_tokens.is_empty() {
+            content.push('\n');
+            for token in &cask_tokens {
+                content.push_str(&format!("cask \"{}\"\n", token));
+            }
+        }
+
         // Write to file
         std::fs::write(brewfile_path, &content)?;
 
         println!(
-            "{} Generated {} with {} formulae",
+            "{} Generated {} with {} formulae and {} casks",
             "".green(),
             brewfile_path.cyan(),
-            formulae_names.len().to_string().bold()
+            formulae_names.len().to_string().bold(),
+            cask_tokens.len().to_string().bold()
         );
     } else {
         // Install from Brewfile
@@ -147,13 +160,15 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
             }
         }
 
-        // Casks - for now, just notify
+        // Install casks
         if !casks_to_install.is_empty() {
-            println!("Cask installation not yet implemented");
-            println!(
-                "  Casks to install: {}",
-                casks_to_install.join(", ").dimmed()
-            );
+            println!("Installing casks...");
+            match super::cask::install_cask(api, &casks_to_install).await {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{} Failed to install some casks: {}", "".yellow(), e);
+                }
+            }
         }
 
         println!("{} Bundle install complete", "".green().bold());

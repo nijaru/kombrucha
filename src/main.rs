@@ -122,7 +122,11 @@ enum Commands {
         #[arg(long)]
         json: bool,
 
-        /// List casks instead of formulae
+        /// List formulae only
+        #[arg(long)]
+        formula: bool,
+
+        /// List casks only
         #[arg(long)]
         cask: bool,
 
@@ -995,11 +999,12 @@ async fn run() -> anyhow::Result<()> {
         Some(Commands::List {
             versions,
             json,
+            formula,
             cask,
             quiet,
             columns,
         }) => {
-            commands::list(&api, versions, json, cask, quiet, columns).await?;
+            commands::list(&api, versions, json, formula, cask, quiet, columns).await?;
         }
         Some(Commands::Outdated { cask, quiet }) => {
             commands::outdated(&api, cask, quiet).await?;

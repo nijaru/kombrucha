@@ -811,317 +811,332 @@ pub async fn upgrade(
         })
         .collect();
 
-    if candidates.is_empty() && tap_packages.is_empty() {
+    let have_updates = !candidates.is_empty() || !tap_packages.is_empty();
+
+    if !have_updates && !names.is_empty() {
         println!("{}", "All packages are up to date".green());
         return Ok(());
     }
 
-    // Show what will be upgraded
-    for candidate in &candidates {
-        if let Some(new_version) = candidate.formula.versions.stable.as_ref() {
-            println!(
-                "Upgrading {} {} -> {}",
-                candidate.name.cyan(),
-                candidate.old_version.dimmed(),
-                new_version.cyan()
-            );
-        } else {
-            println!(
-                "Skipping {} {} (no stable version)",
-                candidate.name.cyan(),
-                candidate.old_version.dimmed()
-            );
+    if have_updates {
+        // Show what will be upgraded
+        for candidate in &candidates {
+            if let Some(new_version) = candidate.formula.versions.stable.as_ref() {
+                println!(
+                    "Upgrading {} {} -> {}",
+                    candidate.name.cyan(),
+                    candidate.old_version.dimmed(),
+                    new_version.cyan()
+                );
+            } else {
+                println!(
+                    "Skipping {} {} (no stable version)",
+                    candidate.name.cyan(),
+                    candidate.old_version.dimmed()
+                );
+            }
         }
-    }
 
-    // Phase 2: Resolve dependencies for all candidates to build complete formula map
-    // This is critical for generating correct receipts with runtime_dependencies
-    let candidate_names: Vec<String> = candidates.iter().map(|c| c.name.clone()).collect();
-    let (all_formulae, _) = if !candidate_names.is_empty() {
-        resolve_dependencies(api, &candidate_names).await?
-    } else {
-        (HashMap::new(), vec![])
-    };
+        // Phase 2: Resolve dependencies for all candidates to build complete formula map
+        // This is critical for generating correct receipts with runtime_dependencies
+        let candidate_names: Vec<String> = candidates.iter().map(|c| c.name.clone()).collect();
+        let (all_formulae, _) = if !candidate_names.is_empty() {
+            resolve_dependencies(api, &candidate_names).await?
+        } else {
+            (HashMap::new(), vec![])
+        };
 
-    // Phase 3: Download all bottles in parallel
-    println!("Downloading {} bottles...", candidates.len());
-    let formulae: Vec<_> = candidates.iter().map(|c| c.formula.clone()).collect();
-    let downloaded = download::download_bottles(api, &formulae).await?;
-    let download_map: HashMap<_, _> = downloaded.into_iter().collect();
+        // Phase 3: Download all bottles in parallel
+        println!("Downloading {} bottles...", candidates.len());
+        let formulae: Vec<_> = candidates.iter().map(|c| c.formula.clone()).collect();
+        let downloaded = download::download_bottles(api, &formulae).await?;
+        let download_map: HashMap<_, _> = downloaded.into_iter().collect();
 
-    // Phase 4: Install with parallel extraction/relocation, sequential linking
-    // Separate packages that need fallback (no bottles) from those with bottles
-    let (with_bottles, without_bottles): (Vec<_>, Vec<_>) = candidates
-        .iter()
-        .partition(|c| download_map.contains_key(&c.name));
+        // Phase 4: Install with parallel extraction/relocation, sequential linking
+        // Separate packages that need fallback (no bottles) from those with bottles
+        let (with_bottles, without_bottles): (Vec<_>, Vec<_>) = candidates
+            .iter()
+            .partition(|c| download_map.contains_key(&c.name));
 
-    // Result type for parallel phase (extract + relocate only)
-    struct ExtractedPackage {
-        name: String,
-        old_version: String,
-        new_version: String,
-        extracted_path: std::path::PathBuf,
-        formula: Formula,
-    }
+        // Result type for parallel phase (extract + relocate only)
+        struct ExtractedPackage {
+            name: String,
+            old_version: String,
+            new_version: String,
+            extracted_path: std::path::PathBuf,
+            formula: Formula,
+        }
 
-    // Progress bar for parallel extraction/relocation (I/O and CPU bound)
-    let progress = ProgressBar::new(with_bottles.len() as u64);
-    progress.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.cyan} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
-            .unwrap()
-            .progress_chars("=>-"),
-    );
-    progress.set_message("Extracting and relocating bottles...");
+        // Progress bar for parallel extraction/relocation (I/O and CPU bound)
+        let progress = ProgressBar::new(with_bottles.len() as u64);
+        progress.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.cyan} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .unwrap()
+                .progress_chars("=>-"),
+        );
+        progress.set_message("Extracting and relocating bottles...");
 
-    let completed = AtomicUsize::new(0);
+        let completed = AtomicUsize::new(0);
 
-    // PARALLEL PHASE: Extract and relocate bottles (safe - unique directories)
-    let extraction_results: Vec<std::result::Result<ExtractedPackage, String>> = with_bottles
-        .par_iter()
-        .map(|candidate| {
-            let formula_name = &candidate.name;
-            let old_version = &candidate.old_version;
-            let formula = &candidate.formula;
-            let new_version = match formula.versions.stable.as_ref() {
-                Some(v) => v.clone(),
-                None => return Err(format!("{}: no stable version", formula_name)),
-            };
-
-            let bottle_path = download_map.get(formula_name).unwrap();
-
-            // Extract new version (I/O bound - benefits from parallelism)
-            let extracted_path =
-                match extract::extract_bottle(bottle_path, formula_name, &new_version) {
-                    Ok(path) => path,
-                    Err(e) => return Err(format!("{}: failed to extract: {}", formula_name, e)),
+        // PARALLEL PHASE: Extract and relocate bottles (safe - unique directories)
+        let extraction_results: Vec<std::result::Result<ExtractedPackage, String>> = with_bottles
+            .par_iter()
+            .map(|candidate| {
+                let formula_name = &candidate.name;
+                let old_version = &candidate.old_version;
+                let formula = &candidate.formula;
+                let new_version = match formula.versions.stable.as_ref() {
+                    Some(v) => v.clone(),
+                    None => return Err(format!("{}: no stable version", formula_name)),
                 };
 
-            // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
-            let actual_new_version = match extracted_path.file_name().and_then(|n| n.to_str()) {
-                Some(v) => v.to_string(),
-                None => {
-                    return Err(format!(
-                        "{}: invalid extracted path: {}",
-                        formula_name,
-                        extracted_path.display()
-                    ));
-                }
-            };
+                let bottle_path = download_map.get(formula_name).unwrap();
 
-            // Relocate bottle (CPU bound - benefits from parallelism)
-            if let Err(e) =
-                crate::relocate::relocate_bottle(&extracted_path, &crate::cellar::detect_prefix())
-            {
-                // Clean up extracted bottle to avoid orphans in Cellar
-                let _ = std::fs::remove_dir_all(&extracted_path);
-                return Err(format!("{}: failed to relocate: {}", formula_name, e));
-            }
-
-            // Update progress (Relaxed ordering is sufficient - this is only for UI updates
-            // and doesn't require synchronization with other memory operations)
-            let done = completed.fetch_add(1, Ordering::Relaxed) + 1;
-            progress.set_position(done as u64);
-
-            Ok(ExtractedPackage {
-                name: formula_name.clone(),
-                old_version: old_version.clone(),
-                new_version: actual_new_version,
-                extracted_path,
-                formula: formula.clone(),
-            })
-        })
-        .collect();
-
-    progress.finish_with_message(format!("Extracted {} bottles", with_bottles.len()));
-
-    // SEQUENTIAL PHASE: Link and cleanup (touches shared directories - no race conditions)
-    println!("Linking packages...");
-    let mut successful_upgrades = 0;
-
-    for result in extraction_results {
-        match result {
-            Ok(pkg) => {
-                // Unlink old version (sequential - touches shared /opt/homebrew/bin/)
-                if let Err(e) = symlink::unlink_formula(&pkg.name, &pkg.old_version) {
-                    println!(
-                        "  {}: failed to unlink old version symlink: {}",
-                        pkg.name.bold().red(),
-                        e
-                    );
-                }
-
-                // Create symlinks (sequential - touches shared directories)
-                let mut linking_failed = false;
-                let linked_count = if !pkg.formula.keg_only {
-                    let linked = match symlink::link_formula(&pkg.name, &pkg.new_version) {
-                        Ok(l) => l,
+                // Extract new version (I/O bound - benefits from parallelism)
+                let extracted_path =
+                    match extract::extract_bottle(bottle_path, formula_name, &new_version) {
+                        Ok(path) => path,
                         Err(e) => {
-                            println!("  {}: failed to link: {}", pkg.name.bold().red(), e);
-                            continue;
+                            return Err(format!("{}: failed to extract: {}", formula_name, e));
                         }
                     };
 
-                    // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
-                    if let Err(e) = symlink::optlink(&pkg.name, &pkg.new_version) {
+                // Get actual installed version (may have bottle revision suffix like 25.1.0_1)
+                let actual_new_version = match extracted_path.file_name().and_then(|n| n.to_str()) {
+                    Some(v) => v.to_string(),
+                    None => {
+                        return Err(format!(
+                            "{}: invalid extracted path: {}",
+                            formula_name,
+                            extracted_path.display()
+                        ));
+                    }
+                };
+
+                // Relocate bottle (CPU bound - benefits from parallelism)
+                if let Err(e) = crate::relocate::relocate_bottle(
+                    &extracted_path,
+                    &crate::cellar::detect_prefix(),
+                ) {
+                    // Clean up extracted bottle to avoid orphans in Cellar
+                    let _ = std::fs::remove_dir_all(&extracted_path);
+                    return Err(format!("{}: failed to relocate: {}", formula_name, e));
+                }
+
+                // Update progress (Relaxed ordering is sufficient - this is only for UI updates
+                // and doesn't require synchronization with other memory operations)
+                let done = completed.fetch_add(1, Ordering::Relaxed) + 1;
+                progress.set_position(done as u64);
+
+                Ok(ExtractedPackage {
+                    name: formula_name.clone(),
+                    old_version: old_version.clone(),
+                    new_version: actual_new_version,
+                    extracted_path,
+                    formula: formula.clone(),
+                })
+            })
+            .collect();
+
+        progress.finish_with_message(format!("Extracted {} bottles", with_bottles.len()));
+
+        // SEQUENTIAL PHASE: Link and cleanup (touches shared directories - no race conditions)
+        println!("Linking packages...");
+        let mut successful_upgrades = 0;
+
+        for result in extraction_results {
+            match result {
+                Ok(pkg) => {
+                    // Unlink old version (sequential - touches shared /opt/homebrew/bin/)
+                    if let Err(e) = symlink::unlink_formula(&pkg.name, &pkg.old_version) {
                         println!(
-                            "  {}: failed to create opt link: {}",
+                            "  {}: failed to unlink old version symlink: {}",
                             pkg.name.bold().red(),
                             e
                         );
-                        linking_failed = true;
                     }
 
-                    linked.len()
-                } else {
-                    0
-                };
+                    // Create symlinks (sequential - touches shared directories)
+                    let mut linking_failed = false;
+                    let linked_count = if !pkg.formula.keg_only {
+                        let linked = match symlink::link_formula(&pkg.name, &pkg.new_version) {
+                            Ok(l) => l,
+                            Err(e) => {
+                                println!("  {}: failed to link: {}", pkg.name.bold().red(), e);
+                                continue;
+                            }
+                        };
 
-                // Generate receipt
-                let runtime_deps = build_runtime_deps(&pkg.formula.dependencies, &all_formulae);
-
-                // Read old receipt to preserve installed_on_request status
-                let old_path = cellar::cellar_path().join(&pkg.name).join(&pkg.old_version);
-                let installed_on_request =
-                    if let Ok(old_receipt) = receipt::InstallReceipt::read(&old_path) {
-                        old_receipt.installed_on_request
-                    } else {
-                        true
-                    };
-
-                let receipt_data = receipt::InstallReceipt::new_bottle(
-                    &pkg.formula,
-                    runtime_deps,
-                    installed_on_request,
-                );
-                let mut receipt_failed = false;
-                if let Err(e) = receipt_data.write(&pkg.extracted_path) {
-                    println!(
-                        "  {}: failed to write receipt: {}",
-                        pkg.name.bold().red(),
-                        e
-                    );
-                    receipt_failed = true;
-                }
-
-                // Remove old version directory (always cleanup to avoid inconsistent state)
-                let old_removed = if old_path.exists() {
-                    match std::fs::remove_dir_all(&old_path) {
-                        Ok(_) => true,
-                        Err(e) => {
+                        // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
+                        if let Err(e) = symlink::optlink(&pkg.name, &pkg.new_version) {
                             println!(
-                                "  {}: failed to remove old version: {}",
+                                "  {}: failed to create opt link: {}",
                                 pkg.name.bold().red(),
                                 e
                             );
-                            // Continue anyway - new version is installed
-                            false
+                            linking_failed = true;
                         }
+
+                        linked.len()
+                    } else {
+                        0
+                    };
+
+                    // Generate receipt
+                    let runtime_deps = build_runtime_deps(&pkg.formula.dependencies, &all_formulae);
+
+                    // Read old receipt to preserve installed_on_request status
+                    let old_path = cellar::cellar_path().join(&pkg.name).join(&pkg.old_version);
+                    let installed_on_request =
+                        if let Ok(old_receipt) = receipt::InstallReceipt::read(&old_path) {
+                            old_receipt.installed_on_request
+                        } else {
+                            true
+                        };
+
+                    let receipt_data = receipt::InstallReceipt::new_bottle(
+                        &pkg.formula,
+                        runtime_deps,
+                        installed_on_request,
+                    );
+                    let mut receipt_failed = false;
+                    if let Err(e) = receipt_data.write(&pkg.extracted_path) {
+                        println!(
+                            "  {}: failed to write receipt: {}",
+                            pkg.name.bold().red(),
+                            e
+                        );
+                        receipt_failed = true;
                     }
-                } else {
-                    false
-                };
 
-                // Report success
-                if linked_count > 0 {
-                    println!("    ├ Linked {} files", linked_count.to_string().dimmed());
-                }
-                if pkg.formula.keg_only {
-                    println!(
-                        "    ├ {} is keg-only (not linked to prefix)",
-                        pkg.name.dimmed()
-                    );
-                }
-                if old_removed {
-                    println!("    ├ Removed old version {}", pkg.old_version.dimmed());
-                }
+                    // Remove old version directory (always cleanup to avoid inconsistent state)
+                    let old_removed = if old_path.exists() {
+                        match std::fs::remove_dir_all(&old_path) {
+                            Ok(_) => true,
+                            Err(e) => {
+                                println!(
+                                    "  {}: failed to remove old version: {}",
+                                    pkg.name.bold().red(),
+                                    e
+                                );
+                                // Continue anyway - new version is installed
+                                false
+                            }
+                        }
+                    } else {
+                        false
+                    };
 
-                if linking_failed || receipt_failed {
+                    // Report success
+                    if linked_count > 0 {
+                        println!("    ├ Linked {} files", linked_count.to_string().dimmed());
+                    }
+                    if pkg.formula.keg_only {
+                        println!(
+                            "    ├ {} is keg-only (not linked to prefix)",
+                            pkg.name.dimmed()
+                        );
+                    }
+                    if old_removed {
+                        println!("    ├ Removed old version {}", pkg.old_version.dimmed());
+                    }
+
+                    if linking_failed || receipt_failed {
+                        println!(
+                            "    └ Upgraded {} to {} (with warnings)",
+                            pkg.name.bold().yellow(),
+                            pkg.new_version.dimmed()
+                        );
+                    } else {
+                        println!(
+                            "    └ Upgraded {} to {}",
+                            pkg.name.bold().green(),
+                            pkg.new_version.dimmed()
+                        );
+                        successful_upgrades += 1;
+                    }
+                }
+                Err(err) => {
+                    println!("  {}", err.to_string().red());
+                }
+            }
+        }
+
+        // Handle packages without bottles sequentially (fallback to brew)
+        for candidate in &without_bottles {
+            let formula_name = &candidate.name;
+            let new_version = candidate.formula.versions.stable.as_ref().unwrap();
+
+            match super::utils::fallback_to_brew("upgrade", formula_name) {
+                Ok(_) => {
                     println!(
-                        "    └ Upgraded {} to {} (with warnings)",
-                        pkg.name.bold().yellow(),
-                        pkg.new_version.dimmed()
-                    );
-                } else {
-                    println!(
-                        "    └ Upgraded {} to {}",
-                        pkg.name.bold().green(),
-                        pkg.new_version.dimmed()
+                        "    └ Upgraded {} to {} (via brew)",
+                        formula_name.bold().green(),
+                        new_version.dimmed()
                     );
                     successful_upgrades += 1;
                 }
-            }
-            Err(err) => {
-                println!("  {}", err.to_string().red());
-            }
-        }
-    }
-
-    // Handle packages without bottles sequentially (fallback to brew)
-    for candidate in &without_bottles {
-        let formula_name = &candidate.name;
-        let new_version = candidate.formula.versions.stable.as_ref().unwrap();
-
-        match super::utils::fallback_to_brew("upgrade", formula_name) {
-            Ok(_) => {
-                println!(
-                    "    └ Upgraded {} to {} (via brew)",
-                    formula_name.bold().green(),
-                    new_version.dimmed()
-                );
-                successful_upgrades += 1;
-            }
-            Err(e) => {
-                println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e);
-            }
-        }
-    }
-
-    // Handle tap packages via brew
-    let mut tap_upgrades = 0;
-    if !tap_packages.is_empty() {
-        println!(
-            "\nUpgrading {} tap packages via brew...",
-            tap_packages.len()
-        );
-        for (formula_name, tap_name) in &tap_packages {
-            // Capture old version BEFORE upgrade (matches native upgrade behavior at line 1863)
-            let old_version =
-                if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
-                    Some(linked_ver)
-                } else if let Ok(versions) = cellar::get_installed_versions(formula_name) {
-                    versions.first().map(|v| v.version.clone())
-                } else {
-                    None
-                };
-
-            let full_name = format!("{}/{}", tap_name, formula_name);
-            match super::utils::fallback_to_brew("upgrade", &full_name) {
-                Ok(_) => {
-                    // Clean up the SPECIFIC old version that was replaced
-                    if let Some(old_ver) = old_version
-                        && let Err(e) =
-                            super::utils::cleanup_specific_version(formula_name, &old_ver)
-                    {
-                        println!(
-                            "    Warning: failed to clean up old version: {}",
-                            e.to_string().yellow()
-                        );
-                    }
-                    println!("  Upgraded {}", formula_name.bold().green());
-                    tap_upgrades += 1;
+                Err(e) => {
+                    println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e);
                 }
-                Err(e) => println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e),
             }
         }
+
+        // Handle tap packages via brew
+        let mut tap_upgrades = 0;
+        if !tap_packages.is_empty() {
+            println!(
+                "\nUpgrading {} tap packages via brew...",
+                tap_packages.len()
+            );
+            for (formula_name, tap_name) in &tap_packages {
+                // Capture old version BEFORE upgrade (matches native upgrade behavior at line 1863)
+                let old_version =
+                    if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
+                        Some(linked_ver)
+                    } else if let Ok(versions) = cellar::get_installed_versions(formula_name) {
+                        versions.first().map(|v| v.version.clone())
+                    } else {
+                        None
+                    };
+
+                let full_name = format!("{}/{}", tap_name, formula_name);
+                match super::utils::fallback_to_brew("upgrade", &full_name) {
+                    Ok(_) => {
+                        // Clean up the SPECIFIC old version that was replaced
+                        if let Some(old_ver) = old_version
+                            && let Err(e) =
+                                super::utils::cleanup_specific_version(formula_name, &old_ver)
+                        {
+                            println!(
+                                "    Warning: failed to clean up old version: {}",
+                                e.to_string().yellow()
+                            );
+                        }
+                        println!("  Upgraded {}", formula_name.bold().green());
+                        tap_upgrades += 1;
+                    }
+                    Err(e) => println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e),
+                }
+            }
+        }
+
+        let total_upgraded = successful_upgrades + tap_upgrades;
+
+        println!(
+            "Upgraded {} packages",
+            total_upgraded.to_string().bold().green()
+        );
     }
 
-    let total_upgraded = successful_upgrades + tap_upgrades;
-
-    println!(
-        "Upgraded {} packages",
-        total_upgraded.to_string().bold().green()
-    );
+    // If upgrading all packages, also upgrade casks
+    if names.is_empty() {
+        println!();
+        if let Err(e) = super::cask::upgrade_cask(api, &[]).await {
+            println!("Failed to upgrade casks: {}", e);
+        }
+    }
 
     Ok(())
 }
@@ -1335,6 +1350,21 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
         if installed_versions.is_empty() {
+            // Check if it's a cask
+            if crate::cask::is_cask_installed(formula_name) {
+                // Delegate to cask uninstall
+                if let Err(e) = super::cask::uninstall_cask(&[formula_name.to_string()]) {
+                    println!(
+                        "  {}: Failed to uninstall cask: {}",
+                        formula_name.bold().red(),
+                        e
+                    );
+                } else {
+                    actually_uninstalled += 1;
+                }
+                continue;
+            }
+
             println!("  {}: not installed", formula_name.bold().yellow());
             continue;
         }

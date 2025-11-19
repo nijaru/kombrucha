@@ -426,6 +426,14 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
         );
     }
 
+    // If cleaning everything (no specific args), also clean casks
+    if formula_names.is_empty() {
+        println!();
+        if let Err(e) = super::cask::cleanup_cask(&[], dry_run) {
+            println!("{} Failed to clean casks: {}", "".yellow(), e);
+        }
+    }
+
     Ok(())
 }
 
@@ -515,6 +523,7 @@ pub fn doctor() -> Result<()> {
 
     let prefix = cellar::detect_prefix();
     let cellar = cellar::cellar_path();
+    let caskroom = crate::cask::caskroom_dir();
     let bin_dir = prefix.join("bin");
 
     println!("{}", "Checking system directories...".bold());
@@ -552,6 +561,25 @@ pub fn doctor() -> Result<()> {
         issues += 1;
     } else {
         println!("  {} Cellar exists and is writable", "".green());
+    }
+
+    // Check if Caskroom exists and is writable
+    if !caskroom.exists() {
+        println!(
+            "  {} Caskroom does not exist: {}",
+            "".yellow(),
+            caskroom.display()
+        );
+        // Not strictly an issue as it's created on demand, but worth noting
+    } else if std::fs::metadata(&caskroom)?.permissions().readonly() {
+        println!(
+            "  {} Caskroom is not writable: {}",
+            "".red(),
+            caskroom.display()
+        );
+        issues += 1;
+    } else {
+        println!("  {} Caskroom exists and is writable", "".green());
     }
 
     // Check if bin directory exists

@@ -67,6 +67,7 @@ pub async fn list(
     _api: &BrewApi,
     show_versions: bool,
     json: bool,
+    formula: bool,
     cask: bool,
     quiet: bool,
     columns: bool,
@@ -102,114 +103,19 @@ pub async fn list(
         is_tty
     };
 
-    if cask {
-        // List installed casks
-        let casks = crate::cask::list_installed_casks()?;
+    // Determine what to show
+    // If neither specified, show both (default behavior)
+    let show_formulae = formula || !cask;
+    let show_casks = cask || !formula;
+    let show_headers = show_formulae && show_casks;
 
-        if json {
-            // Output as JSON
-            #[derive(serde::Serialize)]
-            struct CaskInfo {
-                token: String,
-                version: String,
-            }
-
-            let cask_list: Vec<CaskInfo> = casks
-                .into_iter()
-                .map(|(token, version)| CaskInfo { token, version })
-                .collect();
-
-            let json_str = serde_json::to_string_pretty(&cask_list)?;
-            println!("{}", json_str);
-        } else if use_quiet {
-            // Quiet mode: just package names, one per line, no headers
-            if casks.is_empty() {
-                return Ok(());
-            }
-
-            for (token, _version) in &casks {
-                println!("{}", token);
-            }
-        } else if use_columns {
-            // Column mode (default in TTY or explicit --columns)
-            if is_tty {
-                println!("Installed casks:");
-            }
-
-            if casks.is_empty() {
-                if is_tty {
-                    println!("No casks installed");
-                }
-                return Ok(());
-            }
-
-            if is_tty {
-                println!();
-            }
-
-            if show_versions {
-                // Columns with versions: "name version" in columns
-                let formatted: Vec<String> = casks
-                    .iter()
-                    .map(|(token, version)| format!("{} {}", token, version))
-                    .collect();
-                print!("{}", format_columns(&formatted));
-            } else {
-                // Columns with names only
-                let names: Vec<String> = casks.iter().map(|(token, _)| token.clone()).collect();
-                print!("{}", format_columns(&names));
-            }
-
-            if is_tty {
-                println!(
-                    "{} {} casks installed",
-                    "".green(),
-                    casks.len().to_string().bold()
-                );
-            }
-        } else {
-            // Single column mode (--versions, -1, or piped without explicit --columns)
-            if is_tty {
-                println!("Installed casks:");
-            }
-
-            if casks.is_empty() {
-                if is_tty {
-                    println!("No casks installed");
-                }
-                return Ok(());
-            }
-
-            if is_tty {
-                println!();
-            }
-
-            if show_versions {
-                // Show versions
-                for (token, version) in &casks {
-                    println!("{} {}", token.bold().green(), version.dimmed());
-                }
-            } else {
-                // Names only
-                for (token, _version) in &casks {
-                    println!("{}", token.bold().green());
-                }
-            }
-
-            if is_tty {
-                println!(
-                    "{} {} casks installed",
-                    "".green(),
-                    casks.len().to_string().bold()
-                );
-            }
-        }
-    } else {
+    if show_formulae {
         // List installed formulae
         let packages = cellar::list_installed()?;
 
-        if json {
-            // Output as JSON
+        if json && !show_casks {
+            // Output as JSON (only if not showing casks too, or prioritize formulae)
+            // ... (existing JSON logic)
             #[derive(serde::Serialize)]
             struct PackageInfo {
                 name: String,
@@ -234,121 +140,129 @@ pub async fn list(
 
             let json_str = serde_json::to_string_pretty(&package_list)?;
             println!("{}", json_str);
-        } else if use_quiet {
-            // Quiet mode: just package names, one per line, no headers
-            if packages.is_empty() {
-                return Ok(());
-            }
+            return Ok(());
+        }
 
-            // Group by formula name to get unique names
-            let mut names: HashSet<String> = HashSet::with_capacity(packages.len());
-            for pkg in packages {
-                names.insert(pkg.name.clone());
-            }
-
-            let mut sorted_names: Vec<_> = names.into_iter().collect();
-            sorted_names.sort();
-
-            for name in sorted_names {
-                println!("{}", name);
-            }
-        } else if use_columns {
-            // Column mode (default in TTY or explicit --columns)
-            if is_tty {
-                println!("Installed packages:");
+        if !json {
+            if show_headers && is_tty {
+                println!("{}", "==> Formulae".bold().green());
             }
 
             if packages.is_empty() {
-                if is_tty {
+                if is_tty && !show_casks {
                     println!("No packages installed");
                 }
-                return Ok(());
-            }
-
-            // Group by formula name
-            let mut by_name: HashMap<String, Vec<cellar::InstalledPackage>> =
-                HashMap::with_capacity(packages.len());
-            for pkg in packages {
-                by_name.entry(pkg.name.clone()).or_default().push(pkg);
-            }
-
-            let mut names: Vec<_> = by_name.keys().cloned().collect();
-            names.sort();
-
-            if is_tty {
-                println!();
-            }
-
-            if show_versions {
-                // Columns with versions: "name version" in columns
-                let formatted: Vec<String> = names
-                    .iter()
-                    .map(|name| {
-                        let versions = &by_name[name];
-                        let pkg = &versions[0]; // Show first version in column mode
-                        format!("{} {}", name, pkg.version)
-                    })
-                    .collect();
-                print!("{}", format_columns(&formatted));
             } else {
-                // Columns with names only
-                print!("{}", format_columns(&names));
-            }
-
-            if is_tty {
-                println!(
-                    "{} {} packages installed",
-                    "".green(),
-                    by_name.len().to_string().bold()
-                );
-            }
-        } else {
-            // Single column mode (--versions, -1, or piped without explicit --columns)
-            if is_tty {
-                println!("Installed packages:");
-            }
-
-            if packages.is_empty() {
-                if is_tty {
-                    println!("No packages installed");
+                // ... (existing formulae display logic)
+                // Group by formula name
+                let mut by_name: HashMap<String, Vec<cellar::InstalledPackage>> =
+                    HashMap::with_capacity(packages.len());
+                for pkg in packages {
+                    by_name.entry(pkg.name.clone()).or_default().push(pkg);
                 }
-                return Ok(());
-            }
 
-            // Group by formula name
-            let mut by_name: HashMap<String, Vec<cellar::InstalledPackage>> =
-                HashMap::with_capacity(packages.len());
-            for pkg in packages {
-                by_name.entry(pkg.name.clone()).or_default().push(pkg);
-            }
+                let mut names: Vec<_> = by_name.keys().cloned().collect();
+                names.sort();
 
-            let mut names: Vec<_> = by_name.keys().cloned().collect();
-            names.sort();
-
-            if is_tty {
-                println!();
-            }
-
-            for name in names {
-                let versions = &by_name[&name];
-
-                if show_versions {
-                    // Show all versions on one line (brew behavior)
-                    let version_str: Vec<String> =
-                        versions.iter().map(|pkg| pkg.version.clone()).collect();
-                    println!("{} {}", name.bold().green(), version_str.join(" ").dimmed());
+                if use_columns {
+                    if show_versions {
+                        // Columns with versions: "name version" in columns
+                        let formatted: Vec<String> = names
+                            .iter()
+                            .map(|name| {
+                                let versions = &by_name[name];
+                                let pkg = &versions[0]; // Show first version in column mode
+                                format!("{} {}", name, pkg.version)
+                            })
+                            .collect();
+                        print!("{}", format_columns(&formatted));
+                    } else {
+                        // Columns with names only
+                        print!("{}", format_columns(&names));
+                    }
                 } else {
-                    // No versions requested: names only
-                    println!("{}", name.bold().green());
+                    for name in names {
+                        let versions = &by_name[&name];
+
+                        if show_versions {
+                            // Show all versions on one line (brew behavior)
+                            let version_str: Vec<String> =
+                                versions.iter().map(|pkg| pkg.version.clone()).collect();
+                            println!("{} {}", name.bold().green(), version_str.join(" ").dimmed());
+                        } else {
+                            // No versions requested: names only
+                            println!("{}", name.bold().green());
+                        }
+                    }
                 }
             }
+        }
+    }
 
-            if is_tty {
-                println!(
-                    "{} {} packages installed",
-                    "".green(),
-                    by_name.len().to_string().bold()
-                );
+    if show_casks {
+        // List installed casks
+        let casks = crate::cask::list_installed_casks()?;
+
+        if json && !show_formulae {
+            // Output as JSON (only if not showing formulae too)
+            // ... (existing JSON logic)
+            #[derive(serde::Serialize)]
+            struct CaskInfo {
+                token: String,
+                version: String,
+            }
+
+            let cask_list: Vec<CaskInfo> = casks
+                .into_iter()
+                .map(|(token, version)| CaskInfo { token, version })
+                .collect();
+
+            let json_str = serde_json::to_string_pretty(&cask_list)?;
+            println!("{}", json_str);
+            return Ok(());
+        }
+
+        if !json {
+            if show_headers && is_tty {
+                if show_formulae {
+                    println!(); // Spacing
+                }
+                println!("{}", "==> Casks".bold().green());
+            }
+
+            if casks.is_empty() {
+                if is_tty && !show_formulae {
+                    println!("No casks installed");
+                }
+            } else {
+                // ... (existing casks display logic)
+                if use_columns {
+                    if show_versions {
+                        // Columns with versions: "name version" in columns
+                        let formatted: Vec<String> = casks
+                            .iter()
+                            .map(|(token, version)| format!("{} {}", token, version))
+                            .collect();
+                        print!("{}", format_columns(&formatted));
+                    } else {
+                        // Columns with names only
+                        let names: Vec<String> =
+                            casks.iter().map(|(token, _)| token.clone()).collect();
+                        print!("{}", format_columns(&names));
+                    }
+                } else {
+                    if show_versions {
+                        // Show versions
+                        for (token, version) in &casks {
+                            println!("{} {}", token.bold().green(), version.dimmed());
+                        }
+                    } else {
+                        // Names only
+                        for (token, _version) in &casks {
+                            println!("{}", token.bold().green());
+                        }
+                    }
+                }
             }
         }
     }
