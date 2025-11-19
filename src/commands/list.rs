@@ -250,17 +250,15 @@ pub async fn list(
                             casks.iter().map(|(token, _)| token.clone()).collect();
                         print!("{}", format_columns(&names));
                     }
+                } else if show_versions {
+                    // Show versions
+                    for (token, version) in &casks {
+                        println!("{} {}", token.bold().green(), version.dimmed());
+                    }
                 } else {
-                    if show_versions {
-                        // Show versions
-                        for (token, version) in &casks {
-                            println!("{} {}", token.bold().green(), version.dimmed());
-                        }
-                    } else {
-                        // Names only
-                        for (token, _version) in &casks {
-                            println!("{}", token.bold().green());
-                        }
+                    // Names only
+                    for (token, _version) in &casks {
+                        println!("{}", token.bold().green());
                     }
                 }
             }
