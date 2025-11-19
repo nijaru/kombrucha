@@ -106,6 +106,10 @@ enum Commands {
     Uses {
         /// Formula name
         formula: String,
+
+        /// Only show formulae that are currently installed
+        #[arg(long)]
+        installed: bool,
     },
 
     /// List installed packages
@@ -985,8 +989,8 @@ async fn run() -> anyhow::Result<()> {
         }) => {
             commands::deps(&api, &formula, tree, installed, direct).await?;
         }
-        Some(Commands::Uses { formula }) => {
-            commands::uses(&api, &formula).await?;
+        Some(Commands::Uses { formula, installed }) => {
+            commands::uses(&api, &formula, installed).await?;
         }
         Some(Commands::List {
             versions,
@@ -1436,12 +1440,8 @@ async fn run() -> anyhow::Result<()> {
             commands::maintenance::update_if_needed()?;
         }
         None => {
-            println!(
-                "{} Welcome to bru - a fast Homebrew-compatible package manager!",
-                "👋".bold()
-            );
-            println!("\nRun {} to see available commands.", "bru --help".cyan());
-            println!("\n{} Built with Rust for maximum performance", "⚡".bold());
+            // Show help when no command is provided (brew-compatible behavior)
+            Cli::command().print_help()?;
         }
     }
 

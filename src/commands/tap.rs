@@ -27,7 +27,7 @@ pub fn tap(tap_name: Option<&str>) -> Result<()> {
             println!("Tapping {}...", tap.cyan());
 
             if crate::tap::is_tapped(tap)? {
-                println!("  {} {} already tapped", "✓".green(), tap.bold());
+                println!("  {} {} already tapped", "".green(), tap.bold());
                 return Ok(());
             }
 
@@ -35,7 +35,7 @@ pub fn tap(tap_name: Option<&str>) -> Result<()> {
 
             println!(
                 "  {} Tapped {} successfully",
-                "✓".green(),
+                "".green(),
                 tap.bold().green()
             );
         }
@@ -48,7 +48,7 @@ pub fn untap(tap_name: &str) -> Result<()> {
     println!("Untapping {}...", tap_name.cyan());
 
     if !crate::tap::is_tapped(tap_name)? {
-        println!("  {} {} is not tapped", "⚠".yellow(), tap_name.bold());
+        println!("  {} {} is not tapped", "".yellow(), tap_name.bold());
         return Ok(());
     }
 
@@ -56,7 +56,7 @@ pub fn untap(tap_name: &str) -> Result<()> {
 
     println!(
         "  {} Untapped {} successfully",
-        "✓".green(),
+        "".green(),
         tap_name.bold().green()
     );
 
@@ -67,17 +67,13 @@ pub fn untap(tap_name: &str) -> Result<()> {
 pub fn tap_info(tap_name: &str) -> Result<()> {
     println!(
         "{} Tap information for {}",
-        "ℹ".bold(),
+        "".bold(),
         tap_name.cyan().bold()
     );
     println!();
 
     if !crate::tap::is_tapped(tap_name)? {
-        println!(
-            "  {} Tap {} is not installed",
-            "⚠".yellow(),
-            tap_name.bold()
-        );
+        println!("  {} Tap {} is not installed", "".yellow(), tap_name.bold());
         return Ok(());
     }
 
@@ -143,7 +139,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
     if parts.len() != 2 {
         println!(
             "{} Invalid tap name. Format: {}",
-            "✗".red(),
+            "".red(),
             "user/repo".cyan()
         );
         return Ok(());
@@ -164,7 +160,7 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
     if tap_path.exists() {
         println!(
             "{} Tap already exists: {}",
-            "⚠".yellow(),
+            "".yellow(),
             tap_path.display().to_string().cyan()
         );
         return Ok(());
@@ -191,12 +187,12 @@ pub fn tap_new(tap_name: &str) -> Result<()> {
         .status()?;
 
     if !status.success() {
-        println!("  {} Failed to initialize git repository", "⚠".yellow());
+        println!("  {} Failed to initialize git repository", "".yellow());
     }
 
     println!(
         "{} Tap created at: {}",
-        "✓".green().bold(),
+        "".green().bold(),
         tap_path.display().to_string().cyan()
     );
     println!(
@@ -218,7 +214,7 @@ pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "✗".red(), tap_name);
+        println!("{} Tap not found: {}", "".red(), tap_name);
         return Ok(());
     }
 
@@ -237,7 +233,7 @@ pub fn tap_pin(tap_name: &str) -> anyhow::Result<()> {
 
     std::fs::write(&pin_file, "")?;
 
-    println!(" {} Tap pinned: {}", "✓".green().bold(), tap_name.bold());
+    println!(" {} Tap pinned: {}", "".green().bold(), tap_name.bold());
     println!(
         "  This tap will not be updated by {} or {}",
         "bru update".cyan(),
@@ -262,11 +258,7 @@ pub fn tap_unpin(tap_name: &str) -> anyhow::Result<()> {
 
     std::fs::remove_file(&pin_file)?;
 
-    println!(
-        "\n {} Tap unpinned: {}",
-        "✓".green().bold(),
-        tap_name.bold()
-    );
+    println!("\n {} Tap unpinned: {}", "".green().bold(), tap_name.bold());
     println!(
         "  This tap will now be updated by {} and {}",
         "bru update".cyan(),
@@ -283,7 +275,7 @@ pub fn tap_readme(tap_name: &str) -> anyhow::Result<()> {
     let tap_dir = crate::tap::tap_directory(tap_name)?;
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "✗".red(), tap_name);
+        println!("{} Tap not found: {}", "".red(), tap_name);
         return Ok(());
     }
 
@@ -325,10 +317,10 @@ pub fn tap_cmd(tap_name: &str, command: &str, args: &[String]) -> anyhow::Result
     let cmd_dir = tap_dir.join("cmd");
 
     if cmd_dir.exists() {
-        println!("  {} Tap has cmd/ directory", "✓".green());
+        println!("  {} Tap has cmd/ directory", "".green());
         println!("  Would execute: {}/{}", tap_name, command.cyan());
     } else {
-        println!("  {} Tap has no cmd/ directory", "⚠".yellow());
+        println!("  {} Tap has no cmd/ directory", "".yellow());
     }
 
     Ok(())

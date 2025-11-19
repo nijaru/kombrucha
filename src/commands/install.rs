@@ -100,7 +100,7 @@ pub(crate) async fn resolve_dependencies(
 
     // Only print summary if not in quiet mode
     if std::env::var("BRU_QUIET").is_err() {
-        println!("✓ {} dependencies resolved", all_formulae.len());
+        println!("{} dependencies resolved", all_formulae.len());
     }
 
     Ok((all_formulae, dep_order))
@@ -209,18 +209,13 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
                             .and_then(|b| b.stable.as_ref())
                             .is_none()
                     {
-                        println!("{} No bottle available for {}", "⚠".yellow(), name.bold());
+                        println!("{}: No bottle available", name.bold().yellow());
                         return None;
                     }
                     Some(formula)
                 }
                 Err(e) => {
-                    println!(
-                        "{} Failed to fetch formula {}: {}",
-                        "✗".red(),
-                        name.bold(),
-                        e
-                    );
+                    println!("{}: Failed to fetch formula: {}", name.bold().red(), e);
                     None
                 }
             }
@@ -241,9 +236,8 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     match download::download_bottles(api, &formulae).await {
         Ok(results) => {
             println!(
-                "{} Downloaded {} bottles to {}",
-                "✓".green(),
-                results.len().to_string().bold(),
+                "Downloaded {} bottles to {}",
+                results.len().to_string().bold().green(),
                 download::cache_dir().display().to_string().dimmed()
             );
             for (name, path) in results {
@@ -255,7 +249,7 @@ pub async fn fetch(api: &BrewApi, formula_names: &[String]) -> Result<()> {
             }
         }
         Err(e) => {
-            println!("{} Download failed: {}", "✗".red(), e);
+            println!("{}: {}", "Download failed".red().bold(), e);
             return Err(e.into());
         }
     }
@@ -305,19 +299,10 @@ pub async fn install(
                 Some(&format!("{} (custom tap)", tap_formula.bold())),
             ) {
                 Ok(_) => {
-                    println!(
-                        "  {} {} installed successfully",
-                        "✓".green(),
-                        tap_formula.bold()
-                    );
+                    println!("  {} installed successfully", tap_formula.bold().green());
                 }
                 Err(e) => {
-                    println!(
-                        "  {} Failed to install {}: {}",
-                        "✗".red(),
-                        tap_formula.bold(),
-                        e
-                    );
+                    println!("  {}: Failed to install: {}", tap_formula.bold().red(), e);
                 }
             }
         }
@@ -384,19 +369,10 @@ pub async fn install(
                 Some(&format!("{} (cask)", cask_name.bold())),
             ) {
                 Ok(_) => {
-                    println!(
-                        "  {} {} installed successfully",
-                        "✓".green(),
-                        cask_name.bold()
-                    );
+                    println!("  {} installed successfully", cask_name.bold().green());
                 }
                 Err(e) => {
-                    println!(
-                        "  {} Failed to install {}: {}",
-                        "✗".red(),
-                        cask_name.bold(),
-                        e
-                    );
+                    println!("  {}: Failed to install: {}", cask_name.bold().red(), e);
                 }
             }
         }
@@ -405,7 +381,7 @@ pub async fn install(
     // Report any other errors
     if !errors.is_empty() {
         for (name, err) in &errors {
-            println!("{} {}: {}", "✗".red(), name, err);
+            println!("{}: {}", name.red().bold(), err);
         }
     }
 
@@ -487,8 +463,8 @@ pub async fn install(
     // If dry-run, stop here
     if dry_run {
         println!(
-            "{} Dry run complete - no packages were installed",
-            "✓".green()
+            "{}",
+            "Dry run complete - no packages were installed".green()
         );
         return Ok(());
     }
@@ -533,12 +509,7 @@ pub async fn install(
                         continue;
                     }
                     Err(e) => {
-                        println!(
-                            "  {} Failed to install {}: {}",
-                            "✗".red(),
-                            formula.name.bold(),
-                            e
-                        );
+                        println!("  {}: Failed to install: {}", formula.name.bold().red(), e);
                         continue;
                     }
                 }
@@ -578,19 +549,14 @@ pub async fn install(
         // Skip linking if formula is keg-only (matches Homebrew behavior)
         if !formula.keg_only {
             let linked = symlink::link_formula(&formula.name, actual_version)?;
-            println!(
-                "    ├ {} Linked {} files",
-                "✓".green(),
-                linked.len().to_string().dimmed()
-            );
+            println!("    ├ Linked {} files", linked.len().to_string().dimmed());
 
             // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
             symlink::optlink(&formula.name, actual_version)?;
         } else {
             println!(
-                "    ├ {} {} is keg-only (not linked to prefix)",
-                "ℹ".cyan(),
-                formula.name
+                "    ├ {} is keg-only (not linked to prefix)",
+                formula.name.dimmed()
             );
         }
 
@@ -601,8 +567,7 @@ pub async fn install(
         receipt_data.write(&extracted_path)?;
 
         println!(
-            "    └ {} Installed {} {}",
-            "✓".green(),
+            "    └ Installed {} {}",
             formula.name.bold().green(),
             version.dimmed()
         );
@@ -611,9 +576,8 @@ pub async fn install(
     // Summary
     let installed_count = to_install.len();
     println!(
-        "{} Installed {} packages",
-        "✓".green().bold(),
-        installed_count.to_string().bold()
+        "Installed {} packages",
+        installed_count.to_string().bold().green()
     );
 
     Ok(())
@@ -739,7 +703,7 @@ pub async fn upgrade(
         spinner.finish_and_clear();
 
         if outdated.is_empty() {
-            println!("{} All packages are up to date", "✓".green());
+            println!("{}", "All packages are up to date".green());
             return Ok(());
         }
 
@@ -755,10 +719,7 @@ pub async fn upgrade(
 
     // If dry-run, stop after showing what would be upgraded
     if dry_run {
-        println!(
-            "{} Dry run complete - no packages were upgraded",
-            "✓".green()
-        );
+        println!("{}", "Dry run complete - no packages were upgraded".green());
         return Ok(());
     }
 
@@ -851,7 +812,7 @@ pub async fn upgrade(
         .collect();
 
     if candidates.is_empty() && tap_packages.is_empty() {
-        println!("{} All packages are up to date", "✓".green());
+        println!("{}", "All packages are up to date".green());
         return Ok(());
     }
 
@@ -984,9 +945,8 @@ pub async fn upgrade(
                 // Unlink old version (sequential - touches shared /opt/homebrew/bin/)
                 if let Err(e) = symlink::unlink_formula(&pkg.name, &pkg.old_version) {
                     println!(
-                        "  {} {}: failed to unlink old version symlink: {}",
-                        "✗".red(),
-                        pkg.name.bold(),
+                        "  {}: failed to unlink old version symlink: {}",
+                        pkg.name.bold().red(),
                         e
                     );
                 }
@@ -997,7 +957,7 @@ pub async fn upgrade(
                     let linked = match symlink::link_formula(&pkg.name, &pkg.new_version) {
                         Ok(l) => l,
                         Err(e) => {
-                            println!("  {} {}: failed to link: {}", "✗".red(), pkg.name.bold(), e);
+                            println!("  {}: failed to link: {}", pkg.name.bold().red(), e);
                             continue;
                         }
                     };
@@ -1005,9 +965,8 @@ pub async fn upgrade(
                     // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
                     if let Err(e) = symlink::optlink(&pkg.name, &pkg.new_version) {
                         println!(
-                            "  {} {}: failed to create opt link: {}",
-                            "✗".red(),
-                            pkg.name.bold(),
+                            "  {}: failed to create opt link: {}",
+                            pkg.name.bold().red(),
                             e
                         );
                         linking_failed = true;
@@ -1038,9 +997,8 @@ pub async fn upgrade(
                 let mut receipt_failed = false;
                 if let Err(e) = receipt_data.write(&pkg.extracted_path) {
                     println!(
-                        "  {} {}: failed to write receipt: {}",
-                        "✗".red(),
-                        pkg.name.bold(),
+                        "  {}: failed to write receipt: {}",
+                        pkg.name.bold().red(),
                         e
                     );
                     receipt_failed = true;
@@ -1052,9 +1010,8 @@ pub async fn upgrade(
                         Ok(_) => true,
                         Err(e) => {
                             println!(
-                                "  {} {}: failed to remove old version: {}",
-                                "✗".red(),
-                                pkg.name.bold(),
+                                "  {}: failed to remove old version: {}",
+                                pkg.name.bold().red(),
                                 e
                             );
                             // Continue anyway - new version is installed
@@ -1067,38 +1024,27 @@ pub async fn upgrade(
 
                 // Report success
                 if linked_count > 0 {
-                    println!(
-                        "    ├ {} Linked {} files",
-                        "✓".green(),
-                        linked_count.to_string().dimmed()
-                    );
+                    println!("    ├ Linked {} files", linked_count.to_string().dimmed());
                 }
                 if pkg.formula.keg_only {
                     println!(
-                        "    ├ {} {} is keg-only (not linked to prefix)",
-                        "ℹ".cyan(),
-                        pkg.name
+                        "    ├ {} is keg-only (not linked to prefix)",
+                        pkg.name.dimmed()
                     );
                 }
                 if old_removed {
-                    println!(
-                        "    ├ {} Removed old version {}",
-                        "✓".green(),
-                        pkg.old_version.dimmed()
-                    );
+                    println!("    ├ Removed old version {}", pkg.old_version.dimmed());
                 }
 
                 if linking_failed || receipt_failed {
                     println!(
-                        "    └ {} Upgraded {} to {} (with warnings)",
-                        "⚠".yellow(),
+                        "    └ Upgraded {} to {} (with warnings)",
                         pkg.name.bold().yellow(),
                         pkg.new_version.dimmed()
                     );
                 } else {
                     println!(
-                        "    └ {} Upgraded {} to {}",
-                        "✓".green(),
+                        "    └ Upgraded {} to {}",
                         pkg.name.bold().green(),
                         pkg.new_version.dimmed()
                     );
@@ -1106,7 +1052,7 @@ pub async fn upgrade(
                 }
             }
             Err(err) => {
-                println!("  {} {}", "✗".red(), err);
+                println!("  {}", err.to_string().red());
             }
         }
     }
@@ -1119,20 +1065,14 @@ pub async fn upgrade(
         match super::utils::fallback_to_brew("upgrade", formula_name) {
             Ok(_) => {
                 println!(
-                    "    └ {} Upgraded {} to {} (via brew)",
-                    "✓".green(),
+                    "    └ Upgraded {} to {} (via brew)",
                     formula_name.bold().green(),
                     new_version.dimmed()
                 );
                 successful_upgrades += 1;
             }
             Err(e) => {
-                println!(
-                    "  {} Failed to upgrade {}: {}",
-                    "✗".red(),
-                    formula_name.bold(),
-                    e
-                );
+                println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e);
             }
         }
     }
@@ -1164,20 +1104,14 @@ pub async fn upgrade(
                             super::utils::cleanup_specific_version(formula_name, &old_ver)
                     {
                         println!(
-                            "    {} Warning: failed to clean up old version: {}",
-                            "⚠".yellow(),
-                            e
+                            "    Warning: failed to clean up old version: {}",
+                            e.to_string().yellow()
                         );
                     }
-                    println!("  {} Upgraded {}", "✓".green(), formula_name.bold());
+                    println!("  Upgraded {}", formula_name.bold().green());
                     tap_upgrades += 1;
                 }
-                Err(e) => println!(
-                    "  {} Failed to upgrade {}: {}",
-                    "✗".red(),
-                    formula_name.bold(),
-                    e
-                ),
+                Err(e) => println!("  {}: Failed to upgrade: {}", formula_name.bold().red(), e),
             }
         }
     }
@@ -1185,9 +1119,8 @@ pub async fn upgrade(
     let total_upgraded = successful_upgrades + tap_upgrades;
 
     println!(
-        "{} Upgraded {} packages",
-        "✓".green().bold(),
-        total_upgraded.to_string().bold()
+        "Upgraded {} packages",
+        total_upgraded.to_string().bold().green()
     );
 
     Ok(())
@@ -1200,7 +1133,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
     let formula_names = names;
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{}", "No formulae specified".red());
         return Ok(());
     }
 
@@ -1225,16 +1158,15 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         // Skip pinned packages
         if pinned.contains(formula_name) {
             println!(
-                "  {} {} is pinned (cannot reinstall pinned formulae)",
-                "⚠".yellow(),
-                formula_name.bold()
+                "  {}: pinned (cannot reinstall pinned formulae)",
+                formula_name.bold().yellow()
             );
             continue;
         }
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
         if installed_versions.is_empty() {
-            println!("  {} {} not installed", "⚠".yellow(), formula_name.bold());
+            println!("  {}: not installed", formula_name.bold().yellow());
             continue;
         }
 
@@ -1274,14 +1206,13 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             match super::utils::fallback_to_brew("reinstall", &full_name) {
                 Ok(_) => {
                     actually_reinstalled += 1;
-                    println!("  {} Reinstalled {}", "✓".green(), formula_name.bold());
+                    println!("  Reinstalled {}", formula_name.bold().green());
                     continue;
                 }
                 Err(e) => {
                     println!(
-                        "  {} Failed to reinstall {}: {}",
-                        "✗".red(),
-                        formula_name.bold(),
+                        "  {}: Failed to reinstall: {}",
+                        formula_name.bold().red(),
                         e
                     );
                     continue;
@@ -1325,9 +1256,8 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
                     }
                     Err(e) => {
                         println!(
-                            "  {} Failed to reinstall {}: {}",
-                            "✗".red(),
-                            formula_name.bold(),
+                            "  {}: Failed to reinstall: {}",
+                            formula_name.bold().red(),
                             e
                         );
                         continue;
@@ -1357,16 +1287,11 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
             // Create version-agnostic symlinks (opt/ and var/homebrew/linked/)
             symlink::optlink(formula_name, actual_new_version)?;
 
-            println!(
-                "    ├ {} Linked {} files",
-                "✓".green(),
-                linked.len().to_string().dimmed()
-            );
+            println!("    ├ Linked {} files", linked.len().to_string().dimmed());
         } else {
             println!(
-                "    ├ {} {} is keg-only (not linked to prefix)",
-                "ℹ".cyan(),
-                formula_name
+                "    ├ {} is keg-only (not linked to prefix)",
+                formula_name.dimmed()
             );
         }
 
@@ -1376,8 +1301,7 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
         let receipt_data = receipt::InstallReceipt::new_bottle(&formula, runtime_deps, true);
         receipt_data.write(&extracted_path)?;
         println!(
-            "    └ {} Reinstalled {} {}",
-            "✓".green(),
+            "    └ Reinstalled {} {}",
             formula_name.bold().green(),
             new_version.dimmed()
         );
@@ -1386,9 +1310,8 @@ pub async fn reinstall(api: &BrewApi, names: &[String], cask: bool) -> Result<()
 
     if actually_reinstalled > 0 {
         println!(
-            "{} Reinstalled {} package{}",
-            "✓".green().bold(),
-            actually_reinstalled.to_string().bold(),
+            "Reinstalled {} package{}",
+            actually_reinstalled.to_string().bold().green(),
             if actually_reinstalled == 1 { "" } else { "s" }
         );
     } else {
@@ -1412,7 +1335,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         // Check if installed
         let installed_versions = cellar::get_installed_versions(formula_name)?;
         if installed_versions.is_empty() {
-            println!("  {} {} not installed", "⚠".yellow(), formula_name.bold());
+            println!("  {}: not installed", formula_name.bold().yellow());
             continue;
         }
 
@@ -1441,9 +1364,8 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
             if !dependents.is_empty() {
                 println!(
-                    "  {} Cannot uninstall {} - required by: {}",
-                    "⚠".yellow(),
-                    formula_name.bold(),
+                    "  {}: Cannot uninstall - required by: {}",
+                    formula_name.bold().yellow(),
                     dependents.join(", ").cyan()
                 );
                 println!("    Use {} to force uninstall", "--force".dimmed());
@@ -1461,8 +1383,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         let unlinked = symlink::unlink_formula(formula_name, &version)?;
         if !unlinked.is_empty() {
             println!(
-                "    ├ {} Unlinked {} files",
-                "✓".green(),
+                "    ├ Unlinked {} files",
                 unlinked.len().to_string().dimmed()
             );
         }
@@ -1513,8 +1434,7 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
         }
 
         println!(
-            "    └ {} Uninstalled {} {}",
-            "✓".green(),
+            "    └ Uninstalled {} {}",
             formula_name.bold().green(),
             version.dimmed()
         );
@@ -1523,9 +1443,8 @@ pub async fn uninstall(_api: &BrewApi, formula_names: &[String], force: bool) ->
 
     if actually_uninstalled > 0 {
         println!(
-            "{} Uninstalled {} package{}",
-            "✓".green().bold(),
-            actually_uninstalled.to_string().bold(),
+            "Uninstalled {} package{}",
+            actually_uninstalled.to_string().bold().green(),
             if actually_uninstalled == 1 { "" } else { "s" }
         );
     } else {

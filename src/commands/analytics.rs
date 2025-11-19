@@ -24,14 +24,14 @@ pub fn analytics(action: Option<&str>) -> Result<()> {
                 std::fs::create_dir_all(parent)?;
             }
             std::fs::write(&analytics_file, "")?;
-            println!("{} Analytics disabled", "✓".green());
+            println!("{} Analytics disabled", "".green());
         }
         Some("on") => {
             // Remove the file to enable analytics
             if analytics_file.exists() {
                 std::fs::remove_file(&analytics_file)?;
             }
-            println!("{} Analytics enabled", "✓".green());
+            println!("{} Analytics enabled", "".green());
         }
         Some("state") | None => {
             // Show current state
@@ -49,7 +49,7 @@ pub fn analytics(action: Option<&str>) -> Result<()> {
             }
         }
         Some(other) => {
-            println!("{} Invalid action: {}", "✗".red(), other);
+            println!("{} Invalid action: {}", "".red(), other);
             println!("Valid actions: on, off, state");
             return Ok(());
         }
@@ -70,7 +70,7 @@ pub fn analytics_state() -> anyhow::Result<()> {
     if analytics_disabled {
         println!("  Status: {}", "disabled".dimmed());
         println!("  Analytics are currently turned off");
-        println!("  {} No usage data is being collected", "✓".green());
+        println!("  {} No usage data is being collected", "".green());
     } else {
         println!("  Status: {}", "enabled".green());
         println!("  Analytics are currently enabled");
@@ -79,7 +79,7 @@ pub fn analytics_state() -> anyhow::Result<()> {
 
     println!(
         "\n  {} To change: {} [on|off]",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "bru analytics".cyan()
     );
 

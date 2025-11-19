@@ -24,7 +24,7 @@ pub fn log(formula_name: &str) -> Result<()> {
     // Check if formula is installed
     let installed_versions = cellar::get_installed_versions(formula_name)?;
     if installed_versions.is_empty() {
-        println!("{} {} is not installed", "⚠".yellow(), formula_name.bold());
+        println!("{} {} is not installed", "".yellow(), formula_name.bold());
         println!(
             "Run {} to install it",
             format!("bru install {}", formula_name).cyan()
@@ -246,7 +246,7 @@ pub async fn gist_logs(api: &BrewApi, formula: Option<&str>) -> Result<()> {
 
     println!("{}", output);
     println!();
-    println!("{} Diagnostic information generated", "✓".green());
+    println!("{} Diagnostic information generated", "".green());
     println!("Copy the above output to share for debugging");
 
     Ok(())

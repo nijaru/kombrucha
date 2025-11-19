@@ -28,7 +28,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
     match api.fetch_formula(formula_name).await {
         Ok(_) => {}
         Err(_) => {
-            println!("{} Formula '{}' not found", "✗".red(), formula_name);
+            println!("{} Formula '{}' not found", "".red(), formula_name);
             return Ok(());
         }
     }
@@ -83,7 +83,7 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
         match found_path {
             Some(p) => p,
             None => {
-                println!("{} Formula file not found locally", "⚠".yellow());
+                println!("{} Formula file not found locally", "".yellow());
                 println!("Formula exists in API but not in local taps");
                 println!("Try: {}", "brew tap homebrew/core".to_string().cyan());
                 return Ok(());
@@ -109,13 +109,13 @@ pub async fn edit(api: &BrewApi, formula_name: &str) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("{} Finished editing {}", "✓".green(), formula_name.bold());
+            println!("{} Finished editing {}", "".green(), formula_name.bold());
         }
         Ok(_) => {
-            println!("{} Editor exited with error", "⚠".yellow());
+            println!("{} Editor exited with error", "".yellow());
         }
         Err(e) => {
-            println!("{} Failed to open editor: {}", "✗".red(), e);
+            println!("{} Failed to open editor: {}", "".red(), e);
             println!("Set EDITOR environment variable to your preferred editor");
         }
     }
@@ -209,7 +209,7 @@ pub fn create(url: &str, name: Option<&str>) -> Result<()> {
     let filename = format!("{}.rb", formula_name);
     std::fs::write(&filename, template)?;
 
-    println!("{} Created {}", "✓".green(), filename.bold().green());
+    println!("{} Created {}", "".green(), filename.bold().green());
     println!();
     println!("{}", "Next steps:".bold());
     println!(
@@ -275,7 +275,7 @@ pub async fn livecheck(api: &BrewApi, formula_name: &str) -> Result<()> {
 /// * `formula_names` - The formulae to audit
 pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -364,15 +364,15 @@ pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
                 }
 
                 if issues.is_empty() {
-                    println!("  {} No issues found", "✓".green());
+                    println!("  {} No issues found", "".green());
                 } else {
                     for issue in issues {
-                        println!("  {} {}", "⚠".yellow(), issue.dimmed());
+                        println!("  {} {}", "".yellow(), issue.dimmed());
                     }
                 }
             }
             None => {
-                println!("  {} Formula file not found locally", "⚠".yellow());
+                println!("  {} Formula file not found locally", "".yellow());
             }
         }
 
@@ -392,7 +392,7 @@ pub async fn audit(_api: &BrewApi, formula_names: &[String]) -> Result<()> {
 /// * `fix` - If true, automatically fix style violations
 pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -407,7 +407,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
 
     println!(
         "\n {} Style checking requires RuboCop (Phase 3)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Formula style would be validated against Homebrew standards:");
     println!("  - Naming conventions");
@@ -417,7 +417,7 @@ pub fn style(formula_names: &[String], fix: bool) -> anyhow::Result<()> {
 
     for formula in formula_names {
         println!("  {}", formula.cyan());
-        println!("    {} Would check formula style", "ℹ".dimmed());
+        println!("    {} Would check formula style", "".dimmed());
     }
 
     if fix {
@@ -439,7 +439,7 @@ pub fn test(formula_name: &str) -> anyhow::Result<()> {
 
     println!(
         "{} Formula testing requires Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Test suite would be executed from formula's test block");
     println!("  Typical tests verify:");
@@ -467,7 +467,7 @@ pub fn test(formula_name: &str) -> anyhow::Result<()> {
 /// * `write` - If true, write bottle DSL back to formula files
 pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -479,13 +479,13 @@ pub fn bottle(formula_names: &[String], write: bool) -> anyhow::Result<()> {
     if write {
         println!(
             "  {} Write mode enabled - would update formula files",
-            "ℹ".blue()
+            "".dimmed()
         );
     }
 
     println!(
         "{} Bottle generation requires Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Would build from source and create bottles:");
 
@@ -544,17 +544,17 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
     let (formula_path, source_tap) = match (formula_path, source_tap) {
         (Some(path), Some(tap)) => (path, tap),
         _ => {
-            println!("{} Formula not found: {}", "✗".red(), formula_name);
+            println!("{} Formula not found: {}", "".red(), formula_name);
             return Ok(());
         }
     };
 
-    println!("  {} Found in: {}", "✓".green(), source_tap.cyan());
+    println!("  {} Found in: {}", "".green(), source_tap.cyan());
 
     // Validate target tap
     let target_tap_dir = crate::tap::tap_directory(target_tap)?;
     if !target_tap_dir.exists() {
-        println!("{} Target tap not found: {}", "✗".red(), target_tap);
+        println!("{} Target tap not found: {}", "".red(), target_tap);
         println!(
             "  Create it first with: {}",
             format!("bru tap-new {}", target_tap).cyan()
@@ -569,7 +569,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
     let target_path = target_formula_dir.join(format!("{}.rb", formula_name));
 
     if target_path.exists() {
-        println!("{} Formula already exists in target tap", "⚠".yellow());
+        println!("{} Formula already exists in target tap", "".yellow());
         return Ok(());
     }
 
@@ -577,7 +577,7 @@ pub fn extract(formula_name: &str, target_tap: &str) -> Result<()> {
 
     println!(
         "{} Extracted {} to {}",
-        "✓".green().bold(),
+        "".green().bold(),
         formula_name.bold(),
         target_tap.cyan()
     );
@@ -613,7 +613,7 @@ pub async fn unpack(api: &BrewApi, formula_name: &str, dest_dir: Option<&str>) -
     // For now, provide informational output
     println!(
         "{} Source unpacking requires Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Formula source would be downloaded and extracted to:");
 
@@ -647,7 +647,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
     // Check if formula is installed
     let versions = cellar::get_installed_versions(formula_name)?;
     if versions.is_empty() {
-        println!("{} Formula not installed: {}", "✗".red(), formula_name);
+        println!("{} Formula not installed: {}", "".red(), formula_name);
         return Ok(());
     }
 
@@ -676,7 +676,7 @@ pub fn migrate(formula_name: &str, new_tap: Option<&str>) -> Result<()> {
 
     println!(
         "{} Migration prepared (metadata would be updated)",
-        "✓".green()
+        "".green()
     );
 
     Ok(())
@@ -713,7 +713,7 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
 
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
-            println!("  {} Not installed", "⚠".yellow());
+            println!("  {} Not installed", "".yellow());
             continue;
         }
 
@@ -780,14 +780,14 @@ pub fn linkage(formula_names: &[String], show_all: bool) -> Result<()> {
         } else if broken_links > 0 {
             println!(
                 "  {} {} files checked, {} broken links",
-                "⚠".yellow(),
+                "".yellow(),
                 checked_files,
                 broken_links
             );
         } else {
             println!(
                 "  {} {} files checked, all links valid",
-                "✓".green(),
+                "".green(),
                 checked_files
             );
         }
@@ -815,13 +815,13 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
     };
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "✗".red(), tap);
+        println!("{} Tap not found: {}", "".red(), tap);
         return Ok(());
     }
 
     let formula_dir = tap_dir.join("Formula");
     if !formula_dir.exists() {
-        println!("{} No Formula directory in tap", "⚠".yellow());
+        println!("{} No Formula directory in tap", "".yellow());
         return Ok(());
     }
 
@@ -858,21 +858,21 @@ pub fn readall(tap_name: Option<&str>) -> Result<()> {
     let (total, valid) = count_formulae(&formula_dir, 0);
 
     if total == 0 {
-        println!("{} No formulae found in tap", "⚠".yellow());
+        println!("{} No formulae found in tap", "".yellow());
     } else if valid == total {
         println!(
             "{} All {} formulae are readable",
-            "✓".green().bold(),
+            "".green().bold(),
             total.to_string().bold()
         );
     } else {
         println!(
             "{} {} of {} formulae are readable",
-            "⚠".yellow(),
+            "".yellow(),
             valid,
             total
         );
-        println!("  {} {} formulae have issues", "✗".red(), total - valid);
+        println!("  {} {} formulae have issues", "".red(), total - valid);
     }
 
     Ok(())

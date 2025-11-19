@@ -163,7 +163,7 @@ pub async fn list(
             if is_tty {
                 println!(
                     "{} {} casks installed",
-                    "✓".green(),
+                    "".green(),
                     casks.len().to_string().bold()
                 );
             }
@@ -199,7 +199,7 @@ pub async fn list(
             if is_tty {
                 println!(
                     "{} {} casks installed",
-                    "✓".green(),
+                    "".green(),
                     casks.len().to_string().bold()
                 );
             }
@@ -298,7 +298,7 @@ pub async fn list(
             if is_tty {
                 println!(
                     "{} {} packages installed",
-                    "✓".green(),
+                    "".green(),
                     by_name.len().to_string().bold()
                 );
             }
@@ -346,7 +346,7 @@ pub async fn list(
             if is_tty {
                 println!(
                     "{} {} packages installed",
-                    "✓".green(),
+                    "".green(),
                     by_name.len().to_string().bold()
                 );
             }
@@ -642,7 +642,7 @@ pub fn leaves() -> Result<()> {
             println!();
             println!(
                 "{} {} leaf packages",
-                "ℹ".blue(),
+                "".dimmed(),
                 leaves.len().to_string().bold()
             );
         }
@@ -685,7 +685,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
             Some(p) => p,
             None => {
                 if !formula_names.is_empty() {
-                    println!("{} {} is not installed", "⚠".yellow(), formula_name.bold());
+                    println!("{} {} is not installed", "".yellow(), formula_name.bold());
                 }
                 continue;
             }
@@ -702,7 +702,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
             has_missing = true;
             println!(
                 "{} {} is missing dependencies:",
-                "✗".red(),
+                "".red(),
                 formula_name.bold()
             );
             for dep in missing_deps {
@@ -713,7 +713,7 @@ pub fn missing(formula_names: &[String]) -> Result<()> {
     }
 
     if !has_missing {
-        println!("{} No missing dependencies found", "✓".green());
+        println!("{} No missing dependencies found", "".green());
     }
 
     Ok(())

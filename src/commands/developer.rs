@@ -16,7 +16,7 @@ pub fn vendor_gems() -> anyhow::Result<()> {
 
     println!(
         "{} Vendored gems require Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Would install Ruby gems required by Homebrew:");
     println!("  - activesupport");
@@ -33,7 +33,7 @@ pub fn vendor_gems() -> anyhow::Result<()> {
 
     println!(
         "\n  {} Gems would be installed to: {}",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "Homebrew/Library/Homebrew/vendor".cyan()
     );
 
@@ -56,7 +56,7 @@ pub fn ruby(args: &[String]) -> anyhow::Result<()> {
 
     println!(
         "{} Ruby execution requires Phase 3 (embedded Ruby interpreter)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Would run Ruby code with Homebrew's environment loaded");
 
@@ -81,14 +81,14 @@ pub fn irb() -> anyhow::Result<()> {
 
     println!(
         "{} IRB requires Phase 3 (embedded Ruby interpreter)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Interactive Ruby shell with Homebrew environment loaded");
     println!("  Full access to Homebrew internals and formula DSL");
 
     println!(
         "\n  {} Use {} for non-interactive execution",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "bru ruby".cyan()
     );
 
@@ -104,7 +104,7 @@ pub fn irb() -> anyhow::Result<()> {
 /// * `args` - The command and arguments to profile
 pub fn prof(args: &[String]) -> anyhow::Result<()> {
     if args.is_empty() {
-        println!("{} No command specified to profile", "✗".red());
+        println!("{} No command specified to profile", "".red());
         println!("Usage: {} <command> [args]", "bru prof".cyan());
         return Ok(());
     }
@@ -140,7 +140,7 @@ pub fn install_bundler_gems() -> anyhow::Result<()> {
 
     println!(
         "\n  {} Different from {}",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "vendor-gems".cyan()
     );
     println!("  vendor-gems: Runtime dependencies");
@@ -183,7 +183,7 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
                 println!("Developer mode already enabled");
             } else {
                 std::fs::write(&dev_flag_file, "")?;
-                println!("{} Developer mode enabled", "✓".green().bold());
+                println!("{} Developer mode enabled", "".green().bold());
                 println!("  Changes:");
                 println!("  - Will update to latest commit instead of stable");
                 println!("  - Additional validation enabled");
@@ -194,12 +194,12 @@ pub fn developer(action: Option<&str>) -> anyhow::Result<()> {
                 println!("Developer mode already disabled");
             } else {
                 std::fs::remove_file(&dev_flag_file)?;
-                println!("{} Developer mode disabled", "✓".green().bold());
+                println!("{} Developer mode disabled", "".green().bold());
                 println!("  Reverted to stable release updates");
             }
         }
         Some(other) => {
-            println!("{} Unknown action: {}", "✗".red(), other);
+            println!("{} Unknown action: {}", "".red(), other);
             println!("Usage: {} [on|off|state]", "bru developer".cyan());
         }
     }
@@ -222,7 +222,7 @@ pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
 
     println!(
         "{} Type checking requires Phase 3 (Ruby interop + Sorbet)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Sorbet is a gradual type checker for Ruby");
     println!("  Would check:");
@@ -237,7 +237,7 @@ pub fn typecheck(files: &[String]) -> anyhow::Result<()> {
             println!("    {}", file.cyan());
         }
     } else {
-        println!("  {} Would check all Homebrew Ruby files", "ℹ".dimmed());
+        println!("  {} Would check all Homebrew Ruby files", "".dimmed());
     }
 
     Ok(())
@@ -260,7 +260,7 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
 
     println!(
         "{} Python resource updates require Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Would analyze Python package dependencies:");
     println!("  - Parse setup.py or pyproject.toml");
@@ -286,7 +286,7 @@ pub fn update_python_resources(formula_name: &str, print_only: bool) -> anyhow::
 /// * `formula_names` - The formulae to analyze
 pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -303,7 +303,7 @@ pub fn determine_test_runners(formula_names: &[String]) -> anyhow::Result<()> {
 
     for formula in formula_names {
         println!("  {}", formula.cyan());
-        println!("    {} Would detect test framework", "ℹ".dimmed());
+        println!("    {} Would detect test framework", "".dimmed());
     }
 
     Ok(())
@@ -339,7 +339,7 @@ pub fn dispatch_build_bottle(formula_name: &str, platform: Option<&str>) -> anyh
 
     println!(
         "\n  {} For local bottle builds, use: {}",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "bru bottle".cyan()
     );
 
@@ -371,7 +371,7 @@ pub fn bump_formula_pr(
 
     println!(
         "{} Formula PR creation requires Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Automated workflow to update a formula:");
     println!("  1. Fetch new version from upstream");
@@ -384,7 +384,7 @@ pub fn bump_formula_pr(
 
     println!(
         "\n  {} This is a maintainer/contributor workflow",
-        "ℹ".dimmed()
+        "".dimmed()
     );
 
     Ok(())
@@ -407,7 +407,7 @@ pub fn bump_cask_pr(cask_name: &str, version: Option<&str>) -> anyhow::Result<()
 
     println!(
         "{} Cask PR creation requires Phase 3 (Ruby interop)",
-        "ℹ".blue()
+        "".dimmed()
     );
     println!("  Automated workflow to update a cask:");
     println!("  1. Fetch new version metadata");
@@ -420,7 +420,7 @@ pub fn bump_cask_pr(cask_name: &str, version: Option<&str>) -> anyhow::Result<()
 
     println!(
         "\n  {} This is a maintainer/contributor workflow",
-        "ℹ".dimmed()
+        "".dimmed()
     );
 
     Ok(())
@@ -526,7 +526,7 @@ pub fn pr_pull(pr_ref: &str) -> anyhow::Result<()> {
 
     println!(
         "\n  {} Use {} to test changes",
-        "ℹ".dimmed(),
+        "".dimmed(),
         "bru test".cyan()
     );
 
@@ -560,7 +560,7 @@ pub fn pr_upload(use_bintray: bool) -> anyhow::Result<()> {
     println!("    4. Update PR with bottle DSL");
     println!("    5. Commit bottle block to PR branch");
 
-    println!("  {} Requires GitHub authentication", "⚠".yellow());
+    println!("  {} Requires GitHub authentication", "".yellow());
 
     Ok(())
 }
@@ -605,7 +605,7 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
 
     println!(
         "\n  {} This is the core of Homebrew's CI infrastructure",
-        "ℹ".dimmed()
+        "".dimmed()
     );
 
     Ok(())
@@ -621,7 +621,7 @@ pub fn test_bot(formula_names: &[String], skip_cleanup: bool) -> anyhow::Result<
 /// * `message` - Optional reason for the bump
 pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -641,7 +641,7 @@ pub fn bump_revision(formula_names: &[String], message: Option<&str>) -> anyhow:
 
     for formula in formula_names {
         println!("  {}", formula.cyan());
-        println!("    {} Would increment revision field", "ℹ".dimmed());
+        println!("    {} Would increment revision field", "".dimmed());
     }
 
     Ok(())
@@ -669,7 +669,7 @@ pub fn pr_automerge(strategy: Option<&str>) -> anyhow::Result<()> {
     println!("  - Meets style guidelines");
 
     println!("  Would scan open PRs and merge eligible ones");
-    println!("  {} Requires maintainer permissions", "⚠".yellow());
+    println!("  {} Requires maintainer permissions", "".yellow());
 
     Ok(())
 }
@@ -716,12 +716,12 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
             if let Some(username) = user {
                 let user_line = lines.iter().find(|line| line.contains(username));
                 if let Some(line) = user_line {
-                    println!(" {} {}", "✓".green(), line);
+                    println!(" {} {}", "".green(), line);
                 } else {
                     println!(" No contributions found for {}", username);
                 }
             } else {
-                println!(" {} Top contributors:", "✓".green());
+                println!(" {} Top contributors:", "".green());
                 for line in lines.iter().take(10) {
                     println!("  {}", line.dimmed());
                 }
@@ -731,7 +731,7 @@ pub fn contributions(user: Option<&str>, from_date: Option<&str>) -> anyhow::Res
             }
         }
     } else {
-        println!("{} homebrew/core tap not found", "✗".red());
+        println!("{} homebrew/core tap not found", "".red());
     }
 
     Ok(())
@@ -754,8 +754,8 @@ pub fn update_license_data() -> anyhow::Result<()> {
     println!("    3. Update Homebrew's license database");
     println!("    4. Validate existing formula licenses");
 
-    println!("  {} SPDX: Software Package Data Exchange", "ℹ".dimmed());
-    println!("  {} Standardized license identifiers", "ℹ".dimmed());
+    println!("  {} SPDX: Software Package Data Exchange", "".dimmed());
+    println!("  {} Standardized license identifiers", "".dimmed());
 
     Ok(())
 }
@@ -778,7 +778,7 @@ pub fn install_formula_api() -> anyhow::Result<()> {
 
     println!(
         "\n  {} Improves search performance significantly",
-        "ℹ".dimmed()
+        "".dimmed()
     );
 
     Ok(())
@@ -802,7 +802,7 @@ pub fn setup() -> anyhow::Result<()> {
     println!("    5. Install bundler gems");
     println!("    6. Configure shell environment");
 
-    println!("  {} For contributors and maintainers", "ℹ".dimmed());
+    println!("  {} For contributors and maintainers", "".dimmed());
     println!("  See: https://docs.brew.sh/Development");
 
     Ok(())
@@ -817,7 +817,7 @@ pub fn setup() -> anyhow::Result<()> {
 /// * `formula_names` - Formulae to fix
 pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -833,7 +833,7 @@ pub fn fix_bottle_tags(formula_names: &[String]) -> anyhow::Result<()> {
 
     for formula in formula_names {
         println!("  {}", formula.cyan());
-        println!("    {} Would update bottle tags in formula", "ℹ".dimmed());
+        println!("    {} Would update bottle tags in formula", "".dimmed());
         println!("    Example: monterey -> ventura -> sonoma");
     }
 
@@ -877,7 +877,7 @@ pub fn generate_man_completions() -> anyhow::Result<()> {
 /// * `bottle_files` - The bottle JSON files to merge
 pub fn bottle_merge(bottle_files: &[String]) -> anyhow::Result<()> {
     if bottle_files.is_empty() {
-        println!("{} No bottle files specified", "✗".red());
+        println!("{} No bottle files specified", "".red());
         return Ok(());
     }
 
@@ -1011,7 +1011,7 @@ pub fn nodenv_sync() -> anyhow::Result<()> {
     let nodenv_dir = prefix.join("opt/nodenv");
 
     if nodenv_dir.exists() {
-        println!("  {} nodenv installation found", "✓".green());
+        println!("  {} nodenv installation found", "".green());
         println!("    {}", nodenv_dir.display().to_string().dimmed());
     } else {
         println!("  nodenv not installed");
@@ -1039,7 +1039,7 @@ pub fn pyenv_sync() -> anyhow::Result<()> {
     let pyenv_dir = prefix.join("opt/pyenv");
 
     if pyenv_dir.exists() {
-        println!("  {} pyenv installation found", "✓".green());
+        println!("  {} pyenv installation found", "".green());
         println!("    {}", pyenv_dir.display().to_string().dimmed());
     } else {
         println!("  pyenv not installed");
@@ -1067,7 +1067,7 @@ pub fn rbenv_sync() -> anyhow::Result<()> {
     let rbenv_dir = prefix.join("opt/rbenv");
 
     if rbenv_dir.exists() {
-        println!("  {} rbenv installation found", "✓".green());
+        println!("  {} rbenv installation found", "".green());
         println!("    {}", rbenv_dir.display().to_string().dimmed());
     } else {
         println!("  rbenv not installed");

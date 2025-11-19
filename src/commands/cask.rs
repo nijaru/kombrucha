@@ -25,7 +25,7 @@ use std::path::PathBuf;
 /// Supports .dmg, .pkg, and .zip file formats. Creates tracking metadata in Caskroom.
 pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "✗".red());
+        println!("{} No casks specified", "".red());
         return Ok(());
     }
 
@@ -62,9 +62,9 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             Ok(c) => c,
             Err(msg) => {
                 if msg.starts_with("Already installed") {
-                    println!("  {} {}", "✓".green(), msg);
+                    println!("  {} {}", "".green(), msg);
                 } else {
-                    println!("  {} {}", "✗".red(), msg);
+                    println!("  {} {}", "".red(), msg);
                 }
                 continue;
             }
@@ -85,7 +85,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         // Extract app artifacts from cask metadata
         let apps = crate::cask::extract_app_artifacts(&cask.artifacts);
         if apps.is_empty() {
-            println!("  {} No app artifacts found", "⚠".yellow());
+            println!("  {} No app artifacts found", "".yellow());
             continue;
         }
 
@@ -96,14 +96,14 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         let download_path = match crate::cask::download_cask(url, &cask_name).await {
             Ok(p) => p,
             Err(e) => {
-                println!("  {} Failed to download: {}", "✗".red(), e);
+                println!("  {} Failed to download: {}", "".red(), e);
                 continue;
             }
         };
 
         println!(
             "    {} Downloaded to {}",
-            "✓".green(),
+            "".green(),
             download_path.display().to_string().dimmed()
         );
 
@@ -120,14 +120,14 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             let mount_point = match crate::cask::mount_dmg(&download_path) {
                 Ok(p) => p,
                 Err(e) => {
-                    println!("  {} Failed to mount: {}", "✗".red(), e);
+                    println!("  {} Failed to mount: {}", "".red(), e);
                     continue;
                 }
             };
 
             println!(
                 "    {} Mounted at {}",
-                "✓".green(),
+                "".green(),
                 mount_point.display().to_string().dimmed()
             );
 
@@ -136,7 +136,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 let app_path = mount_point.join(app_name);
 
                 if !app_path.exists() {
-                    println!("    {} App not found: {}", "⚠".yellow(), app_name);
+                    println!("    {} App not found: {}", "".yellow(), app_name);
                     continue;
                 }
 
@@ -145,12 +145,12 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                     Ok(_) => {
                         println!(
                             "    └ {} Installed to /Applications/{}",
-                            "✓".green(),
+                            "".green(),
                             app_name.bold()
                         );
                     }
                     Err(e) => {
-                        println!("    └ {} Failed to install: {}", "✗".red(), e);
+                        println!("    └ {} Failed to install: {}", "".red(), e);
                     }
                 }
             }
@@ -158,17 +158,17 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
             // Unmount DMG after installation
             println!("  Unmounting DMG...");
             if let Err(e) = crate::cask::unmount_dmg(&mount_point) {
-                println!("    {} Failed to unmount: {}", "⚠".yellow(), e);
+                println!("    {} Failed to unmount: {}", "".yellow(), e);
             }
         } else if filename.ends_with(".pkg") {
             // Install PKG directly using system installer
             println!("  Installing PKG...");
             match crate::cask::install_pkg(&download_path) {
                 Ok(_) => {
-                    println!("    └ {} Installed successfully", "✓".green());
+                    println!("    └ {} Installed successfully", "".green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to install: {}", "✗".red(), e);
+                    println!("  {} Failed to install: {}", "".red(), e);
                     continue;
                 }
             }
@@ -179,13 +179,13 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 Ok(dir) => {
                     println!(
                         "    └ {} Extracted to {}",
-                        "✓".green(),
+                        "".green(),
                         dir.display().to_string().dimmed()
                     );
                     dir
                 }
                 Err(e) => {
-                    println!("  {} Failed to extract: {}", "✗".red(), e);
+                    println!("  {} Failed to extract: {}", "".red(), e);
                     continue;
                 }
             };
@@ -196,7 +196,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                 let app_path = extract_dir.join(app);
 
                 if !app_path.exists() {
-                    println!("    └ {} App not found in ZIP: {}", "⚠".yellow(), app);
+                    println!("    └ {} App not found in ZIP: {}", "".yellow(), app);
                     continue;
                 }
 
@@ -204,18 +204,18 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
                     Ok(target) => {
                         println!(
                             "    └ {} Installed to {}",
-                            "✓".green(),
+                            "".green(),
                             target.display().to_string().bold()
                         );
                     }
                     Err(e) => {
-                        println!("  {} Failed to install: {}", "✗".red(), e);
+                        println!("  {} Failed to install: {}", "".red(), e);
                         continue;
                     }
                 }
             }
         } else {
-            println!("  {} Unsupported file type: {}", "⚠".yellow(), filename);
+            println!("  {} Unsupported file type: {}", "".yellow(), filename);
             continue;
         }
 
@@ -235,13 +235,13 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 
         println!(
             "\n  {} Installed {} {}",
-            "✓".green().bold(),
+            "".green().bold(),
             cask_name.bold().green(),
             version.dimmed()
         );
     }
 
-    println!("{} Cask installation complete", "✓".green().bold());
+    println!("{} Cask installation complete", "".green().bold());
     Ok(())
 }
 
@@ -250,7 +250,7 @@ pub async fn install_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 /// Useful for fixing corrupted installations or forcing a clean install.
 pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "✗".red());
+        println!("{} No casks specified", "".red());
         return Ok(());
     }
 
@@ -262,7 +262,7 @@ pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> 
     for cask_name in cask_names {
         // Check if installed before attempting reinstall
         if !crate::cask::is_cask_installed(cask_name) {
-            println!("  {} {} not installed", "⚠".yellow(), cask_name.bold());
+            println!("  {} {} not installed", "".yellow(), cask_name.bold());
             continue;
         }
 
@@ -274,10 +274,10 @@ pub async fn reinstall_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> 
         // Install fresh copy
         install_cask(api, std::slice::from_ref(cask_name)).await?;
 
-        println!("  {} Reinstalled {}", "✓".green(), cask_name.bold().green());
+        println!("  {} Reinstalled {}", "".green(), cask_name.bold().green());
     }
 
-    println!("{} Cask reinstall complete", "✓".green().bold());
+    println!("{} Cask reinstall complete", "".green().bold());
     Ok(())
 }
 
@@ -319,7 +319,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
 
         if !cask_dir.exists() {
             if !cask_names.is_empty() {
-                println!("  {} {} not installed", "⚠".yellow(), token.bold());
+                println!("  {} {} not installed", "".yellow(), token.bold());
             }
             continue;
         }
@@ -381,7 +381,7 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
 
         println!(
             "    {} Keeping {} {}",
-            "✓".green(),
+            "".green(),
             token.bold(),
             latest.file_name().to_string_lossy().dimmed()
         );
@@ -389,18 +389,18 @@ pub fn cleanup_cask(cask_names: &[String], dry_run: bool) -> Result<()> {
 
     // Print summary
     if total_removed == 0 {
-        println!("{} No old cask versions to remove", "✓".green());
+        println!("{} No old cask versions to remove", "".green());
     } else if dry_run {
         println!(
             "{} Would remove {} old cask versions ({})",
-            "ℹ".blue(),
+            "".dimmed(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
     } else {
         println!(
             "{} Removed {} old cask versions, freed {}",
-            "✓".green().bold(),
+            "".green().bold(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
@@ -460,7 +460,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         let outdated: Vec<_> = results.into_iter().flatten().collect();
 
         if outdated.is_empty() {
-            println!("{} All casks are up to date", "✓".green());
+            println!("{} All casks are up to date", "".green());
             return Ok(());
         }
 
@@ -486,10 +486,10 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
         // Then install the new version
         install_cask(api, std::slice::from_ref(cask_name)).await?;
 
-        println!("  {} Upgraded {}", "✓".green(), cask_name.bold().green());
+        println!("  {} Upgraded {}", "".green(), cask_name.bold().green());
     }
 
-    println!("{} Cask upgrade complete", "✓".green().bold());
+    println!("{} Cask upgrade complete", "".green().bold());
     Ok(())
 }
 
@@ -499,7 +499,7 @@ pub async fn upgrade_cask(api: &BrewApi, cask_names: &[String]) -> Result<()> {
 /// from the Caskroom directory.
 pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
     if cask_names.is_empty() {
-        println!("{} No casks specified", "✗".red());
+        println!("{} No casks specified", "".red());
         return Ok(());
     }
 
@@ -513,7 +513,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
 
         // Check if installed
         if !crate::cask::is_cask_installed(cask_name) {
-            println!("  {} {} is not installed", "⚠".yellow(), cask_name.bold());
+            println!("  {} {} is not installed", "".yellow(), cask_name.bold());
             continue;
         }
 
@@ -558,10 +558,10 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
 
                 match std::fs::remove_dir_all(&app_path) {
                     Ok(_) => {
-                        println!("    {} Removed {}", "✓".green(), app_name.bold());
+                        println!("    {} Removed {}", "".green(), app_name.bold());
                     }
                     Err(e) => {
-                        println!("    {} Failed to remove: {}", "✗".red(), e);
+                        println!("    {} Failed to remove: {}", "".red(), e);
                         println!(
                             "    Try: {}",
                             format!("sudo rm -rf {}", app_path.display()).cyan()
@@ -569,7 +569,7 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
                     }
                 }
             } else {
-                println!("  {} App not found: {}", "⚠".yellow(), app_name.dimmed());
+                println!("  {} App not found: {}", "".yellow(), app_name.dimmed());
             }
         }
 
@@ -581,13 +581,13 @@ pub fn uninstall_cask(cask_names: &[String]) -> Result<()> {
 
         println!(
             "\n  {} Uninstalled {} {}",
-            "✓".green().bold(),
+            "".green().bold(),
             cask_name.bold().green(),
             version.dimmed()
         );
     }
 
-    println!("{} Cask uninstallation complete", "✓".green().bold());
+    println!("{} Cask uninstallation complete", "".green().bold());
     Ok(())
 }
 
@@ -602,10 +602,10 @@ pub fn uses_cask(cask_name: &str) -> anyhow::Result<()> {
     println!("  Unlike formulae, casks typically don't have dependents");
     println!("  Casks are GUI applications, not libraries");
 
-    println!("  {} Casks are usually standalone", "ℹ".dimmed());
+    println!("  {} Casks are usually standalone", "".dimmed());
     println!(
         "  {} Safe to uninstall without affecting other software",
-        "✓".green()
+        "".green()
     );
 
     Ok(())

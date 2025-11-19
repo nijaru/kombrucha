@@ -68,7 +68,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
         .collect();
 
     if to_remove.is_empty() {
-        println!("{} No unused dependencies to remove", "✓".green());
+        println!("{} No unused dependencies to remove", "".green());
         return Ok(());
     }
 
@@ -86,7 +86,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
     if dry_run {
         println!(
             "{} Would remove {} packages",
-            "ℹ".blue(),
+            "".dimmed(),
             to_remove.len().to_string().bold()
         );
         println!("Run without {} to remove them", "--dry-run".dimmed());
@@ -111,7 +111,7 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
         if !unlinked.is_empty() {
             println!(
                 "    {} Unlinked {} files",
-                "✓".green(),
+                "".green(),
                 unlinked.len().to_string().dimmed()
             );
         }
@@ -157,12 +157,12 @@ pub fn autoremove(dry_run: bool) -> Result<()> {
             std::fs::remove_dir(&formula_dir)?;
         }
 
-        println!("    {} Removed {}", "✓".green(), pkg.name.bold().green());
+        println!("    {} Removed {}", "".green(), pkg.name.bold().green());
     }
 
     println!(
         "{} Removed {} unused packages",
-        "✓".green().bold(),
+        "".green().bold(),
         to_remove.len().to_string().bold()
     );
 
@@ -207,7 +207,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
             Some(v) => v,
             None => {
                 if !formula_names.is_empty() {
-                    println!("  {} {} not installed", "⚠".yellow(), formula.bold());
+                    println!("  {} {} not installed", "".yellow(), formula.bold());
                 }
                 continue;
             }
@@ -327,7 +327,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
                 if !unlinked.is_empty() {
                     println!(
                         "  {} Unlinked {} symlinks from {} {}",
-                        "✓".green(),
+                        "".green(),
                         unlinked.len().to_string().dimmed(),
                         name.cyan(),
                         version.dimmed()
@@ -386,7 +386,7 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
                         let count = completed.fetch_add(1, Ordering::Relaxed) + 1;
                         println!(
                             "  {} Removed {} {} ({}) [{}/{}]",
-                            "✓".green(),
+                            "".green(),
                             name.cyan(),
                             version.dimmed(),
                             format_size(size).dimmed(),
@@ -409,18 +409,18 @@ pub fn cleanup(formula_names: &[String], dry_run: bool, cask: bool) -> Result<()
     }
 
     if total_removed == 0 {
-        println!("{} No old versions to remove", "✓".green());
+        println!("{} No old versions to remove", "".green());
     } else if dry_run {
         println!(
             "{} Would remove {} old versions ({})",
-            "ℹ".blue(),
+            "".dimmed(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
     } else {
         println!(
             "{} Removed {} old versions, freed {}",
-            "✓".green().bold(),
+            "".green().bold(),
             total_removed.to_string().bold(),
             format_size(total_space_freed).bold()
         );
@@ -437,7 +437,7 @@ pub fn cache(clean: bool) -> Result<()> {
         println!("Cleaning download cache...");
 
         if !cache_dir.exists() {
-            println!("{} Cache is already empty", "✓".green());
+            println!("{} Cache is already empty", "".green());
             return Ok(());
         }
 
@@ -458,7 +458,7 @@ pub fn cache(clean: bool) -> Result<()> {
 
         println!(
             "{} Removed {} bottles, freed {}",
-            "✓".green().bold(),
+            "".green().bold(),
             removed_count.to_string().bold(),
             format_size(total_size).bold()
         );
@@ -523,14 +523,14 @@ pub fn doctor() -> Result<()> {
     if !prefix.exists() {
         println!(
             "  {} Homebrew prefix does not exist: {}",
-            "✗".red(),
+            "".red(),
             prefix.display()
         );
         issues += 1;
     } else {
         println!(
             "  {} Homebrew prefix exists: {}",
-            "✓".green(),
+            "".green(),
             prefix.display()
         );
     }
@@ -539,33 +539,33 @@ pub fn doctor() -> Result<()> {
     if !cellar.exists() {
         println!(
             "  {} Cellar does not exist: {}",
-            "⚠".yellow(),
+            "".yellow(),
             cellar.display()
         );
         warnings += 1;
     } else if std::fs::metadata(&cellar)?.permissions().readonly() {
         println!(
             "  {} Cellar is not writable: {}",
-            "✗".red(),
+            "".red(),
             cellar.display()
         );
         issues += 1;
     } else {
-        println!("  {} Cellar exists and is writable", "✓".green());
+        println!("  {} Cellar exists and is writable", "".green());
     }
 
     // Check if bin directory exists
     if !bin_dir.exists() {
         println!(
             "  {} Bin directory does not exist: {}",
-            "⚠".yellow(),
+            "".yellow(),
             bin_dir.display()
         );
         warnings += 1;
     } else {
         println!(
             "  {} Bin directory exists: {}",
-            "✓".green(),
+            "".green(),
             bin_dir.display()
         );
     }
@@ -579,12 +579,12 @@ pub fn doctor() -> Result<()> {
             let version = String::from_utf8_lossy(&output.stdout);
             println!(
                 "  {} git is installed: {}",
-                "✓".green(),
+                "".green(),
                 version.trim().dimmed()
             );
         }
         _ => {
-            println!("  {} git is not installed or not in PATH", "✗".red());
+            println!("  {} git is not installed or not in PATH", "".red());
             println!("    git is required for tap management");
             println!(
                 "    {} Install with: {}",
@@ -624,11 +624,11 @@ pub fn doctor() -> Result<()> {
     }
 
     if broken_links.is_empty() {
-        println!("  {} No broken symlinks found", "✓".green());
+        println!("  {} No broken symlinks found", "".green());
     } else {
         println!(
             "  {} Found {} broken symlinks:",
-            "⚠".yellow(),
+            "".yellow(),
             broken_links.len()
         );
         for link in broken_links.iter().take(5) {
@@ -648,17 +648,17 @@ pub fn doctor() -> Result<()> {
     println!("{}", "Summary:".bold());
 
     if issues == 0 && warnings == 0 {
-        println!("  {} Your system is ready to brew!", "✓".green().bold());
+        println!("  {} Your system is ready to brew!", "".green().bold());
     } else {
         if issues > 0 {
             println!(
                 "  {} Found {} issue(s) that need attention",
-                "✗".red(),
+                "".red(),
                 issues
             );
         }
         if warnings > 0 {
-            println!("  {} Found {} warning(s)", "⚠".yellow(), warnings);
+            println!("  {} Found {} warning(s)", "".yellow(), warnings);
         }
     }
 
@@ -670,9 +670,9 @@ pub fn update() -> Result<()> {
     // Clear cached formula/cask data to ensure fresh results
     println!("Refreshing formula and cask cache...");
     if let Err(e) = crate::cache::clear_caches() {
-        println!("  {} Failed to clear cache: {}", "⚠".yellow(), e);
+        println!("  {} Failed to clear cache: {}", "".yellow(), e);
     } else {
-        println!("  {} Cache cleared", "✓".green());
+        println!("  {} Cache cleared", "".green());
     }
 
     let taps = crate::tap::list_taps()?;
@@ -781,17 +781,17 @@ pub fn update() -> Result<()> {
         if updated > 0 {
             println!(
                 "{} Updated {} taps, {} unchanged",
-                "✓".green().bold(),
+                "".green().bold(),
                 updated.to_string().bold(),
                 unchanged.to_string().dimmed()
             );
         } else {
-            println!("{} All taps are up to date", "✓".green().bold());
+            println!("{} All taps are up to date", "".green().bold());
         }
     } else {
         println!(
             "{} {} succeeded, {} failed",
-            "⚠".yellow(),
+            "".yellow(),
             (updated + unchanged).to_string().bold(),
             errors.to_string().bold()
         );
@@ -813,13 +813,13 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
     };
 
     if !tap_dir.exists() {
-        println!("{} Tap not found: {}", "✗".red(), tap);
+        println!("{} Tap not found: {}", "".red(), tap);
         return Ok(());
     }
 
     let git_dir = tap_dir.join(".git");
     if !git_dir.exists() {
-        println!("{} Not a git repository: {}", "⚠".yellow(), tap);
+        println!("{} Not a git repository: {}", "".yellow(), tap);
         return Ok(());
     }
 
@@ -831,7 +831,7 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
         .status()?;
 
     if !fetch_status.success() {
-        println!("{} Failed to fetch", "✗".red());
+        println!("{} Failed to fetch", "".red());
         return Ok(());
     }
 
@@ -849,12 +849,12 @@ pub fn update_reset(tap_name: Option<&str>) -> anyhow::Result<()> {
             .status()?;
 
         if !reset_main_status.success() {
-            println!("{} Failed to reset", "✗".red());
+            println!("{} Failed to reset", "".red());
             return Ok(());
         }
     }
 
-    println!("{} Tap reset complete: {}", "✓".green().bold(), tap.bold());
+    println!("{} Tap reset complete: {}", "".green().bold(), tap.bold());
 
     Ok(())
 }
@@ -867,7 +867,7 @@ pub fn update_report() -> anyhow::Result<()> {
     let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
 
     if !repository_path.exists() {
-        println!("{} homebrew/core tap not found", "✗".red());
+        println!("{} homebrew/core tap not found", "".red());
         return Ok(());
     }
 
@@ -887,7 +887,7 @@ pub fn update_report() -> anyhow::Result<()> {
         } else {
             println!(
                 "{} {} commits in the last 24 hours:",
-                "✓".green(),
+                "".green(),
                 lines.len().to_string().bold()
             );
             for line in lines.iter().take(10) {
@@ -910,7 +910,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
     let repository_path = prefix.join("Library/Taps/homebrew/homebrew-core");
 
     if !repository_path.exists() {
-        println!("{} homebrew/core tap not found", "✗".red());
+        println!("{} homebrew/core tap not found", "".red());
         return Ok(());
     }
 
@@ -945,7 +945,7 @@ pub fn update_if_needed() -> anyhow::Result<()> {
 
         std::fs::write(&last_update_file, "")?;
     } else {
-        println!("  {} Update not needed (updated recently)", "✓".green());
+        println!("  {} Update not needed (updated recently)", "".green());
         println!("    Last update: within 24 hours");
     }
 

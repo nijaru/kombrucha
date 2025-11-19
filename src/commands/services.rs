@@ -68,7 +68,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
             println!();
             println!(
                 "{} {} services",
-                "ℹ".blue(),
+                "".dimmed(),
                 services.len().to_string().bold()
             );
         }
@@ -79,7 +79,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
             if !crate::services::service_exists(formula) {
                 println!(
                     "{} Service file not found for {}",
-                    "⚠".yellow(),
+                    "".yellow(),
                     formula.bold()
                 );
                 println!("To create a service, the formula must support it.");
@@ -92,10 +92,10 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             match crate::services::start_service(formula) {
                 Ok(_) => {
-                    println!("  {} Started {}", "✓".green(), formula.bold().green());
+                    println!("  {} Started {}", "".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to start: {}", "✗".red(), e);
+                    println!("  {} Failed to start: {}", "".red(), e);
                 }
             }
         }
@@ -106,7 +106,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
             if !crate::services::service_exists(formula) {
                 println!(
                     "{} Service file not found for {}",
-                    "⚠".yellow(),
+                    "".yellow(),
                     formula.bold()
                 );
                 return Ok(());
@@ -114,10 +114,10 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             match crate::services::stop_service(formula) {
                 Ok(_) => {
-                    println!("  {} Stopped {}", "✓".green(), formula.bold().green());
+                    println!("  {} Stopped {}", "".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to stop: {}", "✗".red(), e);
+                    println!("  {} Failed to stop: {}", "".red(), e);
                 }
             }
         }
@@ -128,7 +128,7 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
             if !crate::services::service_exists(formula) {
                 println!(
                     "{} Service file not found for {}",
-                    "⚠".yellow(),
+                    "".yellow(),
                     formula.bold()
                 );
                 return Ok(());
@@ -136,15 +136,15 @@ pub fn services(action: Option<&str>, formula: Option<&str>) -> Result<()> {
 
             match crate::services::restart_service(formula) {
                 Ok(_) => {
-                    println!("  {} Restarted {}", "✓".green(), formula.bold().green());
+                    println!("  {} Restarted {}", "".green(), formula.bold().green());
                 }
                 Err(e) => {
-                    println!("  {} Failed to restart: {}", "✗".red(), e);
+                    println!("  {} Failed to restart: {}", "".red(), e);
                 }
             }
         }
         Some(other) => {
-            println!("{} Unknown action: {}", "✗".red(), other);
+            println!("{} Unknown action: {}", "".red(), other);
             println!("Available actions:");
             println!("  {} - List all services", "list".cyan());
             println!("  {} - Start a service", "start <formula>".cyan());

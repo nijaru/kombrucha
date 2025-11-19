@@ -37,7 +37,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
         if is_tty {
             println!(
                 "{} No formulae or casks found matching '{}'",
-                "✗".red(),
+                "".red(),
                 query
             );
         }
@@ -57,7 +57,7 @@ pub async fn search(api: &BrewApi, query: &str, formula_only: bool, cask_only: b
 
     if total_to_show == 0 {
         if is_tty {
-            println!("{} No results found with the specified filter", "✗".red());
+            println!("{} No results found with the specified filter", "".red());
         }
         return Ok(());
     }
@@ -271,11 +271,7 @@ pub async fn info(api: &BrewApi, formula: &str, json: bool) -> Result<()> {
                             formula
                         );
                     } else {
-                        println!(
-                            "\n {} No formula or cask found for '{}'",
-                            "✗".red(),
-                            formula
-                        );
+                        println!("\n {} No formula or cask found for '{}'", "".red(), formula);
                     }
                 }
             }
@@ -326,7 +322,7 @@ pub async fn deps(
 
         if formula_data.dependencies.is_empty() && formula_data.build_dependencies.is_empty() {
             if is_tty {
-                println!("{} No dependencies", "✓".green());
+                println!("{} No dependencies", "".green());
             }
             return Ok(());
         }
@@ -388,7 +384,7 @@ pub async fn deps(
 
         if deps.is_empty() {
             if is_tty {
-                println!("{} No dependencies", "✓".green());
+                println!("{} No dependencies", "".green());
             }
             return Ok(());
         }
@@ -424,7 +420,7 @@ pub async fn deps(
 }
 
 /// Show formulae that depend on a given formula
-pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
+pub async fn uses(api: &BrewApi, formula: &str, installed_only: bool) -> Result<()> {
     let is_tty = std::io::IsTerminal::is_terminal(&std::io::stdout());
 
     let spinner = if is_tty {
@@ -441,12 +437,22 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
         ProgressBar::hidden()
     };
 
+    // If filtering by installed, get the list of installed packages
+    let installed_names: HashSet<String> = if installed_only {
+        cellar::list_installed()?
+            .into_iter()
+            .map(|p| p.name)
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     // Fetch all formulae
     let all_formulae = api.fetch_all_formulae().await?;
     spinner.finish_and_clear();
 
     // Find formulae that depend on the target
-    let dependent_formulae: Vec<_> = all_formulae
+    let mut dependent_formulae: Vec<_> = all_formulae
         .into_iter()
         .filter(|f| {
             f.dependencies.contains(&formula.to_string())
@@ -454,9 +460,14 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
         })
         .collect();
 
+    // Filter to installed only if requested
+    if installed_only {
+        dependent_formulae.retain(|f| installed_names.contains(&f.name));
+    }
+
     if dependent_formulae.is_empty() {
         if is_tty {
-            println!("{} No formulae depend on '{}'", "✓".green(), formula);
+            println!("{} No formulae depend on '{}'", "".green(), formula);
         }
         return Ok(());
     }
@@ -464,7 +475,7 @@ pub async fn uses(api: &BrewApi, formula: &str) -> Result<()> {
     if is_tty {
         println!(
             "{} Found {} formulae that depend on {}:",
-            "✓".green(),
+            "".green(),
             dependent_formulae.len().to_string().bold(),
             formula.cyan()
         );
@@ -502,10 +513,10 @@ pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
 
             match status {
                 Ok(s) if s.success() => {
-                    println!("  {} Opened in browser", "✓".green());
+                    println!("  {} Opened in browser", "".green());
                 }
                 _ => {
-                    println!("  {} Could not open browser automatically", "⚠".yellow());
+                    println!("  {} Could not open browser automatically", "".yellow());
                     println!("  Please visit: {}", url);
                 }
             }
@@ -513,7 +524,7 @@ pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
         _ => {
             println!(
                 "  {} No homepage available for {}",
-                "⚠".yellow(),
+                "".yellow(),
                 formula_name.bold()
             );
         }
@@ -525,7 +536,7 @@ pub async fn home(api: &BrewApi, formula_name: &str) -> Result<()> {
 /// Display descriptions for one or more formulae
 pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -553,7 +564,7 @@ pub async fn desc(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 /// Display the contents of a formula or cask as JSON
 pub async fn cat(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -582,7 +593,7 @@ pub async fn cat(api: &BrewApi, formula_names: &[String]) -> Result<()> {
                     Err(_) => {
                         println!(
                             "{} No formula or cask found for '{}'",
-                            "✗".red(),
+                            "".red(),
                             formula_name
                         );
                     }
@@ -617,7 +628,7 @@ pub async fn options(api: &BrewApi, formula_name: &str) -> Result<()> {
             );
         }
         Err(_) => {
-            println!("{} Formula '{}' not found", "✗".red(), formula_name);
+            println!("{} Formula '{}' not found", "".red(), formula_name);
         }
     }
 
@@ -689,7 +700,7 @@ pub async fn formulae(api: &BrewApi) -> Result<()> {
 
     println!(
         "{} {} formulae available",
-        "✓".green(),
+        "".green(),
         all_formulae.len().to_string().bold()
     );
 
@@ -726,7 +737,7 @@ pub async fn casks(api: &BrewApi) -> Result<()> {
 
     println!(
         "{} {} casks available",
-        "✓".green(),
+        "".green(),
         all_casks.len().to_string().bold()
     );
 
@@ -782,16 +793,16 @@ pub async fn unbottled(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
     if unbottled_formulae.is_empty() {
         if formula_names.is_empty() {
-            println!("{} All formulae have bottles", "✓".green());
+            println!("{} All formulae have bottles", "".green());
         } else {
-            println!("{} All specified formulae have bottles", "✓".green());
+            println!("{} All specified formulae have bottles", "".green());
         }
         return Ok(());
     }
 
     println!(
         "{} {} formulae without bottles:",
-        "ℹ".blue(),
+        "".dimmed(),
         unbottled_formulae.len().to_string().bold()
     );
 

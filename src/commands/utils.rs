@@ -51,7 +51,7 @@ pub(super) fn fallback_to_brew_with_reason(
     if !check_brew_available() {
         println!(
             "  {} brew is not installed - cannot install {}",
-            "✗".red(),
+            "".red(),
             formula_name.bold()
         );
         println!("  Install Homebrew to handle this formula");
@@ -68,7 +68,7 @@ pub(super) fn fallback_to_brew_with_reason(
     if status.success() {
         println!(
             "  {} Installed {} via brew",
-            "✓".green(),
+            "".green(),
             formula_name.bold()
         );
         Ok(())
@@ -91,7 +91,7 @@ pub(super) fn cleanup_specific_version(formula_name: &str, old_version: &str) ->
     if !unlinked.is_empty() {
         println!(
             "    ├ {} Unlinked {} symlinks",
-            "✓".green(),
+            "".green(),
             unlinked.len().to_string().dimmed()
         );
     }
@@ -100,7 +100,7 @@ pub(super) fn cleanup_specific_version(formula_name: &str, old_version: &str) ->
     std::fs::remove_dir_all(&old_path)?;
     println!(
         "    ├ {} Removed old version {}",
-        "✓".green(),
+        "".green(),
         old_version.dimmed()
     );
 

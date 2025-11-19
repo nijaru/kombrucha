@@ -72,7 +72,7 @@ pub fn commands() -> Result<()> {
     println!();
     println!(
         "{} {} commands available",
-        "ℹ".blue(),
+        "".dimmed(),
         commands_list.len().to_string().bold()
     );
     println!("Run {} for help", "bru --help".cyan());
@@ -95,7 +95,7 @@ pub fn which_formula(command: &str) -> Result<()> {
     if !command_path.exists() {
         println!(
             "{} Command '{}' not found in {}",
-            "⚠".yellow(),
+            "".yellow(),
             command.bold(),
             bin_dir.display()
         );
@@ -129,7 +129,7 @@ pub fn which_formula(command: &str) -> Result<()> {
 
     println!(
         "{} Could not determine formula for '{}'",
-        "⚠".yellow(),
+        "".yellow(),
         command.bold()
     );
     Ok(())
@@ -215,7 +215,7 @@ pub async fn alias(api: &BrewApi, formula: Option<&str>) -> Result<()> {
                     }
                 }
                 Err(_) => {
-                    println!("{} Formula '{}' not found", "✗".red(), formula_name);
+                    println!("{} Formula '{}' not found", "".red(), formula_name);
                 }
             }
         }
@@ -240,11 +240,11 @@ pub fn unalias(alias_name: &str) -> anyhow::Result<()> {
     println!("  Removes command aliases");
 
     if alias_file.exists() {
-        println!("  {} Alias found:", "✓".green());
+        println!("  {} Alias found:", "".green());
         println!("    {}", alias_file.display().to_string().dimmed());
 
         std::fs::remove_file(&alias_file)?;
-        println!(" {} Alias removed successfully", "✓".green().bold());
+        println!(" {} Alias removed successfully", "".green().bold());
     } else {
         println!("  Alias not found: {}", alias_name);
         println!("    To see all aliases: {}", "bru alias".cyan());
@@ -266,7 +266,7 @@ pub fn docs() -> Result<()> {
     if !status.success() {
         println!(
             "{} Failed to open browser. Visit: {}",
-            "⚠".yellow(),
+            "".yellow(),
             docs_url
         );
     }
@@ -285,12 +285,12 @@ pub fn man() -> anyhow::Result<()> {
     match status {
         Ok(exit_status) if exit_status.success() => Ok(()),
         Ok(_) => {
-            println!(" {} Man page not found", "⚠".yellow());
+            println!(" {} Man page not found", "".yellow());
             println!("  Try: {}", "brew install man-db".cyan());
             Ok(())
         }
         Err(e) => {
-            println!("{} Failed to open man page: {}", "✗".red(), e);
+            println!("{} Failed to open man page: {}", "".red(), e);
             println!(
                 "\n  Documentation available at: {}",
                 "https://docs.brew.sh".cyan()

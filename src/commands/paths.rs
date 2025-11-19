@@ -250,7 +250,7 @@ pub fn shellenv(shell: Option<&str>) -> Result<()> {
         }
         other => {
             // Unsupported shell - display error and supported options
-            println!("{} Unsupported shell: {}", "✗".red(), other);
+            println!("{} Unsupported shell: {}", "".red(), other);
             println!("Supported shells: bash, zsh, fish");
             return Ok(());
         }

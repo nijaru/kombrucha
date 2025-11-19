@@ -186,6 +186,52 @@ pub async fn install_multiple(&self, names: &[&str]) -> Result<Vec<InstallResult
 
 ---
 
+### Installation History & Rollback Tracking
+
+**Status**: Future feature (v0.3.0+)
+
+**Problem**: No record of package operations for rollback/audit
+- User reinstalls `gettext`, needs to know which dependent packages were recently reinstalled
+- No way to rollback to previous package state after upgrade
+- Can't audit "what did I install yesterday?"
+
+**Proposed Design**:
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **SQLite** | Fast queries, transactions, mature | 300KB binary size |
+| **DuckDB** | Analytics-friendly, fast aggregates | 30MB+ binary, overkill |
+| **JSONL log** | Simple, grep-able, zero deps | Slow for large histories |
+
+**Recommendation**: SQLite (`rusqlite` crate)
+- Store in `~/.bru/history.db`
+- Schema: `operations(timestamp, action, package, version, prev_version, metadata)`
+- Operations tracked: install, uninstall, upgrade, reinstall
+- Retention: configurable (default: 90 days)
+
+**Features**:
+```bash
+bru history                    # Show recent operations
+bru history gettext            # Operations for specific package
+bru rollback gettext           # Restore previous version
+bru undo                       # Undo last operation
+```
+
+**Integration Points**:
+- Hook into `install()`, `upgrade()`, `uninstall()` operations
+- Record before/after versions
+- Store dependency tree snapshots for full rollback
+
+**Trade-offs**:
+- ✅ Powerful audit/rollback capabilities
+- ✅ Small overhead (SQLite is fast)
+- ⚠️ New dependency (rusqlite)
+- ⚠️ Homebrew doesn't have this (not a compatibility blocker)
+
+**Defer Until**: After source build support (Phase 5) - core compatibility first
+
+---
+
 ## See Also
 
 - [STATUS.md](./STATUS.md) - Current project state

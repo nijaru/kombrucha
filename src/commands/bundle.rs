@@ -56,7 +56,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
 
         println!(
             "{} Generated {} with {} formulae",
-            "✓".green(),
+            "".green(),
             brewfile_path.cyan(),
             formulae_names.len().to_string().bold()
         );
@@ -65,7 +65,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         println!("Reading {}...", brewfile_path.cyan());
 
         if !std::path::Path::new(brewfile_path).exists() {
-            println!("{} {} not found", "✗".red(), brewfile_path.bold());
+            println!("{} {} not found", "".red(), brewfile_path.bold());
             println!("Run {} to generate one", "bru bundle dump".cyan());
             return Ok(());
         }
@@ -114,7 +114,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
 
         println!(
             "{} Found: {} taps, {} formulae, {} casks",
-            "✓".green(),
+            "".green(),
             taps_to_add.len().to_string().bold(),
             formulae_to_install.len().to_string().bold(),
             casks_to_install.len().to_string().bold()
@@ -125,12 +125,12 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
             println!("Adding taps...");
             for tap_name in &taps_to_add {
                 if crate::tap::is_tapped(tap_name)? {
-                    println!("  {} {} already tapped", "✓".green(), tap_name.dimmed());
+                    println!("  {} {} already tapped", "".green(), tap_name.dimmed());
                 } else {
                     println!("  Tapping {}...", tap_name.cyan());
                     match crate::tap::tap(tap_name) {
-                        Ok(_) => println!("    {} Tapped {}", "✓".green(), tap_name.bold()),
-                        Err(e) => println!("    {} Failed: {}", "✗".red(), e),
+                        Ok(_) => println!("    {} Tapped {}", "".green(), tap_name.bold()),
+                        Err(e) => println!("    {} Failed: {}", "".red(), e),
                     }
                 }
             }
@@ -142,7 +142,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
             match install(api, &formulae_to_install, false, false, false).await {
                 Ok(_) => {}
                 Err(e) => {
-                    println!("{} Failed to install some formulae: {}", "⚠".yellow(), e);
+                    println!("{} Failed to install some formulae: {}", "".yellow(), e);
                 }
             }
         }
@@ -156,7 +156,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
             );
         }
 
-        println!("{} Bundle install complete", "✓".green().bold());
+        println!("{} Bundle install complete", "".green().bold());
     }
 
     Ok(())

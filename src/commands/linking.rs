@@ -50,7 +50,7 @@ fn write_pinned(pinned: &[String]) -> Result<()> {
 /// when you need to keep a specific version installed (e.g., for compatibility).
 pub fn pin(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -62,7 +62,7 @@ pub fn pin(formula_names: &[String]) -> Result<()> {
         // Verify formula is installed before pinning
         let versions = cellar::get_installed_versions(formula)?;
         if versions.is_empty() {
-            println!("  {} {} is not installed", "⚠".yellow(), formula.bold());
+            println!("  {} {} is not installed", "".yellow(), formula.bold());
             continue;
         }
 
@@ -70,7 +70,7 @@ pub fn pin(formula_names: &[String]) -> Result<()> {
             println!("  {} is already pinned", formula.bold());
         } else {
             pinned.push(formula.clone());
-            println!("  {} Pinned {}", "✓".green(), formula.bold().green());
+            println!("  {} Pinned {}", "".green(), formula.bold().green());
         }
     }
 
@@ -84,7 +84,7 @@ pub fn pin(formula_names: &[String]) -> Result<()> {
 /// Removes the pin from formulae, allowing them to be upgraded by `bru upgrade`.
 pub fn unpin(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -96,7 +96,7 @@ pub fn unpin(formula_names: &[String]) -> Result<()> {
         // Find and remove formula from pinned list
         if let Some(pos) = pinned.iter().position(|x| x == formula) {
             pinned.remove(pos);
-            println!("  {} Unpinned {}", "✓".green(), formula.bold().green());
+            println!("  {} Unpinned {}", "".green(), formula.bold().green());
         } else {
             println!("  {} is not pinned", formula.bold());
         }
@@ -116,7 +116,7 @@ pub fn unpin(formula_names: &[String]) -> Result<()> {
 /// Keg-only formulae cannot be linked as they are designed to be isolated.
 pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -126,11 +126,7 @@ pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         // Check if formula is installed
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
-            println!(
-                "  {} {} is not installed",
-                "⚠".yellow(),
-                formula_name.bold()
-            );
+            println!("  {} {} is not installed", "".yellow(), formula_name.bold());
             continue;
         }
 
@@ -140,7 +136,7 @@ pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
             Err(_) => {
                 println!(
                     "  {} Failed to fetch metadata for {}",
-                    "✗".red(),
+                    "".red(),
                     formula_name.bold()
                 );
                 continue;
@@ -152,11 +148,11 @@ pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
         if formula.keg_only {
             println!(
                 "  {} {} is keg-only and cannot be linked",
-                "⚠".yellow(),
+                "".yellow(),
                 formula_name.bold()
             );
             if let Some(reason) = &formula.keg_only_reason {
-                println!("    {} {}", "ℹ".cyan(), reason.explanation);
+                println!("    {} {}", "".dimmed(), reason.explanation);
             }
             continue;
         }
@@ -173,7 +169,7 @@ pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 
         println!(
             "    {} Linked {} files",
-            "✓".green(),
+            "".green(),
             linked.len().to_string().dimmed()
         );
     }
@@ -188,7 +184,7 @@ pub async fn link(api: &BrewApi, formula_names: &[String]) -> Result<()> {
 /// installed in the Cellar.
 pub fn unlink(formula_names: &[String]) -> Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -198,11 +194,7 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
         // Verify formula is installed
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
-            println!(
-                "  {} {} is not installed",
-                "⚠".yellow(),
-                formula_name.bold()
-            );
+            println!("  {} {} is not installed", "".yellow(), formula_name.bold());
             continue;
         }
 
@@ -211,7 +203,7 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
         let version = if let Ok(Some(linked_ver)) = symlink::get_linked_version(formula_name) {
             linked_ver
         } else {
-            println!("  {} {} is not linked", "⚠".yellow(), formula_name.bold());
+            println!("  {} {} is not linked", "".yellow(), formula_name.bold());
             continue;
         };
 
@@ -224,7 +216,7 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
 
         println!(
             "    {} Unlinked {} files",
-            "✓".green(),
+            "".green(),
             unlinked.len().to_string().dimmed()
         );
     }
@@ -242,7 +234,7 @@ pub fn unlink(formula_names: &[String]) -> Result<()> {
 /// via `magnus` crate) to execute formula Ruby code.
 pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
     if formula_names.is_empty() {
-        println!("{} No formulae specified", "✗".red());
+        println!("{} No formulae specified", "".red());
         return Ok(());
     }
 
@@ -258,7 +250,7 @@ pub fn postinstall(formula_names: &[String]) -> anyhow::Result<()> {
         // Verify formula is installed
         let versions = cellar::get_installed_versions(formula_name)?;
         if versions.is_empty() {
-            println!("  {} Not installed", "⚠".yellow());
+            println!("  {} Not installed", "".yellow());
             continue;
         }
 
