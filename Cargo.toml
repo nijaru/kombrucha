@@ -61,6 +61,7 @@ chrono = "0.4"
 
 # In-memory caching
 moka = { version = "0.12", features = ["future"] }
+strsim = "0.11.1"
 
 [dev-dependencies]
 # Testing

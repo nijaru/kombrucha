@@ -350,19 +350,44 @@ impl BrewApi {
         // Share query string between parallel tasks using Arc to avoid cloning
         let query = std::sync::Arc::new(query_lower);
 
-        // Filter results in parallel
+        // Match for formulae: substring or high Jaro-Winkler similarity
+        fn matches_formula_name(name: &str, query: &str) -> bool {
+            let name_lower = name.to_lowercase();
+            // Direct substring match
+            if name_lower.contains(query) {
+                return true;
+            }
+            // Jaro-Winkler similarity >= 0.85 for fuzzy matches
+            if query.len() >= 3 {
+                let similarity = strsim::jaro_winkler(&name_lower, query);
+                return similarity >= 0.85;
+            }
+            false
+        }
+
+        // Match for casks: substring, query contains name, or high Jaro-Winkler similarity
+        fn matches_cask_name(name: &str, query: &str) -> bool {
+            let name_lower = name.to_lowercase();
+            // Direct substring match (either direction)
+            if name_lower.contains(query) || query.contains(&name_lower) {
+                return true;
+            }
+            // Jaro-Winkler similarity >= 0.85 for fuzzy matches
+            if query.len() >= 3 {
+                let similarity = strsim::jaro_winkler(&name_lower, query);
+                return similarity >= 0.85;
+            }
+            false
+        }
+
+        // Filter results in parallel (name-only matching like brew search)
         let (matching_formulae, matching_casks) = tokio::join!(
             tokio::task::spawn_blocking({
                 let query = Arc::clone(&query);
                 move || {
                     formulae
                         .into_iter()
-                        .filter(|f| {
-                            f.name.to_lowercase().contains(query.as_str())
-                                || f.desc
-                                    .as_ref()
-                                    .is_some_and(|d| d.to_lowercase().contains(query.as_str()))
-                        })
+                        .filter(|f| matches_formula_name(&f.name, &query))
                         .collect::<Vec<_>>()
                 }
             }),
@@ -371,15 +396,7 @@ impl BrewApi {
                 move || {
                     casks
                         .into_iter()
-                        .filter(|c| {
-                            c.token.to_lowercase().contains(query.as_str())
-                                || c.name
-                                    .iter()
-                                    .any(|n| n.to_lowercase().contains(query.as_str()))
-                                || c.desc
-                                    .as_ref()
-                                    .is_some_and(|d| d.to_lowercase().contains(query.as_str()))
-                        })
+                        .filter(|c| matches_cask_name(&c.token, &query))
                         .collect::<Vec<_>>()
                 }
             })
