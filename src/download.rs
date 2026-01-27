@@ -42,7 +42,7 @@
 //! }
 //! ```
 
-use crate::api::{BrewApi, Formula};
+use crate::api::Formula;
 use crate::platform;
 use anyhow::{Context, Result, anyhow};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -324,16 +324,8 @@ pub async fn download_bottle(
 /// #[tokio::main]
 /// async fn main() -> anyhow::Result<()> {
 ///     let api = BrewApi::new()?;
-///     let formulae = vec![
-///         api.fetch_formula("ripgrep").await?,
-///         api.fetch_formula("bat").await?,
-///     ];
-///
-///     let bottles = download::download_bottles(&api, &formulae).await?;
-///     for (name, path) in bottles {
-///         println!("Downloaded {} to {}", name, path.display());
-///     }
-///
+///     let formulae = vec![api.fetch_formula("ripgrep").await?];
+///     let bottles = download::download_bottles(&formulae).await?;
 ///     Ok(())
 /// }
 /// ```
@@ -348,7 +340,6 @@ pub async fn download_bottle(
 ///
 /// On a 500 Mbps connection, downloading 10 bottles takes ~5-10 seconds.
 pub async fn download_bottles(
-    _api: &BrewApi,
     formulae: &[Formula],
 ) -> Result<Vec<(String, PathBuf)>> {
     use std::sync::Arc;
@@ -373,7 +364,7 @@ pub async fn download_bottles(
 
         let task = tokio::spawn(async move {
             // Acquire semaphore permit before downloading
-            let _permit = sem.acquire().await.unwrap();
+            let _permit = sem.acquire().await.expect("download semaphore closed unexpectedly");
             // Pass progress only if not in quiet mode
             let progress = if std::env::var("BRU_QUIET").is_ok() {
                 None

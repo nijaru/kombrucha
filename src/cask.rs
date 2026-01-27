@@ -17,7 +17,7 @@ pub fn cask_install_dir(token: &str, version: &str) -> PathBuf {
 /// Download a cask artifact
 pub async fn download_cask(url: &str, token: &str) -> Result<PathBuf> {
     let cache_dir = crate::download::cache_dir();
-    std::fs::create_dir_all(&cache_dir)?;
+    tokio::fs::create_dir_all(&cache_dir).await?;
 
     // Extract filename from URL
     let filename = url.split('/').next_back().unwrap_or(token);
@@ -37,7 +37,7 @@ pub async fn download_cask(url: &str, token: &str) -> Result<PathBuf> {
     }
 
     let bytes = response.bytes().await?;
-    std::fs::write(&dest_path, bytes)?;
+    tokio::fs::write(&dest_path, bytes).await?;
 
     Ok(dest_path)
 }
@@ -230,22 +230,4 @@ pub fn extract_zip(zip_path: &PathBuf) -> Result<PathBuf> {
     }
 
     Ok(extract_dir)
-}
-
-/// Quit an application before uninstalling
-#[allow(dead_code)]
-pub fn quit_app(bundle_id: &str) -> Result<()> {
-    let output = Command::new("osascript")
-        .args(["-e", &format!("quit app id \"{}\"", bundle_id)])
-        .output()?;
-
-    // Ignore errors if app isn't running
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        if !stderr.contains("not running") {
-            eprintln!("Warning: Failed to quit app: {}", stderr);
-        }
-    }
-
-    Ok(())
 }

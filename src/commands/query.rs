@@ -370,7 +370,7 @@ pub async fn deps(
             std::env::set_var("BRU_QUIET", "1");
         }
         let (_all_formulae, dep_order) =
-            super::install::resolve_dependencies(api, &[formula.to_string()]).await?;
+            crate::commands::pkg::phases::resolve_dependencies(api, &[formula.to_string()]).await?;
         // SAFETY: Removing the temporary BRU_QUIET variable set above. Safe for same reasons.
         unsafe {
             std::env::remove_var("BRU_QUIET");

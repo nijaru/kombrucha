@@ -20,7 +20,12 @@ use super::install::install;
 /// * `api` - The Homebrew API client
 /// * `dump` - If true, generate a Brewfile from installed packages
 /// * `file` - The Brewfile path (defaults to "Brewfile")
-pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()> {
+pub async fn bundle(
+    api: &BrewApi,
+    ruby_handle: &magnus::Ruby,
+    dump: bool,
+    file: Option<&str>,
+) -> Result<()> {
     let brewfile_path = file.unwrap_or("Brewfile");
 
     if dump {
@@ -152,7 +157,7 @@ pub async fn bundle(api: &BrewApi, dump: bool, file: Option<&str>) -> Result<()>
         // Install formulae
         if !formulae_to_install.is_empty() {
             println!("Installing formulae...");
-            match install(api, &formulae_to_install, false, false, false).await {
+            match install(api, ruby_handle, &formulae_to_install, false, false).await {
                 Ok(_) => {}
                 Err(e) => {
                     println!("{} Failed to install some formulae: {}", "".yellow(), e);

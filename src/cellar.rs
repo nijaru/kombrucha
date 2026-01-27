@@ -429,9 +429,12 @@ pub fn get_installed_versions(formula: &str) -> Result<Vec<InstalledPackage>> {
 
 /// Compare two version strings semantically
 pub fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
+    let a_base = a.split('_').next().unwrap_or(a);
+    let b_base = b.split('_').next().unwrap_or(b);
+
     // Parse as semantic version numbers
-    let a_parts: Vec<u32> = a.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
-    let b_parts: Vec<u32> = b.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
+    let a_parts: Vec<u32> = a_base.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
+    let b_parts: Vec<u32> = b_base.split('.').filter_map(|s| s.parse::<u32>().ok()).collect();
 
     // Compare version parts numerically
     for i in 0..a_parts.len().max(b_parts.len()) {
@@ -443,6 +446,15 @@ pub fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
         }
     }
 
+    // If base parts are equal, compare revisions
+    let a_rev: u32 = a.split('_').nth(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let b_rev: u32 = b.split('_').nth(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+
+    match a_rev.cmp(&b_rev) {
+        std::cmp::Ordering::Equal => {}
+        other => return other,
+    }
+
     // Fall back to lexicographic
     a.cmp(b)
 }
@@ -450,6 +462,15 @@ pub fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_compare_versions() {
+        use std::cmp::Ordering;
+        assert_eq!(compare_versions("2.0.0", "10.0.0"), Ordering::Less);
+        assert_eq!(compare_versions("1.76.0", "1.76.0_1"), Ordering::Less);
+        assert_eq!(compare_versions("1.76.0_2", "1.76.0_1"), Ordering::Greater);
+        assert_eq!(compare_versions("1.2.3", "1.2.3"), Ordering::Equal);
+    }
 
     #[test]
     fn test_detect_prefix() {

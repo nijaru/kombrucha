@@ -52,6 +52,7 @@ use crate::error::Result;
 use crate::{download, extract, receipt, symlink};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
+use futures::StreamExt;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -471,6 +472,10 @@ impl PackageManager {
             .write(&cellar_dir)
             .map_err(|e| anyhow!("Failed to write installation receipt: {}", e))?;
 
+        // Step 4.5: Unlink old version symlinks
+        symlink::unlink_formula(&formula.name, &from_version)
+            .map_err(|e| anyhow!("Failed to unlink old symlinks: {}", e))?;
+
         // Step 5: Update symlinks to new version
         let _linked_files = symlink::link_formula(&formula.name, &to_version)
             .map_err(|e| anyhow!("Failed to create symlinks: {}", e))?;
@@ -763,28 +768,42 @@ impl PackageManager {
     pub async fn outdated(&self) -> Result<Vec<OutdatedPackage>> {
         let installed = list_installed()?;
 
-        let mut result = Vec::new();
-        for pkg in installed {
-            match self.api.fetch_formula(&pkg.name).await {
-                Ok(formula) => {
-                    if let Some(latest) = formula.versions.stable
-                        && latest > pkg.version
-                    {
-                        result.push(OutdatedPackage {
-                            name: pkg.name,
-                            installed: pkg.version,
-                            latest,
-                            changeable: true,
-                        });
+        // Query API in parallel with a concurrency limit
+        const CONCURRENCY_LIMIT: usize = 15;
+        
+        let mut results = futures::stream::iter(installed)
+            .map(|pkg| {
+                let api = &self.api;
+                async move {
+                    match api.fetch_formula(&pkg.name).await {
+                        Ok(formula) => {
+                            if let Some(latest) = formula.versions.stable
+                                && cellar::compare_versions(&latest, &pkg.version)
+                                    == std::cmp::Ordering::Greater
+                            {
+                                Some(OutdatedPackage {
+                                    name: pkg.name,
+                                    installed: pkg.version,
+                                    latest,
+                                    changeable: true,
+                                })
+                            } else {
+                                None
+                            }
+                        }
+                        Err(_) => None, // Package from tap or not found - skip
                     }
                 }
-                Err(_) => {
-                    // Package from tap or not found - skip
-                }
-            }
-        }
+            })
+            .buffer_unordered(CONCURRENCY_LIMIT)
+            .filter_map(|res| async { res })
+            .collect::<Vec<_>>()
+            .await;
 
-        Ok(result)
+        // Sort by name for deterministic output
+        results.sort_by(|a, b| a.name.cmp(&b.name));
+
+        Ok(results)
     }
 
     /// Clean up old package versions.

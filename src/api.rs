@@ -41,7 +41,8 @@
 //! }
 //! ```
 
-use crate::error::Result;
+use crate::error::{BruError, Result};
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
@@ -146,6 +147,12 @@ pub struct BrewApi {
 }
 
 impl BrewApi {
+    /// Inject a formula into the cache for testing purposes.
+    #[cfg(test)]
+    pub(crate) async fn inject_formula(&self, formula: Formula) {
+        self.formula_cache.insert(formula.name.clone(), formula).await;
+    }
+
     /// Create a new Homebrew API client with in-memory caching.
     ///
     /// # Examples
@@ -403,8 +410,10 @@ impl BrewApi {
         );
 
         Ok(SearchResults {
-            formulae: matching_formulae.unwrap(),
-            casks: matching_casks.unwrap(),
+            formulae: matching_formulae
+                .map_err(|e| BruError::Other(anyhow!("Formula search task failed: {}", e)))?,
+            casks: matching_casks
+                .map_err(|e| BruError::Other(anyhow!("Cask search task failed: {}", e)))?,
         })
     }
 }
