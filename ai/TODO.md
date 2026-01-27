@@ -1,51 +1,46 @@
 # Active Tasks
 
-**Last Updated**: November 18, 2025
+**Last Updated**: January 26, 2026
 
-## Current Sprint
+## Current Sprint (Sprint 7: Formula DSL Completion)
 
-No active sprint tasks - v0.2.2 ready for release
+- [ ] TASK-25: Implement `stable` block and version extraction
+- [ ] TASK-26: Map `url` and `sha256` to Rust downloaders
+- [ ] TASK-27: Implement resources and patches
+- [ ] TASK-28: Add support for build-time options
+
+## Future Sprints
+
+### Sprint 8: Full Source Build Integration
+- [ ] Replace `brew` source fallback with native Ruby builds
+- [ ] Implement `caveats` and `post_install`
+- [ ] Add comprehensive integration tests for source builds
+
+## Completed Tasks
+
+### Sprint 6: Source Build Execution (MVP)
+- [x] TASK-22: Implement Ruby-to-Rust bridge for DSL methods
+- [x] TASK-23: Execute `install` method for a formula
+- [x] TASK-24: Integrate source fallback in main installation loop
+
+### Sprint 5: Ruby Interop Foundation
+- [x] TASK-19: Setup Ruby VM with `magnus`
+- [x] TASK-20: Implement Formula DSL loading
+- [x] TASK-21: Map Formula metadata to Ruby objects
+
+### Sprint 4: Performance & Modularization
+- [x] TASK-15: Parallelize `outdated()` queries
+- [x] TASK-16: Implement parallel extraction in `install`
+- [x] TASK-17: Modularize `main.rs`
+- [x] TASK-18: Implement batch dependency lookups
 
 ## Planned Features
 
-### PackageManager API Improvements
+### Release
+- [ ] Update CHANGELOG.md for v0.2.5
+- [ ] Tag v0.2.5
 
-- [ ] Add `is_installed(name: &str) -> Result<bool>` helper
-- [ ] Add `install_multiple(names: &[&str]) -> Result<Vec<InstallResult>>` batch op
-- [ ] Add `upgrade_multiple(names: &[&str]) -> Result<Vec<UpgradeResult>>` batch op
-- [ ] Optimize `outdated()` for parallel API queries (40s → ~10s possible)
-
-### Cask Support
-
-- [ ] Wrap low-level `Cask` type in PackageManager
-- [ ] Add `install_cask()` operation
-- [ ] Add `upgrade_cask()` operation
-- [ ] Test with common applications
-
-## Phase 5: Source Builds (Future)
-
-- [ ] Evaluate Ruby embedding options (`magnus` vs `rutie` vs others)
-- [ ] Design formula execution interface
-- [ ] Implement source build support for remaining ~5% formulae
-- [ ] Test on uncommon packages
-
-## Documentation
-
-- [ ] Clarify library vs CLI usage in README
-- [ ] Add migration guide for downstream projects
-- [ ] Document caching strategy
-- [ ] Add troubleshooting section
-
-## Testing
-
-- [ ] Test library API with Cutler integration
-- [ ] Real-world validation on different Mac models
-- [ ] Performance profiling on varying system sizes
-- [ ] Edge case testing (interrupted operations, corrupted Cellar, etc.)
-
-## Non-Urgent
-
-- [ ] Performance: Parallelize outdated() queries
-- [ ] Performance: Batch dependency lookups
-- [ ] UX: Add progress callbacks for long operations
-- [ ] UX: Better error messages for network failures
+### Future Improvements
+- [ ] Content-addressable store for faster warm installs
+- [ ] TOCTOU hardening in symlinks
+- [ ] Support for non-core taps in native Rust resolution

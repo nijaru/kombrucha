@@ -1,0 +1,19 @@
+{
+  "project": "tk",
+  "ref": "y9f4",
+  "title": "TASK-28: Add support for build-time options",
+  "description": null,
+  "status": "open",
+  "priority": 3,
+  "labels": [],
+  "assignees": [],
+  "parent": null,
+  "blocked_by": [],
+  "estimate": null,
+  "due_date": null,
+  "logs": [],
+  "created_at": "2026-01-27T04:49:57.238Z",
+  "updated_at": "2026-01-27T04:49:57.238Z",
+  "completed_at": null,
+  "external": {}
+}

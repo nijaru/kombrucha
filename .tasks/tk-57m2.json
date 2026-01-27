@@ -1,0 +1,19 @@
+{
+  "project": "tk",
+  "ref": "57m2",
+  "title": "TASK-25: Implement stable block and version extraction",
+  "description": null,
+  "status": "open",
+  "priority": 2,
+  "labels": [],
+  "assignees": [],
+  "parent": null,
+  "blocked_by": [],
+  "estimate": null,
+  "due_date": null,
+  "logs": [],
+  "created_at": "2026-01-27T04:49:57.179Z",
+  "updated_at": "2026-01-27T04:49:57.179Z",
+  "completed_at": null,
+  "external": {}
+}

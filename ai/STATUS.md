@@ -1,200 +1,40 @@
 # Project Status
 
-**Last Updated**: November 19, 2025
+**Last Updated**: January 26, 2026
 **Version**: v0.2.4 (ready for release)
-**Status**: Testing complete, ready to release
+**Status**: Sprint 6 complete. Source build MVP established with Ruby-to-Rust bridge.
 
 ## Current Phase
 
-**v0.2.4 (2025-11-19) - Feature Parity & Polish**
+**v0.2.4 (2026-01-26) - Source Build Execution (MVP) Sprint**
 
 ### Fixes & Improvements
 
-1. **Fixed Outdated Detection Staleness** (Issue #1)
-   - Problem: bru missed recently updated packages that brew detected
-   - Root cause: JSON API could lag 15-60 minutes behind git taps
-   - Solution: Enhanced URL version parsing from local tap formulas
-   - Status: ✅ FIXED - All 7 test cases now detected correctly
-
-2. **Parallelized Cleanup Operations**
-   - Problem: Cleanup appeared frozen when removing large packages
-   - Solution: Parallel directory deletions with progress spinners
-   - Impact: 3-5x faster when removing multiple packages simultaneously
+1. **Ruby-to-Rust Bridge**
+   - Implemented `system` and `bin.install` DSL methods in Rust.
+   - Mapped Ruby calls to Rust `std::process::Command` and progress logging.
    - Status: ✅ COMPLETE
 
-3. **Added Progress Indicators**
-   - Added spinners for large deletions (>10 MB) in: cleanup, autoremove, uninstall
-   - Progress counters show completion: "Removed X [3/7]"
+2. **Installation Lifecycle Execution**
+   - Implemented `execute_install` to drive the Ruby `install` method from Rust.
+   - Verified that Ruby formulae can trigger Rust-side installation logic.
    - Status: ✅ COMPLETE
 
-4. **Fixed Bottle Revision Comparison**
-   - Problem: False positives flagging 6.9.3_1 as outdated vs 6.9.3
-   - Solution: Strip bottle revisions before version comparison
-   - Impact: Matches Homebrew's default behavior
-   - Status: ✅ FIXED
-
-5. **Fixed Missing Outdated Casks in Upgrade**
-   - Problem: `bru upgrade` (no args) only upgraded formulae, missing outdated casks
-   - Solution: Added automatic Cask upgrade step when upgrading all packages
-   - Impact: Matches Homebrew behavior, ensuring all software is up to date
-   - Status: ✅ FIXED
-
-6. **Added Cask Support to Bundle**
-   - Problem: `bru bundle` previously ignored casks in both dump and install
-   - Solution: Implemented Cask listing in dump and Cask installation in bundle
-   - Impact: Full Brewfile compatibility
-   - Status: ✅ FIXED
-
-7. **Improved Cleanup & Doctor Parity**
-   - Problem: `bru cleanup` (no args) ignored casks; `bru doctor` ignored Caskroom
-   - Solution: Default cleanup now includes casks; doctor checks Caskroom
-   - Impact: Better alignment with Homebrew behavior
-   - Status: ✅ FIXED
-
-8. **Improved List Command Parity**
-   - Problem: `bru list` (no args) only listed formulae; `brew list` lists both
-   - Solution: Implemented logic to list both by default, using headers like `brew`
-   - Impact: Full compatibility with `brew list` behavior
-   - Status: ✅ FIXED
-
-9. **Improved Uninstall Fallback**
-   - Problem: `bru uninstall <cask>` failed if `--cask` wasn't specified
-   - Solution: Added fallback to check for installed cask if formula not found
-   - Impact: Matches `brew uninstall` smart behavior
-   - Status: ✅ FIXED
+3. **Command Propagation**
+   - Propagated `magnus::Ruby` handle through all installation commands (`install`, `upgrade`, `reinstall`, `uninstall`).
+   - Prepared `finalize_installation` for native Ruby source build integration.
+   - Status: ✅ COMPLETE
 
 ### Test Results
-- All 190 tests passing ✅
-- Regression test `test_parity_outdated_count` passing ✅
-- No test failures
-
-### What's New
-
-**PackageManager API** (`src/package_manager.rs`):
-- Core operations: `install()`, `uninstall()`, `upgrade()`, `reinstall()`
-- Discovery: `search()`, `info()`, `list()`, `outdated()`, `dependencies()`, `uses()`
-- Maintenance: `cleanup()`, `check()`
-- Rich result types with timing, paths, dependencies
-- Automatic resource management (HTTP client, connection pooling)
-
-**Public Library API** via `src/lib.rs`:
-- All core modules exposed: api, cellar, download, extract, symlink, etc.
-- High-level PackageManager wrapper for common workflows
-- Low-level module access for advanced use cases
-
-**Documentation**:
-- `docs/library-api.md` - Complete API reference with examples
-- Inline rustdoc with usage patterns
-- 5 example programs showing integration patterns
-- 190 total tests (all passing)
-
-### Test Results
-
-| Category | Count | Status |
-|----------|-------|--------|
-| Library API tests | 9 | ✅ PASS |
-| Unit tests | 76 | ✅ PASS |
-| Integration tests | 14 | ✅ PASS |
-| Doc tests | 66 | ✅ PASS |
-| Other tests | 25 | ✅ PASS |
-| **Total** | **190** | **✅ PASS** |
-
-### Verified
-
-- ✅ Full Homebrew compatibility (INSTALL_RECEIPT.json, symlinks, binary execution)
-- ✅ Error handling robustness (zero panics, proper Result types)
-- ✅ Performance acceptable for interactive use
-- ✅ Type safety across all operations and result types
-- ✅ Async/await patterns correct (async for downloads, sync for local ops)
-- ✅ All examples compile and run correctly
+- All 191 tests passing ✅
+- Regression tests passing ✅
+- Ruby-to-Rust bridge integration verified ✅
 
 ## Release Status
 
 | Step | Status | Notes |
 |------|--------|-------|
-| Code complete | ✅ | All features implemented and tested |
-| Documentation | ✅ | Library API fully documented |
-| Tests passing | ✅ | 190 tests, all green |
-| Changelog | ✅ | v0.2.0 entry added |
-| PR merged | ✅ | #2 merged to main |
-| Tag v0.2.0 | ✅ | Tagged and pushed |
-| GitHub release | ✅ | Release created |
-| Publish to crates.io | ✅ | Published (permanent) |
-
-## Known Limitations
-
-### By Design (Future Phases)
-
-- **Source builds** (Phase 5): No Ruby interop yet; workaround: use `brew` for ~5% formulae without bottles
-- **Cask support** (Phase 5): Low-level Cask type exists; PackageManager doesn't wrap it yet
-- **Parallel outdated()** (Phase 5): Currently sequential API queries (~42s on 340 packages); could be parallelized
-
-### API Gaps (Could add in 0.1.36+)
-
-- No `is_installed(name)` helper (trivial with `list()`)
-- No `install_multiple()` batch operation (can loop manually)
-- No search filtering by description
-
-## Architecture
-
-**Library Module Structure**:
-```
-lib.rs (public API surface)
-├── package_manager.rs (PackageManager struct + operations)
-├── api.rs (Homebrew JSON API client)
-├── cellar.rs (installed package inspection)
-├── download.rs (parallel bottle downloads)
-├── extract.rs (bottle extraction to Cellar)
-├── symlink.rs (symlink management)
-├── receipt.rs (INSTALL_RECEIPT.json handling)
-├── platform.rs (platform detection)
-├── cache.rs (disk caching)
-├── tap.rs (custom tap support)
-└── error.rs (unified error types)
-```
-
-**Design Patterns**:
-- Async for bottle operations (download, extract, symlink creation)
-- Sync for local operations (list, cleanup)
-- HTTP client shared across operations (connection pooling)
-- In-memory caching (LRU) + 24-hour disk cache for API data
-- Proper symlink depth calculation (relative paths matching Homebrew)
-- Keg-only formula respect (no symlinks)
-- Pinned package detection
-
-## Performance Characteristics
-
-**Non-destructive Operations** (no file modifications):
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| `list()` | <50ms | Scans local Cellar |
-| `check()` | 5-10ms | Filesystem checks |
-| `search(query)` | 30-50ms | Cached API query |
-| `info(name)` | 200-300ms | Single API request |
-| `dependencies(name)` | 0-50ms | Cached after first call |
-| `uses(name)` | 20-100ms | Filters installed packages |
-| `cleanup(dry_run)` | 10-20ms | Scans Cellar |
-| `outdated()` | 10-50s | Queries all packages (sequential) |
-
-**Destructive Operations** (modify system):
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| `install()` | 100-500ms | Bottle cached, fast extraction |
-| `upgrade()` | 100-500ms | If upgrade available; 0ms if latest |
-| `uninstall()` | 1-3s | Removes files and symlinks |
-| `cleanup()` | <50ms | Removes old versions |
-
-## What's Not Changing
-
-- ✅ CLI behavior unchanged (no breaking changes)
-- ✅ All existing commands work as before
-- ✅ Performance unchanged
-- ✅ Bottle-based workflows unchanged
-
-## See Also
-
-- [Library API Docs](../docs/library-api.md) - Complete reference
-- [Todo List](./TODO.md) - Active tasks
-- [Decisions](./DECISIONS.md) - Architecture decisions
+| Code complete | ✅ | Performance optimizations, Ruby foundation, and MVP bridge complete |
+| Documentation | ✅ | Library API remains stable |
+| Tests passing | ✅ | 191 tests + Ruby verification passing |
+| Changelog | ⏳ | To be updated for v0.2.5 |

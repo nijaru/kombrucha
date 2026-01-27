@@ -1,0 +1,19 @@
+{
+  "project": "tk",
+  "ref": "lng5",
+  "title": "TASK-26: Map url and sha256 to Rust downloaders",
+  "description": null,
+  "status": "open",
+  "priority": 2,
+  "labels": [],
+  "assignees": [],
+  "parent": null,
+  "blocked_by": [],
+  "estimate": null,
+  "due_date": null,
+  "logs": [],
+  "created_at": "2026-01-27T04:49:57.199Z",
+  "updated_at": "2026-01-27T04:49:57.199Z",
+  "completed_at": null,
+  "external": {}
+}
