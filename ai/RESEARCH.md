@@ -9,7 +9,7 @@
 - Network download NOT the bottleneck (contrary to maintainer claims)
 **Relevance**: Core motivation for kombrucha
 **Decision**: Build parallel-first package manager in Rust
-→ Details: ai/archive/research/performance-analysis.md
+→ Details: ai/research/performance-analysis.md
 
 ## Homebrew Compatibility Requirements (researched 2025-10-08)
 
@@ -20,7 +20,7 @@
 - Tap structure standardized
 **Relevance**: Ensures we can be drop-in replacement
 **Decision**: Follow Homebrew file layout exactly
-→ Details: ai/archive/research/homebrew-compatibility.md
+→ Details: ai/research/homebrew-compatibility.md
 
 ## Bottle-Based Installation Coverage (researched 2025-10-08)
 
@@ -28,7 +28,7 @@
 **Key Finding**: 95% of formulae have pre-built bottles
 **Relevance**: Can defer source builds to Phase 3
 **Decision**: Bottle-first implementation strategy
-→ Details: ai/archive/research/research-findings.md
+→ Details: ai/research/research-findings.md
 
 ## Edge Cases and Platform Compatibility (researched 2025-10-20)
 
@@ -39,7 +39,7 @@
 - Bottle revisions in version strings
 **Relevance**: Caught critical bugs in outdated/upgrade commands
 **Decision**: Add deduplication and version normalization
-→ Details: ai/archive/research/homebrew-edge-cases.md
+→ Details: ai/research/homebrew-edge-cases.md
 
 ## Open Questions
 
