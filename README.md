@@ -1,78 +1,63 @@
 # bru
 
-**A fast, Homebrew-compatible package manager for macOS**
+**A package manager for the brew ecosystem, written in Go**
 
-⚠️ **Experimental**: Production-ready for bottle-based workflows, but under active development.
+Same packages as brew. Doesn't bloat your disk. Doesn't break on upgrade.
 
-Drop-in replacement for `brew` with 8x faster operations. Works with Homebrew's formulae and bottles—no migration needed.
+## What is this?
 
-## Why bru?
+bru uses brew's package universe — the same formula.json API, the same prebuilt
+bottles — but stores them differently. Content-addressable storage means packages are
+deduplicated across versions. Transactional installs mean interrupted upgrades can be
+rolled back. No Ruby startup tax.
 
-| Operation | Homebrew | bru | Speedup |
-|-----------|----------|-----|---------|
-| `search python` | 1.04s | **0.04s** | **26x** |
-| `info wget` | 1.04s | **0.11s** | **9.6x** |
-| `outdated` | 1.63s | **0.78s** | **2.1x** |
-| `update` (8 taps) | 3.2s | **1.9s** | **1.7x** |
-| Startup time | ~100ms | **<10ms** | **10x** |
+It's the [pnpm](https://pnpm.io/) model applied to system packages: pnpm reads npm's
+`package.json` and downloads from npm's registry, but has its own store. Same idea.
 
-**Same formulae, same ecosystem, dramatically faster.**
+## Status
 
-## Installation
+**Design phase.** Architecture spec and research complete. Go implementation not yet started.
 
-### Via Homebrew
+## Why not brew?
 
-```bash
-brew install nijaru/tap/bru
+brew is the default way to get CLI tools on macOS. It works. But:
+
+- **Slow startup** — Ruby interpreter adds hundreds of milliseconds to every command
+- **"Updating Homebrew..."** — auto-update runs on every `brew install`, blocking for 10-30s
+- **Disk bloat** — old versions pile up silently, no dedup across shared dependencies
+- **Upgrade breakage** — interrupted upgrade leaves half-linked packages (brew issue #20427)
+- **No rollback** — if an upgrade breaks something, you're on your own
+
+bru fixes these at the storage layer, not by being a faster wrapper.
+
+## Why not Stout?
+
+[Stout](https://github.com/neul-labs/stout) is a mature Rust-based brew client with
+10+ crates, SQLite indexing, signed indexes, and CVE auditing. It's good. It solves
+the speed problem by being a drop-in brew replacement.
+
+bru isn't drop-in. It's a different tool with a different store. The speed improvement
+is a side effect of the architecture, not the pitch.
+
+## Architecture
+
+```
+CLI → Service → Store (CAS) → Metadata (SQLite) → Fetch (parallel) → Transaction (atomic)
 ```
 
-### Via Cargo
+Key properties:
+- **Content-addressable store**: packages stored by content hash, deduplicated
+- **APFS clonefile**: instant materialization on macOS (copy-on-write)
+- **Transactional installs**: staged writes, atomic commit, crash-safe rollback
+- **SQLite + FTS5**: fast search, incremental metadata sync
+- **MVS resolution**: simple, reproducible dependency resolution
+
+## Building
 
 ```bash
-cargo install kombrucha
+# (TBD — implementation not yet started)
 ```
-
-## Usage
-
-**CLI**: Works like `brew`. See `bru --help` for all commands. Unsupported commands automatically fall back to `brew`.
-
-**Library**: For Rust projects that need programmatic Homebrew access. See [docs/library-api.md](docs/library-api.md) for complete API reference and examples.
-
-## Limitations
-
-Source builds (~5% of formulae without precompiled bottles) automatically fall back to `brew`.
-
-## Compatibility
-
-Works with Homebrew v4.x on:
-- **macOS 13+** (Ventura, Sonoma, Sequoia)
-- **Apple Silicon** (M1/M2/M3)
-- **Intel** (x86_64)
-
-## Documentation
-
-- **[Library API](docs/library-api.md)** - Programmatic access for Rust projects
-- **[Architecture](docs/architecture/)** - System design and internals
-- **[CHANGELOG](CHANGELOG.md)** - Version history
-
-## Testing
-
-```bash
-# Run all tests
-cargo test
-
-# Build release binary
-cargo build --release
-```
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT OR Apache-2.0
-
----
-
-**Made by [nijaru](https://github.com/nijaru)**
+MIT
